@@ -8,7 +8,7 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.SingleSelectReplyButton;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
-import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.Message;
 
 import java.util.Optional;
 
@@ -19,17 +19,21 @@ import java.util.Optional;
 @ProtobufMessage(name = "Message.ListResponseMessage")
 public final class ListResponseMessage implements ButtonReplyMessage<ListResponseMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String title;
-    @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
-    private final Type listType;
-    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    private final SingleSelectReplyButton reply;
-    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
-    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
-    private final String description;
+    final String title;
 
-    public ListResponseMessage(String title, Type listType, SingleSelectReplyButton reply, ContextInfo contextInfo, String description) {
+    @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
+    final Type listType;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
+    final SingleSelectReplyButton reply;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
+    final String description;
+
+    ListResponseMessage(String title, Type listType, SingleSelectReplyButton reply, ContextInfo contextInfo, String description) {
         this.title = title;
         this.listType = listType;
         this.reply = reply;
@@ -38,8 +42,8 @@ public final class ListResponseMessage implements ButtonReplyMessage<ListRespons
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.LIST_RESPONSE;
+    public Message.Type type() {
+        return Message.Type.LIST_RESPONSE;
     }
 
     public String title() {
@@ -56,9 +60,8 @@ public final class ListResponseMessage implements ButtonReplyMessage<ListRespons
     }
 
     @Override
-    public ListResponseMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     public Optional<String> description() {
@@ -78,7 +81,6 @@ public final class ListResponseMessage implements ButtonReplyMessage<ListRespons
                 "description=" + description + ", " +
                 "listType=" + listType + ']';
     }
-
 
     /**
      * The constants of this enumerated type describe the various types of {@link ListMessage}
@@ -102,10 +104,6 @@ public final class ListResponseMessage implements ButtonReplyMessage<ListRespons
 
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return index;
         }
     }
 }

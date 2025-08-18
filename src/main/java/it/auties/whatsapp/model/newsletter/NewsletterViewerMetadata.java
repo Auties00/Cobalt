@@ -1,37 +1,39 @@
 package it.auties.whatsapp.model.newsletter;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
-import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @ProtobufMessage
 public final class NewsletterViewerMetadata {
     @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
-    private boolean mute;
+    boolean mute;
+
     @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
-    private NewsletterViewerRole role;
+    NewsletterViewerRole role;
 
     public NewsletterViewerMetadata(boolean mute, NewsletterViewerRole role) {
         this.mute = mute;
-        this.role = role;
+        this.role = Objects.requireNonNullElse(role, NewsletterViewerRole.UNKNOWN);
     }
 
-    @JsonCreator
-    NewsletterViewerMetadata(Map<String, ?> json) {
-        this.mute = switch (json.get("mute")) {
+    public static Optional<NewsletterViewerMetadata> ofJson(JSONObject object) {
+        var mute = switch (object.get("mute")) {
             case Boolean bool -> bool;
-            case String string -> Objects.equals(string, "ON");
-            default -> false;
+            case String string -> string.equals("ON");
+            case null, default -> false;
         };
-        this.role = switch (json.get("role")) {
+        var role = switch (object.get("role")) {
             case String string -> NewsletterViewerRole.of(string);
             case Integer index -> NewsletterViewerRole.of(index);
             default -> NewsletterViewerRole.UNKNOWN;
         };
+        var result = new NewsletterViewerMetadata(mute, role);
+        return Optional.of(result);
     }
 
     public boolean mute() {
@@ -42,14 +44,12 @@ public final class NewsletterViewerMetadata {
         return role;
     }
 
-    public NewsletterViewerMetadata setMute(boolean mute) {
+    public void setMute(boolean mute) {
         this.mute = mute;
-        return this;
     }
 
-    public NewsletterViewerMetadata setRole(NewsletterViewerRole role) {
+    public void setRole(NewsletterViewerRole role) {
         this.role = role;
-        return this;
     }
 
     @Override
@@ -58,6 +58,13 @@ public final class NewsletterViewerMetadata {
                 "mute=" + mute +
                 ", role=" + role +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof NewsletterViewerMetadata that
+                && mute == that.mute
+                && role == that.role;
     }
 
     @Override

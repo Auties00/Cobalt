@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.contact;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -13,7 +12,6 @@ import it.auties.whatsapp.util.Clock;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalLong;
 
 /**
  * A model class that represents a Contact. This class is only a model, this means that changing its
@@ -25,7 +23,7 @@ public final class Contact implements JidProvider {
      * The non-null unique jid used to identify this contact
      */
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final Jid jid;
+    final Jid jid;
 
     /**
      * The nullable name specified by this contact when he created a Whatsapp account. Theoretically,
@@ -33,57 +31,51 @@ public final class Contact implements JidProvider {
      * Whatsapp. Though it looks that it can be removed later, so it's nullable.
      */
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private String chosenName;
+    String chosenName;
 
     /**
      * The nullable name associated with this contact on the phone connected with Whatsapp
      */
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-    private String fullName;
+    String fullName;
 
     /**
      * The nullable short name associated with this contact on the phone connected with Whatsapp If a
      * name is available, theoretically, also a short name should be
      */
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    private String shortName;
+    String shortName;
 
     /**
      * The nullable last known presence of this contact. This field is associated only with the
      * presence of this contact in the corresponding conversation. If, for example, this contact is
      * composing, recording or paused in a group this field will not be affected. Instead,
-     * {@link Chat#presences()} should be used. By default, Whatsapp will not send updates about a
+     * {@link Chat#getPresence(JidProvider)} should be used. By default, Whatsapp will not send updates about a
      * contact's status unless they send a message or are in the recent contacts. To force Whatsapp to
      * send updates, use {@link Whatsapp#subscribeToPresence(JidProvider)}.
      */
     @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
-    private ContactStatus lastKnownPresence;
+    ContactStatus lastKnownPresence;
 
     /**
      * The nullable last seconds this contact was seen available. Any contact can decide to hide this
      * information in their privacy settings.
      */
     @ProtobufProperty(index = 6, type = ProtobufType.UINT64)
-    private Long lastSeenSeconds;
+    long lastSeenSeconds;
 
     /**
      * Whether this contact is blocked
      */
     @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
-    private boolean blocked;
+    boolean blocked;
 
-    public Contact(Jid jid) {
-        this.jid = jid;
-        this.lastKnownPresence = ContactStatus.UNAVAILABLE;
-    }
-
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Contact(Jid jid, String chosenName, String fullName, String shortName, ContactStatus lastKnownPresence, Long lastSeenSeconds, boolean blocked) {
-        this.jid = jid;
+    Contact(Jid jid, String chosenName, String fullName, String shortName, ContactStatus lastKnownPresence, long lastSeenSeconds, boolean blocked) {
+        this.jid = Objects.requireNonNull(jid, "jid cannot be null");
         this.chosenName = chosenName;
         this.fullName = fullName;
         this.shortName = shortName;
-        this.lastKnownPresence = lastKnownPresence;
+        this.lastKnownPresence = Objects.requireNonNullElse(lastKnownPresence, ContactStatus.UNAVAILABLE);
         this.lastSeenSeconds = lastSeenSeconds;
         this.blocked = blocked;
     }
@@ -108,8 +100,8 @@ public final class Contact implements JidProvider {
         return jid().user();
     }
 
-    public OptionalLong lastSeenSeconds() {
-        return Clock.parseTimestamp(lastSeenSeconds);
+    public long lastSeenSeconds() {
+        return lastSeenSeconds;
     }
 
     public Optional<ZonedDateTime> lastSeen() {
@@ -136,34 +128,28 @@ public final class Contact implements JidProvider {
         return this.blocked;
     }
 
-    public Contact setChosenName(String chosenName) {
+    public void setChosenName(String chosenName) {
         this.chosenName = chosenName;
-        return this;
     }
 
-    public Contact setFullName(String fullName) {
+    public void setFullName(String fullName) {
         this.fullName = fullName;
-        return this;
     }
 
-    public Contact setShortName(String shortName) {
+    public void setShortName(String shortName) {
         this.shortName = shortName;
-        return this;
     }
 
-    public Contact setLastKnownPresence(ContactStatus lastKnownPresence) {
+    public void setLastKnownPresence(ContactStatus lastKnownPresence) {
         this.lastKnownPresence = lastKnownPresence;
-        return this;
     }
 
-    public Contact setLastSeen(ZonedDateTime lastSeen) {
+    public void setLastSeen(ZonedDateTime lastSeen) {
         this.lastSeenSeconds = lastSeen.toEpochSecond();
-        return this;
     }
 
-    public Contact setBlocked(boolean blocked) {
+    public void setBlocked(boolean blocked) {
         this.blocked = blocked;
-        return this;
     }
 
     @Override

@@ -27,8 +27,5 @@ public sealed interface ButtonBody permits ButtonText, NativeFlowInfo {
             this.index = index;
         }
 
-        public int index() {
-            return index;
-        }
     }
 }

@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.message.standard;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufMessage;
@@ -8,77 +7,96 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.interactive.InteractiveHeaderAttachment;
 import it.auties.whatsapp.model.button.interactive.InteractiveLocationAnnotation;
-import it.auties.whatsapp.model.button.template.hsm.HighlyStructuredFourRowTemplateTitle;
+import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredFourRowTemplateTitle;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplateTitle;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.button.ButtonsMessageHeader;
 import it.auties.whatsapp.model.message.model.MediaMessage;
-import it.auties.whatsapp.model.message.model.MediaMessageType;
 import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
-import it.auties.whatsapp.util.Validate;
 
 import java.time.ZonedDateTime;
 import java.util.*;
 
-import static it.auties.whatsapp.model.message.model.MediaMessageType.VIDEO;
+import static it.auties.whatsapp.model.message.model.MediaMessage.Type.VIDEO;
 import static java.util.Objects.requireNonNullElse;
 
 /**
  * A model class that represents a message holding a video inside
  */
 @ProtobufMessage(name = "Message.VideoMessage")
-public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
+public final class VideoOrGifMessage extends MediaMessage
         implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private String mediaUrl;
-    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final String mimetype;
-    @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-    private byte[] mediaSha256;
-    @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
-    private Long mediaSize;
-    @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
-    private final Integer duration;
-    @ProtobufProperty(index = 6, type = ProtobufType.BYTES)
-    private byte[] mediaKey;
-    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
-    private final String caption;
-    @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
-    private final boolean gifPlayback;
-    @ProtobufProperty(index = 9, type = ProtobufType.UINT32)
-    private final Integer height;
-    @ProtobufProperty(index = 10, type = ProtobufType.UINT32)
-    private final Integer width;
-    @ProtobufProperty(index = 11, type = ProtobufType.BYTES)
-    private byte[] mediaEncryptedSha256;
-    @ProtobufProperty(index = 12, type = ProtobufType.MESSAGE)
-    private final List<InteractiveLocationAnnotation> interactiveAnnotations;
-    @ProtobufProperty(index = 13, type = ProtobufType.STRING)
-    private String mediaDirectPath;
-    @ProtobufProperty(index = 14, type = ProtobufType.INT64)
-    private long mediaKeyTimestampSeconds;
-    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
-    private final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
-    @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
-    private final byte[] streamingSidecar;
-    @ProtobufProperty(index = 19, type = ProtobufType.ENUM)
-    private final Attribution gifAttribution;
-    @ProtobufProperty(index = 20, type = ProtobufType.BOOL)
-    private final boolean viewOnce;
-    @ProtobufProperty(index = 21, type = ProtobufType.STRING)
-    private final String thumbnailDirectPath;
-    @ProtobufProperty(index = 22, type = ProtobufType.BYTES)
-    private final byte[] thumbnailSha256;
-    @ProtobufProperty(index = 23, type = ProtobufType.BYTES)
-    private final byte[] thumbnailEncSha256;
-    @ProtobufProperty(index = 24, type = ProtobufType.STRING)
-    private final String staticUrl;
+    String mediaUrl;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public VideoOrGifMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, byte[] mediaKey, String caption, boolean gifPlayback, Integer height, Integer width, byte[] mediaEncryptedSha256, List<InteractiveLocationAnnotation> interactiveAnnotations, String mediaDirectPath, long mediaKeyTimestampSeconds, byte[] thumbnail, ContextInfo contextInfo, byte[] streamingSidecar, Attribution gifAttribution, boolean viewOnce, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, String staticUrl) {
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    final String mimetype;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
+    byte[] mediaSha256;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
+    Long mediaSize;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
+    final Integer duration;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.BYTES)
+    byte[] mediaKey;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
+    final String caption;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
+    final boolean gifPlayback;
+
+    @ProtobufProperty(index = 9, type = ProtobufType.UINT32)
+    final Integer height;
+
+    @ProtobufProperty(index = 10, type = ProtobufType.UINT32)
+    final Integer width;
+
+    @ProtobufProperty(index = 11, type = ProtobufType.BYTES)
+    byte[] mediaEncryptedSha256;
+
+    @ProtobufProperty(index = 12, type = ProtobufType.MESSAGE)
+    final List<InteractiveLocationAnnotation> interactiveAnnotations;
+
+    @ProtobufProperty(index = 13, type = ProtobufType.STRING)
+    String mediaDirectPath;
+
+    @ProtobufProperty(index = 14, type = ProtobufType.INT64)
+    long mediaKeyTimestampSeconds;
+
+    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
+    final byte[] thumbnail;
+
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    @ProtobufProperty(index = 18, type = ProtobufType.BYTES)
+    final byte[] streamingSidecar;
+
+    @ProtobufProperty(index = 19, type = ProtobufType.ENUM)
+    final Attribution gifAttribution;
+
+    @ProtobufProperty(index = 20, type = ProtobufType.BOOL)
+    final boolean viewOnce;
+
+    @ProtobufProperty(index = 21, type = ProtobufType.STRING)
+    final String thumbnailDirectPath;
+
+    @ProtobufProperty(index = 22, type = ProtobufType.BYTES)
+    final byte[] thumbnailSha256;
+
+    @ProtobufProperty(index = 23, type = ProtobufType.BYTES)
+    final byte[] thumbnailEncSha256;
+
+    @ProtobufProperty(index = 24, type = ProtobufType.STRING)
+    final String staticUrl;
+
+    VideoOrGifMessage(String mediaUrl, String mimetype, byte[] mediaSha256, Long mediaSize, Integer duration, byte[] mediaKey, String caption, boolean gifPlayback, Integer height, Integer width, byte[] mediaEncryptedSha256, List<InteractiveLocationAnnotation> interactiveAnnotations, String mediaDirectPath, long mediaKeyTimestampSeconds, byte[] thumbnail, ContextInfo contextInfo, byte[] streamingSidecar, Attribution gifAttribution, boolean viewOnce, String thumbnailDirectPath, byte[] thumbnailSha256, byte[] thumbnailEncSha256, String staticUrl) {
         this.mediaUrl = mediaUrl;
         this.mimetype = mimetype;
         this.mediaSha256 = mediaSha256;
@@ -108,26 +126,29 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     static VideoOrGifMessage videoBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
-        return new VideoOrGifMessageBuilder()
+        var result = new VideoOrGifMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, VIDEO.mimeType()))
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media).orElse(null))
+                .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())
                 .duration(duration)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build()
-                .setDecodedMedia(media);
+                .build();
+        result.setDecodedMedia(media);
+        return result;
     }
 
     @ProtobufBuilder(className = "GifMessageSimpleBuilder")
     static VideoOrGifMessage gifBuilder(byte[] media, String mimeType, String caption, Attribution gifAttribution, byte[] thumbnail, ContextInfo contextInfo) {
-        Validate.isTrue(isNotGif(media, mimeType), "Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
+        if (!isNotGif(media, mimeType)) {
+            throw new IllegalArgumentException("Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
+        }
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
-        return new VideoOrGifMessageBuilder()
+        var result = new VideoOrGifMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, VIDEO.mimeType()))
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media).orElse(null))
+                .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media))
                 .caption(caption)
                 .width(dimensions.width())
                 .height(dimensions.height())
@@ -135,8 +156,9 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
                 .gifPlayback(true)
                 .gifAttribution(requireNonNullElse(gifAttribution, Attribution.NONE))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build()
-                .setDecodedMedia(media);
+                .build();
+        result.setDecodedMedia(media);
+        return result;
     }
 
     private static boolean isNotGif(byte[] media, String mimeType) {
@@ -151,9 +173,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaUrl(String mediaUrl) {
+    public void setMediaUrl(String mediaUrl) {
         this.mediaUrl = mediaUrl;
-        return this;
     }
 
     @Override
@@ -162,9 +183,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -173,15 +193,13 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public VideoOrGifMessage setMediaKeyTimestamp(Long timestamp) {
+    public void setMediaKeyTimestamp(Long timestamp) {
         this.mediaKeyTimestampSeconds = timestamp;
-        return this;
     }
 
     @Override
@@ -190,9 +208,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -201,9 +218,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -222,9 +238,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     public Optional<String> caption() {
@@ -244,8 +259,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public MediaMessageType mediaType() {
-        return MediaMessageType.VIDEO;
+    public MediaMessage.Type mediaType() {
+        return MediaMessage.Type.VIDEO;
     }
 
     @Override
@@ -318,9 +333,8 @@ public final class VideoOrGifMessage extends MediaMessage<VideoOrGifMessage>
     }
 
     @Override
-    public VideoOrGifMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     /**

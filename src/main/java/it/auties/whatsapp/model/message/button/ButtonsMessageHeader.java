@@ -53,10 +53,6 @@ public sealed interface ButtonsMessageHeader permits ButtonsMessageHeaderText, D
             this.index = index;
         }
 
-        public int index() {
-            return index;
-        }
-
         public boolean hasMedia() {
             return this == DOCUMENT
                     || this == IMAGE

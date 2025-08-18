@@ -7,7 +7,7 @@ import it.auties.whatsapp.model.button.interactive.InteractiveNativeFlow;
 import it.auties.whatsapp.model.button.interactive.InteractiveShop;
 
 /**
- * A model class that represents a message that can be used as the content of a {@link it.auties.whatsapp.model.message.button.InteractiveMessage}
+ * A model class that represents a message that can be used as the content of a {@link InteractiveMessage}
  */
 public sealed interface InteractiveMessageContent permits InteractiveShop, InteractiveCollection, InteractiveNativeFlow {
     /**
@@ -44,10 +44,6 @@ public sealed interface InteractiveMessageContent permits InteractiveShop, Inter
 
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return this.index;
         }
     }
 }

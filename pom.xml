@@ -3,9 +3,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.auties00</groupId>
     <artifactId>cobalt</artifactId>
-    <version>0.0.7</version>
+    <version>0.1.0</version>
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>Standalone fully-featured Whatsapp Web API for Java and Kotlin</description>
+    <description>Standalone fully-featured WhatsApp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/Cobalt</url>
 
     <developers>
@@ -127,14 +127,14 @@
 
                     <!-- Deploy the artifact -->
                     <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${maven.nexus.plugin.version}</version>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${maven.staging.plugin.version}</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -176,22 +176,21 @@
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
-        <maven.nexus.plugin.version>1.6.13</maven.nexus.plugin.version>
+        <maven.staging.plugin.version>0.8.0</maven.staging.plugin.version>
         <zxing.version>3.5.1</zxing.version>
-        <protoc.version>3.4.1</protoc.version>
+        <json.version>2.0.57</json.version>
+        <protoc.version>3.4.3</protoc.version>
         <junit.version>5.10.0-M1</junit.version>
-        <jackson.version>2.15.2</jackson.version>
-        <curve25519.version>1.2</curve25519.version>
+        <curve25519.version>2.0</curve25519.version>
         <lazysodium.version>5.1.4</lazysodium.version>
         <linkpreview.version>2.3</linkpreview.version>
         <vcard.version>0.12.1</vcard.version>
         <qr.terminal.version>2.2</qr.terminal.version>
-        <libphonenumber.version>8.13.13</libphonenumber.version>
+        <libphonenumber.version>9.0.4</libphonenumber.version>
         <maven.versions.version>2.15.0</maven.versions.version>
         <plist.version>1.27</plist.version>
         <aspose.words.version>22.11</aspose.words.version>
         <ffmpeg.version>2023.09.10</ffmpeg.version>
-        <http.version>5.3</http.version>
         <sl4j.version>2.0.13</sl4j.version>
         <apk.parser.version>2.6.10</apk.parser.version>
     </properties>
@@ -203,27 +202,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>process-test-annotations</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <annotationProcessorPaths>
-                                <annotationProcessorPath>
-                                    <groupId>${groupId}</groupId>
-                                    <artifactId>${artifactId}</artifactId>
-                                    <version>${version}</version>
-                                </annotationProcessorPath>
-                            </annotationProcessorPaths>
-                            <annotationProcessors>
-                                <annotationProcessor>it.auties.whatsapp.listener.RegisterListenerProcessor</annotationProcessor>
-                            </annotationProcessors>
-                        </configuration>
-                    </execution>
-                </executions>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -235,10 +213,6 @@
                             <version>${protoc.version}</version>
                         </annotationProcessorPath>
                     </annotationProcessorPaths>
-                    <compilerArgs>
-                        <arg>-parameters</arg>
-                    </compilerArgs>
-                    <failOnError>true</failOnError>
                 </configuration>
             </plugin>
 
@@ -284,32 +258,12 @@
             <artifactId>protobuf-base</artifactId>
             <version>${protoc.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>protobuf-serialization-plugin</artifactId>
-            <version>${protoc.version}</version>
-        </dependency>
 
-        <!-- Json serialization (used by Whatsapp) -->
+        <!-- JSON serialization (used by Whatsapp) -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-parameter-names</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${jackson.version}</version>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+            <version>${json.version}</version>
         </dependency>
 
         <!-- Parse phone numbers (Mobile API) -->
@@ -319,14 +273,7 @@
             <version>${libphonenumber.version}</version>
         </dependency>
 
-        <!-- Parse PLIST files for Apple APNS (Mobile API) -->
-        <dependency>
-            <groupId>com.googlecode.plist</groupId>
-            <artifactId>dd-plist</artifactId>
-            <version>${plist.version}</version>
-        </dependency>
-
-        <!-- Parse Android APK for token generation (Mobile API) -->
+        <!-- Parse Android APK (Mobile API) -->
         <dependency>
             <groupId>net.dongliu</groupId>
             <artifactId>apk-parser</artifactId>

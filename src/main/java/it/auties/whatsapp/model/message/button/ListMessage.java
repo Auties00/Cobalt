@@ -10,7 +10,7 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.info.ProductListInfo;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageType;
+import it.auties.whatsapp.model.message.model.Message;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,25 +19,32 @@ import java.util.Optional;
  * A model class that represents a message that contains a list of buttons or a list of products
  */
 @ProtobufMessage(name = "Message.ListMessage")
-public final class ListMessage implements ContextualMessage<ListMessage>, ButtonMessage {
+public final class ListMessage implements ContextualMessage, ButtonMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String title;
-    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final String description;
-    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-    private final String button;
-    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
-    private final Type listType;
-    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    private final List<ButtonSection> sections;
-    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
-    private final ProductListInfo productListInfo;
-    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
-    private final String footer;
-    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    final String title;
 
-    public ListMessage(String title, String description, String button, Type listType, List<ButtonSection> sections, ProductListInfo productListInfo, String footer, ContextInfo contextInfo) {
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    final String description;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+    final String button;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
+    final Type listType;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
+    final List<ButtonSection> sections;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
+    final ProductListInfo productListInfo;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
+    final String footer;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    ListMessage(String title, String description, String button, Type listType, List<ButtonSection> sections, ProductListInfo productListInfo, String footer, ContextInfo contextInfo) {
         this.title = title;
         this.description = description;
         this.button = button;
@@ -49,8 +56,8 @@ public final class ListMessage implements ContextualMessage<ListMessage>, Button
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.LIST;
+    public Message.Type type() {
+        return Message.Type.LIST;
     }
 
     public String title() {
@@ -87,9 +94,8 @@ public final class ListMessage implements ContextualMessage<ListMessage>, Button
     }
 
     @Override
-    public ListMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override
@@ -104,7 +110,6 @@ public final class ListMessage implements ContextualMessage<ListMessage>, Button
                 "footer=" + footer + ", " +
                 "contextInfo=" + contextInfo + ']';
     }
-
 
     /**
      * The constants of this enumerated type describe the various types of {@link ListMessage}
@@ -128,10 +133,6 @@ public final class ListMessage implements ContextualMessage<ListMessage>, Button
 
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return index;
         }
     }
 }

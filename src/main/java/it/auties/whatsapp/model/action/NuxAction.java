@@ -3,44 +3,49 @@ package it.auties.whatsapp.model.action;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.sync.PatchType;
+
+import java.util.Objects;
 
 /**
  * Unknown
  */
 @ProtobufMessage(name = "SyncActionValue.NuxAction")
-public record NuxAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
-        boolean acknowledged
-) implements Action {
+public final class NuxAction implements Action {
+    @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
+    final boolean acknowledged;
 
-    /**
-     * The name of this action
-     *
-     * @return a non-null string
-     */
+    NuxAction(boolean acknowledged) {
+        this.acknowledged = acknowledged;
+    }
+
     @Override
     public String indexName() {
         return "nux";
     }
 
-    /**
-     * The version of this action
-     *
-     * @return a non-null string
-     */
     @Override
     public int actionVersion() {
         return 7;
     }
 
-    /**
-     * The type of this action
-     *
-     * @return a non-null string
-     */
+    public boolean acknowledged() {
+        return acknowledged;
+    }
+
     @Override
-    public PatchType actionType() {
-        return null;
+    public boolean equals(Object o) {
+        return o instanceof NuxAction nuxAction
+                && acknowledged == nuxAction.acknowledged;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(acknowledged);
+    }
+
+    @Override
+    public String toString() {
+        return "NuxAction[" +
+                "acknowledged=" + acknowledged + ']';
     }
 }

@@ -34,9 +34,5 @@ public sealed interface HighlyStructuredLocalizableParameterValue permits Highly
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }
-
-        public int index() {
-            return index;
-        }
     }
 }

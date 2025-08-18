@@ -1,13 +1,13 @@
 package it.auties.whatsapp.util;
 
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class ConcurrentLinkedSet<E> extends AbstractCollection<E> implements Set<E>, Deque<E> {
+// TODO: Can this be optimized?
+public final class ConcurrentLinkedSet<E> extends AbstractCollection<E> implements Set<E>, Deque<E> {
     private Node<E> head;
     private Node<E> tail;
     private final ReentrantLock lock;
@@ -320,6 +320,7 @@ public class ConcurrentLinkedSet<E> extends AbstractCollection<E> implements Set
         };
     }
 
+    @Override
     public Iterator<E> descendingIterator() {
         return new Iterator<>() {
             private Node<E> previousNode = tail;

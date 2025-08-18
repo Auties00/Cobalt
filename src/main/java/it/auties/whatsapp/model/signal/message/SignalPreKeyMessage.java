@@ -1,35 +1,46 @@
 package it.auties.whatsapp.model.signal.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.util.Bytes;
+import it.auties.protobuf.stream.ProtobufInputStream;
+import it.auties.protobuf.stream.ProtobufOutputStream;
 
-import java.util.Arrays;
+import static it.auties.whatsapp.util.SignalConstants.CURRENT_VERSION;
 
 @ProtobufMessage(name = "PreKeySignalMessage")
-public final class SignalPreKeyMessage extends SignalProtocolMessage<SignalPreKeyMessage> {
+public final class SignalPreKeyMessage {
+    private int version;
+
     @ProtobufProperty(index = 1, type = ProtobufType.UINT32)
-    private final Integer preKeyId;
+    final Integer preKeyId;
 
     @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
-    private final byte[] baseKey;
+    final byte[] baseKey;
 
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-    private final byte[] identityKey;
+    final byte[] identityKey;
 
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
-    private final byte[] serializedSignalMessage;
+    final byte[] serializedSignalMessage;
 
     @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
-    private final Integer registrationId;
+    final Integer registrationId;
 
     @ProtobufProperty(index = 6, type = ProtobufType.UINT32)
-    private final Integer signedPreKeyId;
+    final Integer signedPreKeyId;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public SignalPreKeyMessage(Integer preKeyId, byte[] baseKey, byte[] identityKey, byte[] serializedSignalMessage, int registrationId, int signedPreKeyId) {
+    public SignalPreKeyMessage(int version, Integer preKeyId, byte[] baseKey, byte[] identityKey, byte[] serializedSignalMessage, int registrationId, int signedPreKeyId) {
+        this.version = version;
+        this.preKeyId = preKeyId;
+        this.baseKey = baseKey;
+        this.identityKey = identityKey;
+        this.serializedSignalMessage = serializedSignalMessage;
+        this.registrationId = registrationId;
+        this.signedPreKeyId = signedPreKeyId;
+    }
+
+    SignalPreKeyMessage(Integer preKeyId, byte[] baseKey, byte[] identityKey, byte[] serializedSignalMessage, Integer registrationId, Integer signedPreKeyId) {
         this.preKeyId = preKeyId;
         this.baseKey = baseKey;
         this.identityKey = identityKey;
@@ -39,18 +50,32 @@ public final class SignalPreKeyMessage extends SignalProtocolMessage<SignalPreKe
     }
 
     public static SignalPreKeyMessage ofSerialized(byte[] serialized) {
-        return SignalPreKeyMessageSpec.decode(Arrays.copyOfRange(serialized, 1, serialized.length))
-                .setVersion(Bytes.bytesToVersion(serialized[0]))
-                .setSerialized(serialized);
+        var result = SignalPreKeyMessageSpec.decode(ProtobufInputStream.fromBytes(serialized, 1, serialized.length - 1));
+        result.version = Byte.toUnsignedInt(serialized[0]) >> 4;
+        return result;
     }
 
-    @Override
     public byte[] serialized() {
-        if (serialized == null) {
-            this.serialized = Bytes.concat(serializedVersion(), SignalPreKeyMessageSpec.encode(this));
+        var serialized = new byte[1 + SignalPreKeyMessageSpec.sizeOf(this)];
+        serialized[0] = serializedVersion();
+        SignalPreKeyMessageSpec.encode(this, ProtobufOutputStream.toBytes(serialized, 1));
+        return serialized;
+    }
+
+    public int version() {
+        if(version == 0) {
+            throw new InternalError();
         }
 
-        return serialized;
+        return version;
+    }
+
+    public byte serializedVersion() {
+        if(version == 0) {
+            throw new InternalError();
+        }
+
+        return (byte) (version << 4 | CURRENT_VERSION);
     }
 
     public SignalMessage signalMessage() {

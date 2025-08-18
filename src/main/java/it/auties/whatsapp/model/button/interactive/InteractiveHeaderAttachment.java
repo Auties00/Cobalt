@@ -45,8 +45,5 @@ public sealed interface InteractiveHeaderAttachment permits DocumentMessage, Ima
             this.index = index;
         }
 
-        public int index() {
-            return index;
-        }
     }
 }

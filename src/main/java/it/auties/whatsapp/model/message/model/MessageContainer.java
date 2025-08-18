@@ -1,5 +1,6 @@
 package it.auties.whatsapp.model.message.model;
 
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -28,110 +29,316 @@ import java.util.Optional;
  * </ul>
  */
 @ProtobufMessage(name = "Message")
-public record MessageContainer(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        Optional<String> textWithNoContextMessage,
-        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-        Optional<SenderKeyDistributionMessage> senderKeyDistributionMessage,
-        @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-        Optional<ImageMessage> imageMessage,
-        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-        Optional<ContactMessage> contactMessage,
-        @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-        Optional<LocationMessage> locationMessage,
-        @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
-        Optional<TextMessage> textMessage,
-        @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
-        Optional<DocumentMessage> documentMessage,
-        @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
-        Optional<AudioMessage> audioMessage,
-        @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
-        Optional<VideoOrGifMessage> videoMessage,
-        @ProtobufProperty(index = 10, type = ProtobufType.MESSAGE)
-        Optional<CallMessage> callMessage,
-        @ProtobufProperty(index = 12, type = ProtobufType.MESSAGE)
-        Optional<ProtocolMessage> protocolMessage,
-        @ProtobufProperty(index = 13, type = ProtobufType.MESSAGE)
-        Optional<ContactsMessage> contactsArrayMessage,
-        @ProtobufProperty(index = 14, type = ProtobufType.MESSAGE)
-        Optional<HighlyStructuredMessage> highlyStructuredMessage,
-        @ProtobufProperty(index = 16, type = ProtobufType.MESSAGE)
-        Optional<SendPaymentMessage> sendPaymentMessage,
-        @ProtobufProperty(index = 18, type = ProtobufType.MESSAGE)
-        Optional<LiveLocationMessage> liveLocationMessage,
-        @ProtobufProperty(index = 22, type = ProtobufType.MESSAGE)
-        Optional<RequestPaymentMessage> requestPaymentMessage,
-        @ProtobufProperty(index = 23, type = ProtobufType.MESSAGE)
-        Optional<DeclinePaymentRequestMessage> declinePaymentRequestMessage,
-        @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
-        Optional<CancelPaymentRequestMessage> cancelPaymentRequestMessage,
-        @ProtobufProperty(index = 25, type = ProtobufType.MESSAGE)
-        Optional<TemplateMessage> templateMessage,
-        @ProtobufProperty(index = 26, type = ProtobufType.MESSAGE)
-        Optional<StickerMessage> stickerMessage,
-        @ProtobufProperty(index = 28, type = ProtobufType.MESSAGE)
-        Optional<GroupInviteMessage> groupInviteMessage,
-        @ProtobufProperty(index = 29, type = ProtobufType.MESSAGE)
-        Optional<TemplateReplyMessage> templateReplyMessage,
-        @ProtobufProperty(index = 30, type = ProtobufType.MESSAGE)
-        Optional<ProductMessage> productMessage,
-        @ProtobufProperty(index = 31, type = ProtobufType.MESSAGE)
-        Optional<DeviceSentMessage> deviceSentMessage,
-        @ProtobufProperty(index = 32, type = ProtobufType.MESSAGE)
-        Optional<DeviceSyncMessage> deviceSyncMessage,
-        @ProtobufProperty(index = 36, type = ProtobufType.MESSAGE)
-        Optional<ListMessage> listMessage,
-        @ProtobufProperty(index = 37, type = ProtobufType.MESSAGE)
-        Optional<FutureMessageContainer> viewOnceMessage,
-        @ProtobufProperty(index = 38, type = ProtobufType.MESSAGE)
-        Optional<PaymentOrderMessage> orderMessage,
-        @ProtobufProperty(index = 39, type = ProtobufType.MESSAGE)
-        Optional<ListResponseMessage> listResponseMessage,
-        @ProtobufProperty(index = 40, type = ProtobufType.MESSAGE)
-        Optional<FutureMessageContainer> ephemeralMessage,
-        @ProtobufProperty(index = 41, type = ProtobufType.MESSAGE)
-        Optional<PaymentInvoiceMessage> invoiceMessage,
-        @ProtobufProperty(index = 42, type = ProtobufType.MESSAGE)
-        Optional<ButtonsMessage> buttonsMessage,
-        @ProtobufProperty(index = 43, type = ProtobufType.MESSAGE)
-        Optional<ButtonsResponseMessage> buttonsResponseMessage,
-        @ProtobufProperty(index = 44, type = ProtobufType.MESSAGE)
-        Optional<PaymentInviteMessage> paymentInviteMessage,
-        @ProtobufProperty(index = 45, type = ProtobufType.MESSAGE)
-        Optional<InteractiveMessage> interactiveMessage,
-        @ProtobufProperty(index = 46, type = ProtobufType.MESSAGE)
-        Optional<ReactionMessage> reactionMessage,
-        @ProtobufProperty(index = 47, type = ProtobufType.MESSAGE)
-        Optional<StickerSyncRMRMessage> stickerSyncMessage,
-        @ProtobufProperty(index = 48, type = ProtobufType.MESSAGE)
-        Optional<InteractiveResponseMessage> interactiveResponseMessage,
-        @ProtobufProperty(index = 49, type = ProtobufType.MESSAGE)
-        Optional<PollCreationMessage> pollCreationMessage,
-        @ProtobufProperty(index = 50, type = ProtobufType.MESSAGE)
-        Optional<PollUpdateMessage> pollUpdateMessage,
-        @ProtobufProperty(index = 51, type = ProtobufType.MESSAGE)
-        Optional<KeepInChatMessage> keepInChatMessage,
-        @ProtobufProperty(index = 53, type = ProtobufType.MESSAGE)
-        Optional<FutureMessageContainer> documentWithCaptionMessage,
-        @ProtobufProperty(index = 54, type = ProtobufType.MESSAGE)
-        Optional<RequestPhoneNumberMessage> requestPhoneNumberMessage,
-        @ProtobufProperty(index = 55, type = ProtobufType.MESSAGE)
-        Optional<FutureMessageContainer> viewOnceV2Message,
-        @ProtobufProperty(index = 56, type = ProtobufType.MESSAGE)
-        Optional<EncryptedReactionMessage> encryptedReactionMessage,
-        @ProtobufProperty(index = 58, type = ProtobufType.MESSAGE)
-        Optional<FutureMessageContainer> editedMessage,
-        @ProtobufProperty(index = 59, type = ProtobufType.MESSAGE)
-        Optional<FutureMessageContainer> viewOnceV2ExtensionMessage,
-        @ProtobufProperty(index = 78, type = ProtobufType.MESSAGE)
-        Optional<NewsletterAdminInviteMessage> newsletterAdminInviteMessage,
-        @ProtobufProperty(index = 35, type = ProtobufType.MESSAGE)
-        Optional<DeviceContextInfo> deviceInfo
-) {
-    /**
-     * An empty message
-     */
+public final class MessageContainer {
     private static final EmptyMessage EMPTY_MESSAGE = new EmptyMessage();
+
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    final String textWithNoContextMessage;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
+    final SenderKeyDistributionMessage senderKeyDistributionMessage;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
+    final ImageMessage imageMessage;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
+    final ContactMessage contactMessage;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
+    final LocationMessage locationMessage;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
+    final TextMessage textMessage;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
+    final DocumentMessage documentMessage;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
+    final AudioMessage audioMessage;
+
+    @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
+    final VideoOrGifMessage videoMessage;
+
+    @ProtobufProperty(index = 10, type = ProtobufType.MESSAGE)
+    final CallMessage callMessage;
+
+    @ProtobufProperty(index = 12, type = ProtobufType.MESSAGE)
+    final ProtocolMessage protocolMessage;
+
+    @ProtobufProperty(index = 13, type = ProtobufType.MESSAGE)
+    final ContactsMessage contactsArrayMessage;
+
+    @ProtobufProperty(index = 14, type = ProtobufType.MESSAGE)
+    final HighlyStructuredMessage highlyStructuredMessage;
+
+    @ProtobufProperty(index = 16, type = ProtobufType.MESSAGE)
+    final SendPaymentMessage sendPaymentMessage;
+
+    @ProtobufProperty(index = 18, type = ProtobufType.MESSAGE)
+    final LiveLocationMessage liveLocationMessage;
+
+    @ProtobufProperty(index = 22, type = ProtobufType.MESSAGE)
+    final RequestPaymentMessage requestPaymentMessage;
+
+    @ProtobufProperty(index = 23, type = ProtobufType.MESSAGE)
+    final DeclinePaymentRequestMessage declinePaymentRequestMessage;
+
+    @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
+    final CancelPaymentRequestMessage cancelPaymentRequestMessage;
+
+    @ProtobufProperty(index = 25, type = ProtobufType.MESSAGE)
+    final TemplateMessage templateMessage;
+
+    @ProtobufProperty(index = 26, type = ProtobufType.MESSAGE)
+    final StickerMessage stickerMessage;
+
+    @ProtobufProperty(index = 28, type = ProtobufType.MESSAGE)
+    final GroupInviteMessage groupInviteMessage;
+
+    @ProtobufProperty(index = 29, type = ProtobufType.MESSAGE)
+    final TemplateReplyMessage templateReplyMessage;
+
+    @ProtobufProperty(index = 30, type = ProtobufType.MESSAGE)
+    final ProductMessage productMessage;
+
+    @ProtobufProperty(index = 31, type = ProtobufType.MESSAGE)
+    final DeviceSentMessage deviceSentMessage;
+
+    @ProtobufProperty(index = 32, type = ProtobufType.MESSAGE)
+    final DeviceSyncMessage deviceSyncMessage;
+
+    @ProtobufProperty(index = 36, type = ProtobufType.MESSAGE)
+    final ListMessage listMessage;
+
+    @ProtobufProperty(index = 37, type = ProtobufType.MESSAGE)
+    final FutureMessageContainer viewOnceMessage;
+
+    @ProtobufProperty(index = 38, type = ProtobufType.MESSAGE)
+    final PaymentOrderMessage orderMessage;
+
+    @ProtobufProperty(index = 39, type = ProtobufType.MESSAGE)
+    final ListResponseMessage listResponseMessage;
+
+    @ProtobufProperty(index = 40, type = ProtobufType.MESSAGE)
+    final FutureMessageContainer ephemeralMessage;
+
+    @ProtobufProperty(index = 41, type = ProtobufType.MESSAGE)
+    final PaymentInvoiceMessage invoiceMessage;
+
+    @ProtobufProperty(index = 42, type = ProtobufType.MESSAGE)
+    final ButtonsMessage buttonsMessage;
+
+    @ProtobufProperty(index = 43, type = ProtobufType.MESSAGE)
+    final ButtonsResponseMessage buttonsResponseMessage;
+
+    @ProtobufProperty(index = 44, type = ProtobufType.MESSAGE)
+    final PaymentInviteMessage paymentInviteMessage;
+
+    @ProtobufProperty(index = 45, type = ProtobufType.MESSAGE)
+    final InteractiveMessage interactiveMessage;
+
+    @ProtobufProperty(index = 46, type = ProtobufType.MESSAGE)
+    final ReactionMessage reactionMessage;
+
+    @ProtobufProperty(index = 47, type = ProtobufType.MESSAGE)
+    final StickerSyncRMRMessage stickerSyncMessage;
+
+    @ProtobufProperty(index = 48, type = ProtobufType.MESSAGE)
+    final InteractiveResponseMessage interactiveResponseMessage;
+
+    @ProtobufProperty(index = 49, type = ProtobufType.MESSAGE)
+    final PollCreationMessage pollCreationMessage;
+
+    @ProtobufProperty(index = 50, type = ProtobufType.MESSAGE)
+    final PollUpdateMessage pollUpdateMessage;
+
+    @ProtobufProperty(index = 51, type = ProtobufType.MESSAGE)
+    final KeepInChatMessage keepInChatMessage;
+
+    @ProtobufProperty(index = 53, type = ProtobufType.MESSAGE)
+    final FutureMessageContainer documentWithCaptionMessage;
+
+    @ProtobufProperty(index = 54, type = ProtobufType.MESSAGE)
+    final RequestPhoneNumberMessage requestPhoneNumberMessage;
+
+    @ProtobufProperty(index = 55, type = ProtobufType.MESSAGE)
+    final FutureMessageContainer viewOnceV2Message;
+
+    @ProtobufProperty(index = 56, type = ProtobufType.MESSAGE)
+    final EncryptedReactionMessage encryptedReactionMessage;
+
+    @ProtobufProperty(index = 58, type = ProtobufType.MESSAGE)
+    final FutureMessageContainer editedMessage;
+
+    @ProtobufProperty(index = 59, type = ProtobufType.MESSAGE)
+    final FutureMessageContainer viewOnceV2ExtensionMessage;
+
+    @ProtobufProperty(index = 78, type = ProtobufType.MESSAGE)
+    final NewsletterAdminInviteMessage newsletterAdminInviteMessage;
+
+    @ProtobufProperty(index = 35, type = ProtobufType.MESSAGE)
+    final DeviceContextInfo deviceInfo;
+
+    MessageContainer(String textWithNoContextMessage, SenderKeyDistributionMessage senderKeyDistributionMessage, ImageMessage imageMessage, ContactMessage contactMessage, LocationMessage locationMessage, TextMessage textMessage, DocumentMessage documentMessage, AudioMessage audioMessage, VideoOrGifMessage videoMessage, CallMessage callMessage, ProtocolMessage protocolMessage, ContactsMessage contactsArrayMessage, HighlyStructuredMessage highlyStructuredMessage, SendPaymentMessage sendPaymentMessage, LiveLocationMessage liveLocationMessage, RequestPaymentMessage requestPaymentMessage, DeclinePaymentRequestMessage declinePaymentRequestMessage, CancelPaymentRequestMessage cancelPaymentRequestMessage, TemplateMessage templateMessage, StickerMessage stickerMessage, GroupInviteMessage groupInviteMessage, TemplateReplyMessage templateReplyMessage, ProductMessage productMessage, DeviceSentMessage deviceSentMessage, DeviceSyncMessage deviceSyncMessage, ListMessage listMessage, FutureMessageContainer viewOnceMessage, PaymentOrderMessage orderMessage, ListResponseMessage listResponseMessage, FutureMessageContainer ephemeralMessage, PaymentInvoiceMessage invoiceMessage, ButtonsMessage buttonsMessage, ButtonsResponseMessage buttonsResponseMessage, PaymentInviteMessage paymentInviteMessage, InteractiveMessage interactiveMessage, ReactionMessage reactionMessage, StickerSyncRMRMessage stickerSyncMessage, InteractiveResponseMessage interactiveResponseMessage, PollCreationMessage pollCreationMessage, PollUpdateMessage pollUpdateMessage, KeepInChatMessage keepInChatMessage, FutureMessageContainer documentWithCaptionMessage, RequestPhoneNumberMessage requestPhoneNumberMessage, FutureMessageContainer viewOnceV2Message, EncryptedReactionMessage encryptedReactionMessage, FutureMessageContainer editedMessage, FutureMessageContainer viewOnceV2ExtensionMessage, NewsletterAdminInviteMessage newsletterAdminInviteMessage, DeviceContextInfo deviceInfo) {
+        this.textWithNoContextMessage = textWithNoContextMessage;
+        this.senderKeyDistributionMessage = senderKeyDistributionMessage;
+        this.imageMessage = imageMessage;
+        this.contactMessage = contactMessage;
+        this.locationMessage = locationMessage;
+        this.textMessage = textMessage;
+        this.documentMessage = documentMessage;
+        this.audioMessage = audioMessage;
+        this.videoMessage = videoMessage;
+        this.callMessage = callMessage;
+        this.protocolMessage = protocolMessage;
+        this.contactsArrayMessage = contactsArrayMessage;
+        this.highlyStructuredMessage = highlyStructuredMessage;
+        this.sendPaymentMessage = sendPaymentMessage;
+        this.liveLocationMessage = liveLocationMessage;
+        this.requestPaymentMessage = requestPaymentMessage;
+        this.declinePaymentRequestMessage = declinePaymentRequestMessage;
+        this.cancelPaymentRequestMessage = cancelPaymentRequestMessage;
+        this.templateMessage = templateMessage;
+        this.stickerMessage = stickerMessage;
+        this.groupInviteMessage = groupInviteMessage;
+        this.templateReplyMessage = templateReplyMessage;
+        this.productMessage = productMessage;
+        this.deviceSentMessage = deviceSentMessage;
+        this.deviceSyncMessage = deviceSyncMessage;
+        this.listMessage = listMessage;
+        this.viewOnceMessage = viewOnceMessage;
+        this.orderMessage = orderMessage;
+        this.listResponseMessage = listResponseMessage;
+        this.ephemeralMessage = ephemeralMessage;
+        this.invoiceMessage = invoiceMessage;
+        this.buttonsMessage = buttonsMessage;
+        this.buttonsResponseMessage = buttonsResponseMessage;
+        this.paymentInviteMessage = paymentInviteMessage;
+        this.interactiveMessage = interactiveMessage;
+        this.reactionMessage = reactionMessage;
+        this.stickerSyncMessage = stickerSyncMessage;
+        this.interactiveResponseMessage = interactiveResponseMessage;
+        this.pollCreationMessage = pollCreationMessage;
+        this.pollUpdateMessage = pollUpdateMessage;
+        this.keepInChatMessage = keepInChatMessage;
+        this.documentWithCaptionMessage = documentWithCaptionMessage;
+        this.requestPhoneNumberMessage = requestPhoneNumberMessage;
+        this.viewOnceV2Message = viewOnceV2Message;
+        this.encryptedReactionMessage = encryptedReactionMessage;
+        this.editedMessage = editedMessage;
+        this.viewOnceV2ExtensionMessage = viewOnceV2ExtensionMessage;
+        this.newsletterAdminInviteMessage = newsletterAdminInviteMessage;
+        this.deviceInfo = deviceInfo;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof MessageContainer that
+                && Objects.equals(textWithNoContextMessage, that.textWithNoContextMessage)
+                && Objects.equals(senderKeyDistributionMessage, that.senderKeyDistributionMessage)
+                && Objects.equals(imageMessage, that.imageMessage)
+                && Objects.equals(contactMessage, that.contactMessage)
+                && Objects.equals(locationMessage, that.locationMessage)
+                && Objects.equals(textMessage, that.textMessage)
+                && Objects.equals(documentMessage, that.documentMessage)
+                && Objects.equals(audioMessage, that.audioMessage)
+                && Objects.equals(videoMessage, that.videoMessage)
+                && Objects.equals(callMessage, that.callMessage)
+                && Objects.equals(protocolMessage, that.protocolMessage)
+                && Objects.equals(contactsArrayMessage, that.contactsArrayMessage)
+                && Objects.equals(highlyStructuredMessage, that.highlyStructuredMessage)
+                && Objects.equals(sendPaymentMessage, that.sendPaymentMessage)
+                && Objects.equals(liveLocationMessage, that.liveLocationMessage)
+                && Objects.equals(requestPaymentMessage, that.requestPaymentMessage)
+                && Objects.equals(declinePaymentRequestMessage, that.declinePaymentRequestMessage)
+                && Objects.equals(cancelPaymentRequestMessage, that.cancelPaymentRequestMessage)
+                && Objects.equals(templateMessage, that.templateMessage)
+                && Objects.equals(stickerMessage, that.stickerMessage)
+                && Objects.equals(groupInviteMessage, that.groupInviteMessage)
+                && Objects.equals(templateReplyMessage, that.templateReplyMessage)
+                && Objects.equals(productMessage, that.productMessage)
+                && Objects.equals(deviceSentMessage, that.deviceSentMessage)
+                && Objects.equals(deviceSyncMessage, that.deviceSyncMessage)
+                && Objects.equals(listMessage, that.listMessage)
+                && Objects.equals(viewOnceMessage, that.viewOnceMessage)
+                && Objects.equals(orderMessage, that.orderMessage)
+                && Objects.equals(listResponseMessage, that.listResponseMessage)
+                && Objects.equals(ephemeralMessage, that.ephemeralMessage)
+                && Objects.equals(invoiceMessage, that.invoiceMessage)
+                && Objects.equals(buttonsMessage, that.buttonsMessage)
+                && Objects.equals(buttonsResponseMessage, that.buttonsResponseMessage)
+                && Objects.equals(paymentInviteMessage, that.paymentInviteMessage)
+                && Objects.equals(interactiveMessage, that.interactiveMessage)
+                && Objects.equals(reactionMessage, that.reactionMessage)
+                && Objects.equals(stickerSyncMessage, that.stickerSyncMessage)
+                && Objects.equals(interactiveResponseMessage, that.interactiveResponseMessage)
+                && Objects.equals(pollCreationMessage, that.pollCreationMessage)
+                && Objects.equals(pollUpdateMessage, that.pollUpdateMessage)
+                && Objects.equals(keepInChatMessage, that.keepInChatMessage)
+                && Objects.equals(documentWithCaptionMessage, that.documentWithCaptionMessage)
+                && Objects.equals(requestPhoneNumberMessage, that.requestPhoneNumberMessage)
+                && Objects.equals(viewOnceV2Message, that.viewOnceV2Message)
+                && Objects.equals(encryptedReactionMessage, that.encryptedReactionMessage)
+                && Objects.equals(editedMessage, that.editedMessage)
+                && Objects.equals(viewOnceV2ExtensionMessage, that.viewOnceV2ExtensionMessage)
+                && Objects.equals(newsletterAdminInviteMessage, that.newsletterAdminInviteMessage)
+                && Objects.equals(deviceInfo, that.deviceInfo);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                textWithNoContextMessage,
+                senderKeyDistributionMessage,
+                imageMessage,
+                contactMessage,
+                locationMessage,
+                textMessage,
+                documentMessage,
+                audioMessage,
+                videoMessage,
+                callMessage,
+                protocolMessage,
+                contactsArrayMessage,
+                highlyStructuredMessage,
+                sendPaymentMessage,
+                liveLocationMessage,
+                requestPaymentMessage,
+                declinePaymentRequestMessage,
+                cancelPaymentRequestMessage,
+                templateMessage,
+                stickerMessage,
+                groupInviteMessage,
+                templateReplyMessage,
+                productMessage,
+                deviceSentMessage,
+                deviceSyncMessage,
+                listMessage,
+                viewOnceMessage,
+                orderMessage,
+                listResponseMessage,
+                ephemeralMessage,
+                invoiceMessage,
+                buttonsMessage,
+                buttonsResponseMessage,
+                paymentInviteMessage,
+                interactiveMessage,
+                reactionMessage,
+                stickerSyncMessage,
+                interactiveResponseMessage,
+                pollCreationMessage,
+                pollUpdateMessage,
+                keepInChatMessage,
+                documentWithCaptionMessage,
+                requestPhoneNumberMessage,
+                viewOnceV2Message,
+                encryptedReactionMessage,
+                editedMessage,
+                viewOnceV2ExtensionMessage,
+                newsletterAdminInviteMessage,
+                deviceInfo
+        );
+    }
 
     /**
      * Returns an empty message container
@@ -140,6 +347,10 @@ public record MessageContainer(
      */
     public static MessageContainer empty() {
         return new MessageContainerBuilder().build();
+    }
+
+    public static Optional<MessageContainer> ofJson(JSONObject jsonObject) {
+        return Optional.empty();
     }
 
     /**
@@ -238,8 +449,11 @@ public record MessageContainer(
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofViewOnce(T message) {
+        var futureMessageContainer = new FutureMessageContainerBuilder()
+                .content(MessageContainer.of(message))
+                .build();
         return new MessageContainerBuilder()
-                .viewOnceMessage(FutureMessageContainer.of(message))
+                .viewOnceMessage(futureMessageContainer)
                 .build();
     }
 
@@ -251,8 +465,11 @@ public record MessageContainer(
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofViewOnceV2(T message) {
+        var futureMessageContainer = new FutureMessageContainerBuilder()
+                .content(MessageContainer.of(message))
+                .build();
         return new MessageContainerBuilder()
-                .viewOnceV2Message(FutureMessageContainer.of(message))
+                .viewOnceV2Message(futureMessageContainer)
                 .build();
     }
 
@@ -263,8 +480,11 @@ public record MessageContainer(
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofEphemeral(T message) {
+        var futureMessageContainer = new FutureMessageContainerBuilder()
+                .content(MessageContainer.of(message))
+                .build();
         return new MessageContainerBuilder()
-                .ephemeralMessage(FutureMessageContainer.of(message))
+                .ephemeralMessage(futureMessageContainer)
                 .build();
     }
 
@@ -275,8 +495,11 @@ public record MessageContainer(
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofEditedMessage(T message) {
+        var futureMessageContainer = new FutureMessageContainerBuilder()
+                .content(MessageContainer.of(message))
+                .build();
         return new MessageContainerBuilder()
-                .editedMessage(FutureMessageContainer.of(message))
+                .editedMessage(futureMessageContainer)
                 .build();
     }
 
@@ -287,8 +510,11 @@ public record MessageContainer(
      * @param <T>     the type of the message
      */
     public static <T extends Message> MessageContainer ofDocumentWithCaption(T message) {
+        var futureMessageContainer = new FutureMessageContainerBuilder()
+                .content(MessageContainer.of(message))
+                .build();
         return new MessageContainerBuilder()
-                .documentWithCaptionMessage(FutureMessageContainer.of(message))
+                .documentWithCaptionMessage(futureMessageContainer)
                 .build();
     }
 
@@ -299,150 +525,150 @@ public record MessageContainer(
      * @return a non-null message
      */
     public Message content() {
-        if (this.textWithNoContextMessage.isPresent()) {
-            return TextMessage.of(textWithNoContextMessage.get());
+        if (this.textWithNoContextMessage != null) {
+            return TextMessage.of(textWithNoContextMessage);
         }
-        if (this.imageMessage.isPresent()) {
-            return imageMessage.get();
+        if (this.imageMessage != null) {
+            return imageMessage;
         }
-        if (this.contactMessage.isPresent()) {
-            return contactMessage.get();
+        if (this.contactMessage != null) {
+            return contactMessage;
         }
-        if (this.locationMessage.isPresent()) {
-            return locationMessage.get();
+        if (this.locationMessage != null) {
+            return locationMessage;
         }
-        if (this.textMessage.isPresent()) {
-            return textMessage.get();
+        if (this.textMessage != null) {
+            return textMessage;
         }
-        if (this.documentMessage.isPresent()) {
-            return documentMessage.get();
+        if (this.documentMessage != null) {
+            return documentMessage;
         }
-        if (this.audioMessage.isPresent()) {
-            return audioMessage.get();
+        if (this.audioMessage != null) {
+            return audioMessage;
         }
-        if (this.videoMessage.isPresent()) {
-            return videoMessage.get();
+        if (this.videoMessage != null) {
+            return videoMessage;
         }
-        if (this.protocolMessage.isPresent()) {
-            return protocolMessage.get();
+        if (this.protocolMessage != null) {
+            return protocolMessage;
         }
-        if (this.contactsArrayMessage.isPresent()) {
-            return contactsArrayMessage.get();
+        if (this.contactsArrayMessage != null) {
+            return contactsArrayMessage;
         }
-        if (this.highlyStructuredMessage.isPresent()) {
-            return highlyStructuredMessage.get();
+        if (this.highlyStructuredMessage != null) {
+            return highlyStructuredMessage;
         }
-        if (this.sendPaymentMessage.isPresent()) {
-            return sendPaymentMessage.get();
+        if (this.sendPaymentMessage != null) {
+            return sendPaymentMessage;
         }
-        if (this.liveLocationMessage.isPresent()) {
-            return liveLocationMessage.get();
+        if (this.liveLocationMessage != null) {
+            return liveLocationMessage;
         }
-        if (this.requestPaymentMessage.isPresent()) {
-            return requestPaymentMessage.get();
+        if (this.requestPaymentMessage != null) {
+            return requestPaymentMessage;
         }
-        if (this.declinePaymentRequestMessage.isPresent()) {
-            return declinePaymentRequestMessage.get();
+        if (this.declinePaymentRequestMessage != null) {
+            return declinePaymentRequestMessage;
         }
-        if (this.cancelPaymentRequestMessage.isPresent()) {
-            return cancelPaymentRequestMessage.get();
+        if (this.cancelPaymentRequestMessage != null) {
+            return cancelPaymentRequestMessage;
         }
-        if (this.templateMessage.isPresent()) {
-            return templateMessage.get();
+        if (this.templateMessage != null) {
+            return templateMessage;
         }
-        if (this.stickerMessage.isPresent()) {
-            return stickerMessage.get();
+        if (this.stickerMessage != null) {
+            return stickerMessage;
         }
-        if (this.groupInviteMessage.isPresent()) {
-            return groupInviteMessage.get();
+        if (this.groupInviteMessage != null) {
+            return groupInviteMessage;
         }
-        if (this.templateReplyMessage.isPresent()) {
-            return templateReplyMessage.get();
+        if (this.templateReplyMessage != null) {
+            return templateReplyMessage;
         }
-        if (this.productMessage.isPresent()) {
-            return productMessage.get();
+        if (this.productMessage != null) {
+            return productMessage;
         }
-        if (this.deviceSentMessage.isPresent()) {
-            return deviceSentMessage.get().message().content();
+        if (this.deviceSentMessage != null) {
+            return deviceSentMessage.message().content();
         }
-        if (this.deviceSyncMessage.isPresent()) {
-            return deviceSyncMessage.get();
+        if (this.deviceSyncMessage != null) {
+            return deviceSyncMessage;
         }
-        if (this.listMessage.isPresent()) {
-            return listMessage.get();
+        if (this.listMessage != null) {
+            return listMessage;
         }
-        if (this.viewOnceMessage.isPresent()) {
-            return viewOnceMessage.get().unbox();
+        if (this.viewOnceMessage != null) {
+            return viewOnceMessage.content().content();
         }
-        if (this.orderMessage.isPresent()) {
-            return orderMessage.get();
+        if (this.orderMessage != null) {
+            return orderMessage;
         }
-        if (this.listResponseMessage.isPresent()) {
-            return listResponseMessage.get();
+        if (this.listResponseMessage != null) {
+            return listResponseMessage;
         }
-        if (this.ephemeralMessage.isPresent()) {
-            return ephemeralMessage.get().unbox();
+        if (this.ephemeralMessage != null) {
+            return ephemeralMessage.content().content();
         }
-        if (this.invoiceMessage.isPresent()) {
-            return invoiceMessage.get();
+        if (this.invoiceMessage != null) {
+            return invoiceMessage;
         }
-        if (this.buttonsMessage.isPresent()) {
-            return buttonsMessage.get();
+        if (this.buttonsMessage != null) {
+            return buttonsMessage;
         }
-        if (this.buttonsResponseMessage.isPresent()) {
-            return buttonsResponseMessage.get();
+        if (this.buttonsResponseMessage != null) {
+            return buttonsResponseMessage;
         }
-        if (this.paymentInviteMessage.isPresent()) {
-            return paymentInviteMessage.get();
+        if (this.paymentInviteMessage != null) {
+            return paymentInviteMessage;
         }
-        if (interactiveMessage.isPresent()) {
-            return interactiveMessage.get();
+        if (interactiveMessage != null) {
+            return interactiveMessage;
         }
-        if (reactionMessage.isPresent()) {
-            return reactionMessage.get();
+        if (reactionMessage != null) {
+            return reactionMessage;
         }
-        if (stickerSyncMessage.isPresent()) {
-            return stickerSyncMessage.get();
+        if (stickerSyncMessage != null) {
+            return stickerSyncMessage;
         }
-        if (interactiveResponseMessage.isPresent()) {
-            return interactiveResponseMessage.get();
+        if (interactiveResponseMessage != null) {
+            return interactiveResponseMessage;
         }
-        if (pollCreationMessage.isPresent()) {
-            return pollCreationMessage.get();
+        if (pollCreationMessage != null) {
+            return pollCreationMessage;
         }
-        if (pollUpdateMessage.isPresent()) {
-            return pollUpdateMessage.get();
+        if (pollUpdateMessage != null) {
+            return pollUpdateMessage;
         }
-        if (keepInChatMessage.isPresent()) {
-            return keepInChatMessage.get();
+        if (keepInChatMessage != null) {
+            return keepInChatMessage;
         }
-        if (documentWithCaptionMessage.isPresent()) {
-            return documentWithCaptionMessage.get().unbox();
+        if (documentWithCaptionMessage != null) {
+            return documentWithCaptionMessage.content().content();
         }
-        if (requestPhoneNumberMessage.isPresent()) {
-            return requestPhoneNumberMessage.get();
+        if (requestPhoneNumberMessage != null) {
+            return requestPhoneNumberMessage;
         }
-        if (viewOnceV2Message.isPresent()) {
-            return viewOnceV2Message.get().unbox();
+        if (viewOnceV2Message != null) {
+            return viewOnceV2Message.content.content();
         }
-        if (encryptedReactionMessage.isPresent()) {
-            return encryptedReactionMessage.get();
+        if (encryptedReactionMessage != null) {
+            return encryptedReactionMessage;
         }
-        if (editedMessage.isPresent()) {
-            return editedMessage.get().unbox();
+        if (editedMessage != null) {
+            return editedMessage.content().content();
         }
-        if (viewOnceV2ExtensionMessage.isPresent()) {
-            return viewOnceV2ExtensionMessage.get().unbox();
+        if (viewOnceV2ExtensionMessage != null) {
+            return viewOnceV2ExtensionMessage.content().content();
         }
-        if (callMessage.isPresent()) {
-            return callMessage.get();
+        if (callMessage != null) {
+            return callMessage;
         }
-        if (newsletterAdminInviteMessage.isPresent()) {
-            return newsletterAdminInviteMessage.get();
+        if (newsletterAdminInviteMessage != null) {
+            return newsletterAdminInviteMessage;
         }
         // This needs to be last
-        if (this.senderKeyDistributionMessage.isPresent()) {
-            return senderKeyDistributionMessage.get();
+        if (this.senderKeyDistributionMessage != null) {
+            return senderKeyDistributionMessage;
         }
         return EMPTY_MESSAGE;
     }
@@ -452,10 +678,10 @@ public record MessageContainer(
      *
      * @return a non-null Optional ContextualMessage
      */
-    public Optional<ContextualMessage<?>> contentWithContext() {
+    public Optional<ContextualMessage> contentWithContext() {
         return Optional.of(content())
                 .filter(entry -> entry instanceof ContextualMessage)
-                .map(entry -> (ContextualMessage<?>) entry);
+                .map(entry -> (ContextualMessage) entry);
     }
 
     /**
@@ -464,7 +690,7 @@ public record MessageContainer(
      * @param type the non-null type to check against
      * @return a boolean
      */
-    public boolean hasType(MessageType type) {
+    public boolean hasType(Message.Type type) {
         return content().type() == type;
     }
 
@@ -474,7 +700,7 @@ public record MessageContainer(
      * @param category the non-null category to check against
      * @return a boolean
      */
-    public boolean hasCategory(MessageCategory category) {
+    public boolean hasCategory(Message.Category category) {
         return content().category() == category;
     }
 
@@ -483,21 +709,21 @@ public record MessageContainer(
      *
      * @return a non-null type
      */
-    public MessageType type() {
-        if (textWithNoContextMessage.isPresent()) {
-            return MessageType.TEXT;
+    public Message.Type type() {
+        if (textWithNoContextMessage != null) {
+            return Message.Type.TEXT;
         }
 
-        if (ephemeralMessage.isPresent()) {
-            return MessageType.EPHEMERAL;
+        if (ephemeralMessage != null) {
+            return Message.Type.EPHEMERAL;
         }
 
-        if (viewOnceMessage.isPresent() || viewOnceV2Message.isPresent() || viewOnceV2ExtensionMessage.isPresent()) {
-            return MessageType.VIEW_ONCE;
+        if (viewOnceMessage != null || viewOnceV2Message != null || viewOnceV2ExtensionMessage != null) {
+            return Message.Type.VIEW_ONCE;
         }
 
-        if (editedMessage.isPresent()) {
-            return MessageType.EDITED;
+        if (editedMessage != null) {
+            return Message.Type.EDITED;
         }
 
         return content().type();
@@ -508,7 +734,7 @@ public record MessageContainer(
      *
      * @return a non-null type
      */
-    public MessageType deepType() {
+    public Message.Type deepType() {
         return content().type();
     }
 
@@ -517,7 +743,7 @@ public record MessageContainer(
      *
      * @return a non-null category
      */
-    public MessageCategory category() {
+    public Message.Category category() {
         return content().category();
     }
 
@@ -527,13 +753,16 @@ public record MessageContainer(
      * @return a non-null message container
      */
     public MessageContainer toEphemeral() {
-        if (type() == MessageType.EPHEMERAL) {
+        if (type() == Message.Type.EPHEMERAL) {
             return this;
         }
 
+        var futureMessageContainer = new FutureMessageContainerBuilder()
+                .content(MessageContainer.of(content()))
+                .build();
         return new MessageContainerBuilder()
-                .ephemeralMessage(FutureMessageContainer.of(content()))
-                .deviceInfo(deviceInfo.orElse(null))
+                .ephemeralMessage(futureMessageContainer)
+                .deviceInfo(deviceInfo)
                 .build();
     }
 
@@ -543,13 +772,16 @@ public record MessageContainer(
      * @return a non-null message container
      */
     public MessageContainer toViewOnce() {
-        if (type() == MessageType.VIEW_ONCE) {
+        if (type() == Message.Type.VIEW_ONCE) {
             return this;
         }
 
+        var futureMessageContainer = new FutureMessageContainerBuilder()
+                .content(MessageContainer.of(content()))
+                .build();
         return new MessageContainerBuilder()
-                .viewOnceMessage(FutureMessageContainer.of(content()))
-                .deviceInfo(deviceInfo.orElse(null))
+                .viewOnceMessage(futureMessageContainer)
+                .deviceInfo(deviceInfo)
                 .build();
     }
 
@@ -560,32 +792,32 @@ public record MessageContainer(
      * @return a non-null message container
      */
     public MessageContainer unbox() {
-        if (deviceSentMessage.isPresent()) {
-            return deviceSentMessage.get().message();
+        if (deviceSentMessage != null) {
+            return deviceSentMessage.message();
         }
 
-        if (viewOnceMessage.isPresent()) {
-            return viewOnceMessage.get().content();
+        if (viewOnceMessage != null) {
+            return viewOnceMessage.content();
         }
 
-        if (ephemeralMessage.isPresent()) {
-            return ephemeralMessage.get().content();
+        if (ephemeralMessage != null) {
+            return ephemeralMessage.content();
         }
 
-        if (documentWithCaptionMessage.isPresent()) {
-            return documentWithCaptionMessage.get().content();
+        if (documentWithCaptionMessage != null) {
+            return documentWithCaptionMessage.content();
         }
 
-        if (viewOnceV2Message.isPresent()) {
-            return viewOnceV2Message.get().content();
+        if (viewOnceV2Message != null) {
+            return viewOnceV2Message.content();
         }
 
-        if (editedMessage.isPresent()) {
-            return editedMessage.get().content();
+        if (editedMessage != null) {
+            return editedMessage.content();
         }
 
-        if (viewOnceV2ExtensionMessage.isPresent()) {
-            return viewOnceV2ExtensionMessage.get().content();
+        if (viewOnceV2ExtensionMessage != null) {
+            return viewOnceV2ExtensionMessage.content();
         }
 
         return this;
@@ -597,50 +829,50 @@ public record MessageContainer(
      * @return a non-null message container
      */
     public MessageContainer withDeviceInfo(DeviceContextInfo deviceInfo) {
-        if (deviceSentMessage.isPresent()) {
-            return ofBuilder(deviceSentMessage.get())
+        if (deviceSentMessage != null) {
+            return ofBuilder(deviceSentMessage)
                     .deviceInfo(deviceInfo)
                     .build();
         }
 
-        if (viewOnceMessage.isPresent()) {
+        if (viewOnceMessage != null) {
             return new MessageContainerBuilder()
-                    .viewOnceMessage(viewOnceMessage.get())
+                    .viewOnceMessage(viewOnceMessage)
                     .deviceInfo(deviceInfo)
                     .build();
         }
 
-        if (ephemeralMessage.isPresent()) {
+        if (ephemeralMessage != null) {
             return new MessageContainerBuilder()
-                    .ephemeralMessage(ephemeralMessage.get())
+                    .ephemeralMessage(ephemeralMessage)
                     .deviceInfo(deviceInfo)
                     .build();
         }
 
-        if (documentWithCaptionMessage.isPresent()) {
+        if (documentWithCaptionMessage != null) {
             return new MessageContainerBuilder()
-                    .documentWithCaptionMessage(documentWithCaptionMessage.get())
+                    .documentWithCaptionMessage(documentWithCaptionMessage)
                     .deviceInfo(deviceInfo)
                     .build();
         }
 
-        if (viewOnceV2Message.isPresent()) {
+        if (viewOnceV2Message != null) {
             return new MessageContainerBuilder()
-                    .viewOnceV2Message(viewOnceV2Message.get())
+                    .viewOnceV2Message(viewOnceV2Message)
                     .deviceInfo(deviceInfo)
                     .build();
         }
 
-        if (editedMessage.isPresent()) {
+        if (editedMessage != null) {
             return new MessageContainerBuilder()
-                    .editedMessage(editedMessage.get())
+                    .editedMessage(editedMessage)
                     .deviceInfo(deviceInfo)
                     .build();
         }
 
-        if (viewOnceV2ExtensionMessage.isPresent()) {
+        if (viewOnceV2ExtensionMessage != null) {
             return new MessageContainerBuilder()
-                    .viewOnceV2ExtensionMessage(viewOnceV2ExtensionMessage.get())
+                    .viewOnceV2ExtensionMessage(viewOnceV2ExtensionMessage)
                     .deviceInfo(deviceInfo)
                     .build();
         }
@@ -650,13 +882,21 @@ public record MessageContainer(
                 .build();
     }
 
+    public Optional<DeviceContextInfo> deviceInfo() {
+        return Optional.ofNullable(deviceInfo);
+    }
+
+    public Optional<SenderKeyDistributionMessage> senderKeyDistributionMessage() {
+        return Optional.ofNullable(senderKeyDistributionMessage);
+    }
+
     /**
      * Returns whether this container is empty
      *
      * @return a boolean
      */
     public boolean isEmpty() {
-        return hasType(MessageType.EMPTY);
+        return hasType(Message.Type.EMPTY);
     }
 
     /**

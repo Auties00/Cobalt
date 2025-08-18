@@ -7,8 +7,6 @@ import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.product.Product;
 import it.auties.whatsapp.model.product.ProductCatalog;
 
@@ -18,21 +16,26 @@ import java.util.Optional;
  * A model class that represents a message holding a product inside
  */
 @ProtobufMessage(name = "Message.ProductMessage")
-public final class ProductMessage implements ContextualMessage<ProductMessage>, ButtonMessage {
+public final class ProductMessage implements ContextualMessage, ButtonMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-    private final Product product;
-    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final Jid businessOwnerJid;
-    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    private final ProductCatalog catalog;
-    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
-    private final String body;
-    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-    private final String footer;
-    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    final Product product;
 
-    public ProductMessage(Product product, Jid businessOwnerJid, ProductCatalog catalog, String body, String footer, ContextInfo contextInfo) {
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    final Jid businessOwnerJid;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
+    final ProductCatalog catalog;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
+    final String body;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+    final String footer;
+
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    ProductMessage(Product product, Jid businessOwnerJid, ProductCatalog catalog, String body, String footer, ContextInfo contextInfo) {
         this.product = product;
         this.businessOwnerJid = businessOwnerJid;
         this.catalog = catalog;
@@ -42,13 +45,13 @@ public final class ProductMessage implements ContextualMessage<ProductMessage>, 
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.PRODUCT;
+    public Type type() {
+        return Type.PRODUCT;
     }
 
     @Override
-    public MessageCategory category() {
-        return MessageCategory.STANDARD;
+    public Category category() {
+        return Category.STANDARD;
     }
 
     public Product product() {
@@ -77,9 +80,8 @@ public final class ProductMessage implements ContextualMessage<ProductMessage>, 
     }
 
     @Override
-    public ProductMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

@@ -1,9 +1,6 @@
-open module it.auties.cobalt {
+module it.auties.cobalt {
     // Cryptography
     requires it.auties.curve;
-
-    // Scan listeners
-    requires jdk.compiler;
 
     // QR related dependencies
     requires com.google.zxing;
@@ -13,13 +10,7 @@ open module it.auties.cobalt {
 
     // Serialization (Protobuf, JSON)
     requires it.auties.protobuf.base;
-    requires java.compiler;
-    requires com.fasterxml.jackson.annotation;
-    requires com.fasterxml.jackson.databind;
-    requires com.fasterxml.jackson.module.paramnames;
-    requires com.fasterxml.jackson.datatype.jdk8;
-    requires com.fasterxml.jackson.datatype.jsr310;
-    requires dd.plist;
+    requires com.alibaba.fastjson2;
 
     // Generate message previews
     requires it.auties.linkpreview;
@@ -28,12 +19,12 @@ open module it.auties.cobalt {
     requires com.googlecode.ezvcard;
 
     // Mobile api
-    requires libphonenumber;
     requires net.dongliu.apkparser;
+    requires com.google.i18n.phonenumbers.libphonenumber;
 
-    // Unsafe reflection
-    requires jdk.unsupported;
+    // Web api
     requires java.net.http;
+    requires java.logging;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
@@ -52,15 +43,12 @@ open module it.auties.cobalt {
     exports it.auties.whatsapp.model.response;
     exports it.auties.whatsapp.model.payment;
     exports it.auties.whatsapp.model.message.button;
-    exports it.auties.whatsapp.listener;
     exports it.auties.whatsapp.model.privacy;
     exports it.auties.whatsapp.model.poll;
     exports it.auties.whatsapp.model.mobile;
     exports it.auties.whatsapp.model.button.interactive;
     exports it.auties.whatsapp.model.button.base;
     exports it.auties.whatsapp.model.button.template.hydrated;
-    exports it.auties.whatsapp.model.button.template.hsm;
-    exports it.auties.whatsapp.model.button.template;
     exports it.auties.whatsapp.model.companion;
     exports it.auties.whatsapp.model.signal.session;
     exports it.auties.whatsapp.model.signal.auth;

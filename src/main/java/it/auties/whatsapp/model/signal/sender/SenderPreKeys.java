@@ -13,7 +13,7 @@ import java.util.Objects;
 @ProtobufMessage
 public final class SenderPreKeys {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final Collection<Jid> preKeys;
+    final Collection<Jid> preKeys;
 
     public SenderPreKeys() {
         this.preKeys = new ArrayList<>();

@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.info;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -16,27 +15,32 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 @ProtobufMessage
-public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessageInfo>, MessageStatusInfo<NewsletterMessageInfo> {
+public final class NewsletterMessageInfo implements MessageInfo, MessageStatusInfo {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String id;
+    final String id;
+
     @ProtobufProperty(index = 2, type = ProtobufType.INT32)
-    private final int serverId;
+    final int serverId;
+
     @ProtobufProperty(index = 3, type = ProtobufType.UINT64)
-    private final Long timestampSeconds;
+    final Long timestampSeconds;
+
     @ProtobufProperty(index = 4, type = ProtobufType.UINT64)
-    private final Long views;
+    final Long views;
+
     @ProtobufProperty(index = 5, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final Map<String, NewsletterReaction> reactions;
-    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
-    private MessageContainer message;
-    @JsonBackReference
-    private Newsletter newsletter;
-    @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
-    private MessageStatus status;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public NewsletterMessageInfo(String id, int serverId, Long timestampSeconds, Long views, Map<String, NewsletterReaction> reactions, MessageContainer message, MessageStatus status) {
-        this.id = id;
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
+    MessageContainer message;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
+    MessageStatus status;
+
+    Newsletter newsletter;
+
+    NewsletterMessageInfo(String id, int serverId, Long timestampSeconds, Long views, Map<String, NewsletterReaction> reactions, MessageContainer message, MessageStatus status) {
+        this.id = Objects.requireNonNull(id, "id cannot be null");
         this.serverId = serverId;
         this.timestampSeconds = timestampSeconds;
         this.views = views;
@@ -45,9 +49,35 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
         this.status = status;
     }
 
-    public NewsletterMessageInfo setNewsletter(Newsletter newsletter) {
+    public static Optional<NewsletterMessageInfo> ofJson(JSONObject jsonObject) {
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var id = jsonObject.getString("id");
+        if(id == null) {
+            return Optional.empty();
+        }
+
+        var serverId = jsonObject.getIntValue("serverId", -1);
+        var timestampSeconds = jsonObject.getLongValue("timestampSeconds", 0);
+        var views = jsonObject.getLongValue("views", 0);
+        var reactionsJsonObject = jsonObject.getJSONObject("reactions");
+        Map<String, NewsletterReaction> reactions = HashMap.newHashMap(reactionsJsonObject.size());
+        for(var reactionKey : reactionsJsonObject.sequencedKeySet()) {
+            var reactionJsonObject = reactionsJsonObject.getJSONObject(reactionKey);
+            NewsletterReaction.ofJson(reactionJsonObject)
+                    .ifPresent(reaction -> reactions.put(reactionKey, reaction));
+        }
+        var message = MessageContainer.ofJson(jsonObject.getJSONObject("message"))
+                .orElse(MessageContainer.empty());
+        var status = MessageStatus.of(jsonObject.getString("status"))
+                .orElse(MessageStatus.ERROR);
+        return Optional.of(new NewsletterMessageInfo(id, serverId, timestampSeconds, views, reactions, message, status));
+    }
+
+    public void setNewsletter(Newsletter newsletter) {
         this.newsletter = newsletter;
-        return this;
     }
 
     public Jid newsletterJid() {
@@ -90,9 +120,8 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     }
 
     @Override
-    public NewsletterMessageInfo setMessage(MessageContainer message) {
+    public void setMessage(MessageContainer message) {
         this.message = message;
-        return this;
     }
 
     public Optional<ZonedDateTime> timestamp() {
@@ -105,9 +134,8 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     }
 
     @Override
-    public NewsletterMessageInfo setStatus(MessageStatus status) {
+    public void setStatus(MessageStatus status) {
         this.status = status;
-        return this;
     }
 
     public Collection<NewsletterReaction> reactions() {
@@ -163,13 +191,20 @@ public final class NewsletterMessageInfo implements MessageInfo<NewsletterMessag
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj instanceof NewsletterMessageInfo that && Objects.equals(this.id(), that.id());
+    public boolean equals(Object o) {
+        return o instanceof NewsletterMessageInfo that &&
+                serverId == that.serverId &&
+                Objects.equals(id, that.id) &&
+                Objects.equals(timestampSeconds, that.timestampSeconds) &&
+                Objects.equals(views, that.views) &&
+                Objects.equals(reactions, that.reactions) &&
+                Objects.equals(message, that.message) &&
+                Objects.equals(newsletter, that.newsletter) &&
+                status == that.status;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(id, serverId, timestampSeconds, views, reactions, message, newsletter, status);
     }
-
 }

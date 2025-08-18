@@ -8,6 +8,10 @@ import java.util.OptionalLong;
 import java.util.function.Function;
 
 public final class Clock {
+    private Clock() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
+
     public static long nowSeconds() {
         return Instant.now().getEpochSecond();
     }
@@ -29,9 +33,15 @@ public final class Clock {
     }
 
     private static Optional<ZonedDateTime> parseTimestamp(Number input, Function<Long, Instant> converter) {
-        return Optional.ofNullable(input)
-                .map(Number::longValue)
-                .filter(value -> value > 0)
-                .map(value -> ZonedDateTime.ofInstant(converter.apply(value), ZoneId.systemDefault()));
+        if(input == null) {
+            return Optional.empty();
+        }
+
+        var value = input.longValue();
+        if(value <= 0) {
+            return Optional.empty();
+        }
+
+        return Optional.of(ZonedDateTime.ofInstant(converter.apply(value), ZoneId.systemDefault()));
     }
 }

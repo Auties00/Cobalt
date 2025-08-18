@@ -3,76 +3,80 @@ package it.auties.whatsapp.crypto;
 import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.sync.RecordSync;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public class LTHash {
-    private static final int EXPAND_SIZE = 128;
-    public static final String SALT = "WhatsApp Patch Integrity";
-
-    private final byte[] salt;
+public final class LTHash {
+    private static final byte[] SALT = "WhatsApp Patch Integrity".getBytes();
 
     private final byte[] hash;
+    private final Map<Integer, byte[]> indexValueMap;
+    private final List<byte[]> addList;
+    private final List<byte[]> subList;
 
-    private final Map<String, byte[]> indexValueMap;
-
-    private final List<byte[]> add, subtract;
-
-    public LTHash(CompanionHashState hash) {
-        this.salt = SALT.getBytes(StandardCharsets.UTF_8);
-        this.hash = hash.hash();
-        this.indexValueMap = new HashMap<>(hash.indexValueMap());
-        this.add = new ArrayList<>();
-        this.subtract = new ArrayList<>();
+    public LTHash(CompanionHashState state) {
+        this.hash = state.hash();
+        this.indexValueMap = new HashMap<>(state.indexValueMap());
+        this.addList = new ArrayList<>();
+        this.subList = new ArrayList<>();
     }
 
-    public void mix(byte[] indexMac, byte[] valueMac, RecordSync.Operation operation) {
-        var indexMacBase64 = Base64.getEncoder().encodeToString(indexMac);
-        var prevOp = indexValueMap.get(indexMacBase64);
-        if (operation == RecordSync.Operation.REMOVE) {
-            if (prevOp == null) {
-                return;
+    public void mix(byte[] indexMac, byte[] valueMac, RecordSync.Operation op) {
+        var key = Arrays.hashCode(indexMac);
+        var prev = indexValueMap.get(key);
+        if (op == RecordSync.Operation.REMOVE) {
+            if (prev != null) {
+                indexValueMap.remove(key);
+                subList.add(prev);
             }
-            indexValueMap.remove(indexMacBase64, prevOp);
         } else {
-            add.add(valueMac);
-            indexValueMap.put(indexMacBase64, valueMac);
-        }
-        if (prevOp != null) {
-            subtract.add(prevOp);
+            addList.add(valueMac);
+            indexValueMap.put(key, valueMac);
+            if (prev != null) {
+                subList.add(prev);
+            }
         }
     }
 
     public Result finish() {
-        var subtracted = perform(hash, false);
-        var added = perform(subtracted, true);
-        return new Result(added, indexValueMap);
-    }
-
-    private byte[] perform(byte[] input, boolean sum) {
-        for (var item : sum ? add : subtract) {
-            input = perform(input, item, sum);
+        var len = hash.length;
+        if ((len & 1) != 0) {
+            throw new IllegalStateException("Hash length must be even");
         }
-        return input;
-    }
 
-    private byte[] perform(byte[] input, byte[] buffer, boolean sum) {
-        var expanded = Hkdf.extractAndExpand(buffer, salt, EXPAND_SIZE);
-        var eRead = ByteBuffer.wrap(input).order(ByteOrder.LITTLE_ENDIAN);
-        var tRead = ByteBuffer.wrap(expanded).order(ByteOrder.LITTLE_ENDIAN);
-        var write = ByteBuffer.allocate(input.length).order(ByteOrder.LITTLE_ENDIAN);
-        for (var index = 0; index < input.length; index += 2) {
-            var first = Short.toUnsignedInt(eRead.getShort(index));
-            var second = Short.toUnsignedInt(tRead.getShort(index));
-            write.putShort(index, (short) (sum ? first + second : first - second));
+        var shortCount = len / 2;
+        var subSum = new int[shortCount];
+        var addSum = new int[shortCount];
+
+        for (var buf : subList) {
+            accumulate(buf, subSum, shortCount);
         }
-        var result = new byte[input.length];
-        write.get(result);
-        return result;
+
+        for (var buf : addList) {
+            accumulate(buf, addSum, shortCount);
+        }
+
+        var out = new byte[len];
+        for (int i = 0, off = 0; i < shortCount; i++, off += 2) {
+            var newVal = toUInt16(hash, off) - subSum[i] + addSum[i];
+            out[off]     = (byte)(newVal & 0xFF);
+            out[off + 1] = (byte)((newVal >>> 8) & 0xFF);
+        }
+
+        return new Result(out, indexValueMap);
     }
 
-    public record Result(byte[] hash, Map<String, byte[]> indexValueMap) {
+    private void accumulate(byte[] key, int[] sums, int shortCount) {
+        var exp = Hkdf.extractAndExpand(key, SALT, hash.length);
+        for (int i = 0, off = 0; i < shortCount; i++, off += 2) {
+            sums[i] += toUInt16(exp, off);
+        }
+    }
+
+    private static int toUInt16(byte[] b, int off) {
+        return (b[off] & 0xFF) | ((b[off + 1] & 0xFF) << 8);
+    }
+
+    public record Result(byte[] hash, Map<Integer, byte[]> indexValueMap) {
+
     }
 }

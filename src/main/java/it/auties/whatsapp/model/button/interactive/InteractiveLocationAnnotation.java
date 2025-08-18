@@ -7,17 +7,32 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A model class that describes an interactive annotation linked to a message
  */
 @ProtobufMessage(name = "InteractiveAnnotation")
-public record InteractiveLocationAnnotation(
-        @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-        List<InteractivePoint> polygonVertices,
-        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-        InteractiveLocation location
-) {
+public final class InteractiveLocationAnnotation {
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
+    final List<InteractivePoint> polygonVertices;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
+    final InteractiveLocation location;
+
+    InteractiveLocationAnnotation(List<InteractivePoint> polygonVertices, InteractiveLocation location) {
+        this.polygonVertices = Objects.requireNonNullElse(polygonVertices, List.of());
+        this.location = location;
+    }
+
+    public List<InteractivePoint> polygonVertices() {
+        return polygonVertices;
+    }
+
+    public InteractiveLocation location() {
+        return location;
+    }
+
     /**
      * Returns the type of sync
      *
@@ -25,6 +40,25 @@ public record InteractiveLocationAnnotation(
      */
     public Action type() {
         return location != null ? Action.LOCATION : Action.UNKNOWN;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof InteractiveLocationAnnotation that
+                && Objects.equals(polygonVertices, that.polygonVertices)
+                && Objects.equals(location, that.location);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(polygonVertices, location);
+    }
+
+    @Override
+    public String toString() {
+        return "InteractiveLocationAnnotation[" +
+                "polygonVertices=" + polygonVertices + ", " +
+                "location=" + location + ']';
     }
 
     /**
@@ -46,10 +80,6 @@ public record InteractiveLocationAnnotation(
 
         Action(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return index;
         }
     }
 }

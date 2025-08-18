@@ -1,54 +1,192 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.mobile.VerificationCodeError;
-import it.auties.whatsapp.model.mobile.VerificationCodeMethod;
-import it.auties.whatsapp.model.mobile.VerificationCodeStatus;
+
+import java.util.Optional;
 
 /**
  * A model that represents a newsletters from Whatsapp regarding the registration of a phone number
- *
- * @param number              the number that was registered
- * @param lid                 the lid of the number that was registered
- * @param status              the status of the registration
- * @param errorReason         the error, if any was thrown
- * @param method              the method used to register, if any was used
- * @param codeLength          the expected length of the code, if a code request was sent
- * @param notifyAfter         the time in seconds after which the app would notify you to try again to register
- * @param retryAfter          the time in seconds after which the app would allow you to try again to register a sms
- * @param voiceLength         unknown
- * @param callWait            the time in seconds after which the app would allow you to try again to register using a call
- * @param smsWait             the time in seconds after which the app would allow you to try again to register using a sms
- * @param flashType           unknown
- * @param whatsappWait        the last wait time in seconds before trying again, if available
- * @param securityCodeSet     whether 2fa is enabled
- * @param imageCaptcha        the image captcha to solve, only available for business accounts
- * @param audioCaptcha        the audio captcha to solve, only available for business accounts
- * @param otpEligible if requested, whether the phone number was already registered on Whatsapp
  */
-public record RegistrationResponse(@JsonProperty("login") PhoneNumber number,
-                                   @JsonProperty("lid") long lid,
-                                   @JsonProperty("status") VerificationCodeStatus status,
-                                   @JsonProperty("reason") VerificationCodeError errorReason,
-                                   @JsonProperty("method") VerificationCodeMethod method,
-                                   @JsonProperty("length") int codeLength,
-                                   @JsonProperty("notify_after") int notifyAfter,
-                                   @JsonProperty("retry_after") long retryAfter,
-                                   @JsonProperty("voice_length") long voiceLength,
-                                   @JsonProperty(value = "voice_wait", defaultValue = "-1") long callWait,
-                                   @JsonProperty(value = "sms_wait", defaultValue = "-1") long smsWait,
-                                   @JsonProperty(value = "flash_type", defaultValue = "0") boolean flashType,
-                                   @JsonProperty(value = "wa_old_wait", defaultValue = "-1") long whatsappWait,
-                                   @JsonProperty("security_code_set") boolean securityCodeSet,
-                                   @JsonProperty("image_blob") String imageCaptcha,
-                                   @JsonProperty("audio_blob") String audioCaptcha,
-                                   @JsonProperty("cert") String cert,
-                                   @JsonProperty("wa_old_eligible") boolean otpEligible,
-                                   @JsonProperty(value = "send_sms_eligible", defaultValue = "true") boolean smsEligible,
-                                   @JsonProperty("possible_migration") boolean possibleMigration,
-                                   @JsonProperty(value = "autoconf_type", defaultValue = "0") boolean autoConfigure,
-                                   @JsonProperty("wipe_token") String wipeToken
-) {
+public final class RegistrationResponse {
+    private final PhoneNumber number;
+    private final long lid;
+    private final String status;
+    private final String errorReason;
+    private final String method;
+    private final int codeLength;
+    private final int notifyAfter;
+    private final long retryAfter;
+    private final long voiceLength;
+    private final long callWait;
+    private final long smsWait;
+    private final boolean flashType;
+    private final long whatsappWait;
+    private final boolean securityCodeSet;
+    private final String imageCaptcha;
+    private final String audioCaptcha;
+    private final String cert;
+    private final boolean otpEligible;
+    private final boolean smsEligible;
+    private final boolean possibleMigration;
+    private final boolean autoConfigure;
+    private final String wipeToken;
 
+    private RegistrationResponse(PhoneNumber number, long lid, String status, String errorReason, String method, int codeLength, int notifyAfter, long retryAfter, long voiceLength, long callWait, long smsWait, boolean flashType, long whatsappWait, boolean securityCodeSet, String imageCaptcha, String audioCaptcha, String cert, boolean otpEligible, boolean smsEligible, boolean possibleMigration, boolean autoConfigure, String wipeToken) {
+        this.number = number;
+        this.lid = lid;
+        this.status = status;
+        this.errorReason = errorReason;
+        this.method = method;
+        this.codeLength = codeLength;
+        this.notifyAfter = notifyAfter;
+        this.retryAfter = retryAfter;
+        this.voiceLength = voiceLength;
+        this.callWait = callWait;
+        this.smsWait = smsWait;
+        this.flashType = flashType;
+        this.whatsappWait = whatsappWait;
+        this.securityCodeSet = securityCodeSet;
+        this.imageCaptcha = imageCaptcha;
+        this.audioCaptcha = audioCaptcha;
+        this.cert = cert;
+        this.otpEligible = otpEligible;
+        this.smsEligible = smsEligible;
+        this.possibleMigration = possibleMigration;
+        this.autoConfigure = autoConfigure;
+        this.wipeToken = wipeToken;
+    }
+
+    public static Optional<RegistrationResponse> ofJson(byte[] json) {
+        if(json == null) {
+            return Optional.empty();
+        }
+
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var login = jsonObject.getLong("login");
+        if(login == null) {
+            return Optional.empty();
+        }
+
+        var phoneNumber = PhoneNumber.of(login);
+        if(phoneNumber.isEmpty()) {
+            return Optional.empty();
+        }
+
+        var lid = jsonObject.getLongValue("lid", 0);
+        var status = jsonObject.getString("status");
+        var errorReason = jsonObject.getString("reason");
+        var method = jsonObject.getString("method");
+        var codeLength = jsonObject.getIntValue("length", 0);
+        var notifyAfter = jsonObject.getIntValue("notify_after", 0);
+        var retryAfter = jsonObject.getLongValue("retry_after", 0);
+        var voiceLength = jsonObject.getLongValue("voice_length", 0);
+        var callWait = jsonObject.getLongValue("voice_wait", 0);
+        var smsWait = jsonObject.getLongValue("sms_wait", 0);
+        var flashType = jsonObject.getBooleanValue("flash_type", false);
+        var whatsappWait = jsonObject.getLongValue("wa_old_wait", 0);
+        var securityCodeSet = jsonObject.getBooleanValue("security_code_set", false);
+        var imageCaptcha = jsonObject.getString("image_blob");
+        var audioCaptcha = jsonObject.getString("audio_blob");
+        var cert = jsonObject.getString("cert");
+        var otpEligible = jsonObject.getBooleanValue("wa_old_eligible", false);
+        var smsEligible = jsonObject.getBooleanValue("send_sms_eligible", false);
+        var possibleMigration = jsonObject.getBooleanValue("possible_migration", false);
+        var autoConfigure = jsonObject.getBooleanValue("autoconf_type", false);
+        var wipeToken = jsonObject.getString("wipe_token");
+        var result = new RegistrationResponse(phoneNumber.get(), lid, status, errorReason, method, codeLength, notifyAfter, retryAfter, voiceLength, callWait, smsWait, flashType, whatsappWait, securityCodeSet, imageCaptcha, audioCaptcha, cert, otpEligible, smsEligible, possibleMigration, autoConfigure, wipeToken);
+        return Optional.of(result);
+    }
+
+    public PhoneNumber number() {
+        return number;
+    }
+
+    public long lid() {
+        return lid;
+    }
+
+    public String status() {
+        return status;
+    }
+
+    public String errorReason() {
+        return errorReason;
+    }
+
+    public String method() {
+        return method;
+    }
+
+    public int codeLength() {
+        return codeLength;
+    }
+
+    public int notifyAfter() {
+        return notifyAfter;
+    }
+
+    public long retryAfter() {
+        return retryAfter;
+    }
+
+    public long voiceLength() {
+        return voiceLength;
+    }
+
+    public long callWait() {
+        return callWait;
+    }
+
+    public long smsWait() {
+        return smsWait;
+    }
+
+    public boolean flashType() {
+        return flashType;
+    }
+
+    public long whatsappWait() {
+        return whatsappWait;
+    }
+
+    public boolean securityCodeSet() {
+        return securityCodeSet;
+    }
+
+    public String imageCaptcha() {
+        return imageCaptcha;
+    }
+
+    public String audioCaptcha() {
+        return audioCaptcha;
+    }
+
+    public String cert() {
+        return cert;
+    }
+
+    public boolean otpEligible() {
+        return otpEligible;
+    }
+
+    public boolean smsEligible() {
+        return smsEligible;
+    }
+
+    public boolean possibleMigration() {
+        return possibleMigration;
+    }
+
+    public boolean autoConfigure() {
+        return autoConfigure;
+    }
+
+    public String wipeToken() {
+        return wipeToken;
+    }
 }

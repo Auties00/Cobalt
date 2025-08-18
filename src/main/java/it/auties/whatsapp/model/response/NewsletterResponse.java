@@ -1,27 +1,47 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.util.Json;
 
-import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
-public record NewsletterResponse(Newsletter newsletter) {
-    @JsonCreator
-    NewsletterResponse(Map<String, Newsletter> json) {
-        this(json.values()
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletter")));
+public final class NewsletterResponse {
+    private final Newsletter newsletter;
+
+    private NewsletterResponse(Newsletter newsletter) {
+        this.newsletter = newsletter;
     }
 
-    public static Optional<NewsletterResponse> ofJson(String json) {
-        return Json.readValue(json, JsonResponse.class).data();
+    public static Optional<NewsletterResponse> ofJson(byte[] json) {
+        if(json == null) {
+            return Optional.empty();
+        }
+
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var data = jsonObject.getJSONObject("data");
+        if(data == null) {
+            return Optional.empty();
+        }
+
+        var dataKeys = data.sequencedKeySet();
+        if(dataKeys.isEmpty()) {
+            return Optional.empty();
+        }
+
+        var newsletter = Newsletter.ofJson(data.getJSONObject(dataKeys.getFirst()));
+        if(newsletter.isEmpty()) {
+            return Optional.empty();
+        }
+
+        var result = new NewsletterResponse(newsletter.get());
+        return Optional.of(result);
     }
 
-    private record JsonResponse(Optional<NewsletterResponse> data) {
-
+    public Newsletter newsletter() {
+        return newsletter;
     }
 }

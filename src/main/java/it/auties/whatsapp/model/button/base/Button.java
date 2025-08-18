@@ -8,22 +8,49 @@ import it.auties.whatsapp.model.info.NativeFlowInfo;
 import it.auties.whatsapp.util.Bytes;
 
 import java.util.HexFormat;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * A model class that represents a button
  */
 @ProtobufMessage(name = "Message.ButtonsMessage.Button")
-public record Button(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        String id,
-        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-        Optional<ButtonText> bodyText,
-        @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-        Optional<NativeFlowInfo> bodyNativeFlow,
-        @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
-        Type bodyType
-) {
+public final class Button {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    final String id;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
+    final ButtonText bodyText;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
+    final NativeFlowInfo bodyNativeFlow;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
+    final Type bodyType;
+
+    Button(String id, ButtonText bodyText, NativeFlowInfo bodyNativeFlow, Type bodyType) {
+        this.id = Objects.requireNonNull(id, "id cannot be null");
+        this.bodyText = bodyText;
+        this.bodyNativeFlow = bodyNativeFlow;
+        this.bodyType = Objects.requireNonNull(bodyType, "bodyType cannot be null");
+    }
+
+    public String id() {
+        return id;
+    }
+
+    public Optional<ButtonText> bodyText() {
+        return Optional.ofNullable(bodyText);
+    }
+
+    public Optional<NativeFlowInfo> bodyNativeFlow() {
+        return Optional.ofNullable(bodyNativeFlow);
+    }
+
+    public Type bodyType() {
+        return bodyType;
+    }
+
     /**
      * Constructs a new button
      *
@@ -59,7 +86,29 @@ public record Button(
      * @return an optional
      */
     public Optional<? extends ButtonBody> body() {
-        return bodyText.isPresent() ? bodyText : bodyNativeFlow;
+        return bodyText != null ? Optional.of(bodyText) : Optional.ofNullable(bodyNativeFlow);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Button that
+                && Objects.equals(id, that.id)
+                && Objects.equals(bodyText, that.bodyText)
+                && Objects.equals(bodyNativeFlow, that.bodyNativeFlow)
+                && Objects.equals(bodyType, that.bodyType);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, bodyText, bodyNativeFlow, bodyType);
+    }
+
+    @Override
+    public String toString() {
+        return "Button[" +
+                "id=" + id + ", " +
+                "bodyText=" + bodyText + ", " +
+                "bodyNativeFlow=" + bodyNativeFlow + ", " +
+                "bodyType=" + bodyType + ']';
+    }
 }

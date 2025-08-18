@@ -1,31 +1,56 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.util.Json;
 
-import java.util.Map;
 import java.util.Optional;
 
-public record CreateAdminInviteNewsletterResponse(@JsonProperty("id") Jid jid, @JsonProperty("mute") Long mute) {
-    @JsonCreator
-    CreateAdminInviteNewsletterResponse(Map<String, String> json) {
-        this(Jid.of(json.get("id")), Long.parseLong(json.get("invite_expiration_time")));
+public final class CreateAdminInviteNewsletterResponse {
+    private final Jid jid;
+
+    private final long expirationTime;
+
+    private CreateAdminInviteNewsletterResponse(Jid jid, long expirationTime) {
+        this.jid = jid;
+        this.expirationTime = expirationTime;
     }
 
-    public static Optional<CreateAdminInviteNewsletterResponse> ofJson(String json) {
-        return Json.readValue(json, JsonData.class)
-                .data()
-                .map(JsonResponse::response);
+    public static Optional<CreateAdminInviteNewsletterResponse> ofJson(byte[] json) {
+        if(json == null) {
+            return Optional.empty();
+        }
+
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var data = jsonObject.getJSONObject("data");
+        if(data == null) {
+            return Optional.empty();
+        }
+
+        var response = data.getJSONObject("xwa2_newsletter_admin_invite_create");
+        if(response == null) {
+            return Optional.empty();
+        }
+
+        var id = response.getString("id");
+        if(id == null) {
+            return Optional.empty();
+        }
+
+        var jid = Jid.of(id);
+        var inviteExpirationTime = response.getLongValue("invite_expiration_time", 0);
+        var result = new CreateAdminInviteNewsletterResponse(jid, inviteExpirationTime);
+        return Optional.of(result);
     }
 
-    private record JsonData(Optional<JsonResponse> data) {
-
+    public Jid jid() {
+        return jid;
     }
 
-    private record JsonResponse(
-            @JsonProperty("xwa2_newsletter_admin_invite_create") CreateAdminInviteNewsletterResponse response) {
-
+    public long expirationTime() {
+        return expirationTime;
     }
 }

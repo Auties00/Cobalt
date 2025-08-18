@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentType;
@@ -12,21 +11,20 @@ import java.util.OptionalLong;
 import static it.auties.protobuf.model.ProtobufType.*;
 
 @ProtobufMessage(name = "ExternalBlobReference")
-public final class ExternalBlobReference implements MutableAttachmentProvider<ExternalBlobReference> {
+public final class ExternalBlobReference implements MutableAttachmentProvider {
     @ProtobufProperty(index = 1, type = BYTES)
-    private byte[] mediaKey;
+    byte[] mediaKey;
     @ProtobufProperty(index = 2, type = STRING)
-    private String mediaDirectPath;
+    String mediaDirectPath;
     @ProtobufProperty(index = 3, type = STRING)
-    private final String handle;
+    final String handle;
     @ProtobufProperty(index = 4, type = UINT64)
-    private long mediaSize;
+    long mediaSize;
     @ProtobufProperty(index = 5, type = BYTES)
-    private byte[] mediaSha256;
+    byte[] mediaSha256;
     @ProtobufProperty(index = 6, type = BYTES)
-    private byte[] mediaEncryptedSha256;
+    byte[] mediaEncryptedSha256;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public ExternalBlobReference(byte[] mediaKey,
                                  String mediaDirectPath,
                                  String handle,
@@ -47,8 +45,7 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaUrl(String mediaUrl) {
-        return this;
+    public void setMediaUrl(String mediaUrl) {
     }
 
     @Override
@@ -57,9 +54,8 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -68,14 +64,12 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public ExternalBlobReference setMediaKeyTimestamp(Long timestamp) {
-        return this;
+    public void setMediaKeyTimestamp(Long timestamp) {
     }
 
     @Override
@@ -84,9 +78,8 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -95,9 +88,8 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -106,9 +98,8 @@ public final class ExternalBlobReference implements MutableAttachmentProvider<Ex
     }
 
     @Override
-    public ExternalBlobReference setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     @Override

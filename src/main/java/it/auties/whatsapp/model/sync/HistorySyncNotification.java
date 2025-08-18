@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.sync;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
@@ -8,40 +7,40 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.whatsapp.model.media.AttachmentType;
 import it.auties.whatsapp.model.media.MutableAttachmentProvider;
 
+import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.OptionalLong;
 
 import static it.auties.protobuf.model.ProtobufType.*;
 
 @ProtobufMessage(name = "Message.HistorySyncNotification")
-public final class HistorySyncNotification implements MutableAttachmentProvider<HistorySyncNotification> {
+public final class HistorySyncNotification implements MutableAttachmentProvider {
     @ProtobufProperty(index = 1, type = BYTES)
-    private byte[] mediaSha256;
+    byte[] mediaSha256;
     @ProtobufProperty(index = 2, type = UINT64)
-    private Long mediaSize;
+    Long mediaSize;
     @ProtobufProperty(index = 3, type = BYTES)
-    private byte[] mediaKey;
+    byte[] mediaKey;
     @ProtobufProperty(index = 4, type = BYTES)
-    private byte[] mediaEncryptedSha256;
+    byte[] mediaEncryptedSha256;
     @ProtobufProperty(index = 5, type = STRING)
-    private String mediaDirectPath;
+    String mediaDirectPath;
     @ProtobufProperty(index = 6, type = ENUM)
-    private final HistorySync.Type syncType;
+    final HistorySync.Type syncType;
     @ProtobufProperty(index = 7, type = UINT32)
-    private final Integer chunkOrder;
+    final Integer chunkOrder;
     @ProtobufProperty(index = 8, type = STRING)
-    private final String originalMessageId;
+    final String originalMessageId;
     @ProtobufProperty(index = 9, type = UINT32)
-    private final Integer progress;
+    final Integer progress;
     @ProtobufProperty(index = 10, type = INT64)
-    private final long oldestMsgInChunkTimestampSec;
+    final long oldestMsgInChunkTimestampSec;
     @ProtobufProperty(index = 11, type = BYTES)
-    private final byte[] initialHistBootstrapInlinePayload;
+    final ByteBuffer initialHistBootstrapInlinePayload;
     @ProtobufProperty(index = 12, type = STRING)
-    private final String peerDataRequestSessionId;
+    final String peerDataRequestSessionId;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public HistorySyncNotification(byte[] mediaSha256, Long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySync.Type syncType, Integer chunkOrder, String originalMessageId, Integer progress, long oldestMsgInChunkTimestampSec, byte[] initialHistBootstrapInlinePayload, String peerDataRequestSessionId) {
+    public HistorySyncNotification(byte[] mediaSha256, Long mediaSize, byte[] mediaKey, byte[] mediaEncryptedSha256, String mediaDirectPath, HistorySync.Type syncType, Integer chunkOrder, String originalMessageId, Integer progress, long oldestMsgInChunkTimestampSec, ByteBuffer initialHistBootstrapInlinePayload, String peerDataRequestSessionId) {
         this.mediaSha256 = mediaSha256;
         this.mediaSize = mediaSize;
         this.mediaKey = mediaKey;
@@ -62,8 +61,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaUrl(String mediaUrl) {
-        return this;
+    public void setMediaUrl(String mediaUrl) {
     }
 
     @Override
@@ -72,9 +70,8 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaDirectPath(String mediaDirectPath) {
+    public void setMediaDirectPath(String mediaDirectPath) {
         this.mediaDirectPath = mediaDirectPath;
-        return this;
     }
 
     @Override
@@ -83,14 +80,12 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaKey(byte[] bytes) {
+    public void setMediaKey(byte[] bytes) {
         this.mediaKey = bytes;
-        return this;
     }
 
     @Override
-    public HistorySyncNotification setMediaKeyTimestamp(Long timestamp) {
-        return this;
+    public void setMediaKeyTimestamp(Long timestamp) {
     }
 
     @Override
@@ -99,9 +94,8 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaSha256(byte[] bytes) {
+    public void setMediaSha256(byte[] bytes) {
         this.mediaSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -110,9 +104,8 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaEncryptedSha256(byte[] bytes) {
+    public void setMediaEncryptedSha256(byte[] bytes) {
         this.mediaEncryptedSha256 = bytes;
-        return this;
     }
 
     @Override
@@ -121,9 +114,8 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
     }
 
     @Override
-    public HistorySyncNotification setMediaSize(long mediaSize) {
+    public void setMediaSize(long mediaSize) {
         this.mediaSize = mediaSize;
-        return this;
     }
 
     @Override
@@ -152,7 +144,7 @@ public final class HistorySyncNotification implements MutableAttachmentProvider<
         return oldestMsgInChunkTimestampSec;
     }
 
-    public Optional<byte[]> initialHistBootstrapInlinePayload() {
+    public Optional<ByteBuffer> initialHistBootstrapInlinePayload() {
         return Optional.ofNullable(initialHistBootstrapInlinePayload);
     }
 

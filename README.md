@@ -1,5 +1,7 @@
 # Cobalt
+
 Whatsapp4j has been renamed to Cobalt to comply with an official request coming from Whatsapp.
+The repository's history was cleared to comply with this request, but keep in mind that the project has been actively developed for over two years.
 To be clear, this library is not affiliated with Whatsapp LLC in any way.
 This is a personal project that I maintain in my free time
 
@@ -12,27 +14,22 @@ It can be used with:
 
 ### Donations
 
-If you like my work, you can become a sponsor here on GitHub or tip me on [Paypal](https://www.paypal.me/AutiesDevelopment).
-
-If you prefer crypto, this is my eth address: 0xA7842cDb100fb91718961153149C86e4F4030a76
+If you like my work, you can become a sponsor here on GitHub or tip me through:
+- [Paypal](https://www.paypal.me/AutiesDevelopment)
 
 I can also work on sponsored features and/or projects!
 
 ### Java version
 
-This library was built for [Java 21](https://openjdk.java.net/projects/jdk/21/), the latest LTS.
+This library requires at least [Java 21](https://openjdk.java.net/projects/jdk/21/).
+
+GraalVM native compilation is supported!
 
 ### Breaking changes policy
 
 Until the library doesn't reach release 1.0, there will be major breaking changes between each release.
 This is needed to finalize the design of the API.
 After this milestone, breaking changes will be present only in major releases.
-
-### Optimizing memory usage
-
-If the machine you are hosting this library on has memory constraints, please look into how to tune a JVM.
-The easiest thing you can do is use the -Xmx argument to specify the maximum size, in bytes, of the memory allocation pool.
-I have written this disclaimer because many new devs tend to get confused by Java's opportunistic memory allocation.
 
 ### Can this library get my device banned?
 
@@ -44,38 +41,30 @@ In short, if you use this library without a malicious intent, you will never get
 ### How to install
 
 #### Maven
-
 ```xml
 <dependency>
     <groupId>com.github.auties00</groupId>
     <artifactId>cobalt</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.10</version>
 </dependency>
 ```
 
 #### Gradle
 
-1. Groovy DSL
-   ```groovy
-   implementation 'com.github.auties00:cobalt:0.0.1'
-   ```
+- Groovy DSL
+    ```groovy
+    implementation 'com.github.auties00:cobalt:0.0.10'
+    ```
 
-2. Kotlin DSL
-   ```kotlin
-   implementation("com.github.auties00:cobalt:0.0.1")
-   ```
-
-### Examples
-
-If you need some examples to get started, check
-the [examples' directory](https://github.com/Auties00/Whatsapp4j/tree/master/examples) in this project.
-There are several easy and documented projects and more will come.
-Any contribution is welcomed!
+- Kotlin DSL
+    ```groovy
+    implementation("com.github.auties00:cobalt:0.0.10")
+    ```
 
 ### Javadocs & Documentation
 
-Javadocs for Whatsapp4j are available [here](https://www.javadoc.io/doc/com.github.auties00/whatsappweb4j/latest/whatsapp4j/index.html).
-The documentation for this project reaches most of the publicly available APIs(i.e. public members in exported packages), but sometimes the Javadoc may be incomplete 
+Javadocs for Cobalt are available [here](https://www.javadoc.io/doc/com.github.auties00/cobalt/0.0.10).
+The documentation for this project reaches most of the publicly available APIs(i.e. public members in exported packages), but sometimes the Javadoc may be incomplete
 or some methods could be absent from the project's README. If you find any of the latter, know that even small contributions are welcomed!
 
 ### How to contribute
@@ -87,13 +76,11 @@ If you are not familiar with git, follow these short tutorials in order:
 1. [Fork this project](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo)
 2. [Clone the new repo](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository)
 3. [Create a new branch](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/managing-branches#creating-a-branch)
-4. Once you have implemented the new
-   feature, [create a new merge request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
+4. Once you have implemented the new feature, [create a new merge request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
 
-If you are trying to implement a feature that is present on WhatsappWeb's WebClient, for example audio or video calls,
-consider using [WhatsappWeb4jRequestAnalyzer](https://github.com/Auties00/whatsappweb4j-request-analyzer), a tool I built for this exact purpose.
+Check the frida module to understand how I go about reversing features
 
-### Disclaimer about async operations 
+### Disclaimer about async operations
 This library heavily depends on async operations using the CompletableFuture construct.
 Remember to handle them as your application will terminate without doing anything if the main thread is not executing any task.
 Please do not open redundant issues on GitHub because of this.
@@ -166,13 +153,9 @@ You can now customize the API with these options:
   ```java
   .autodetectListeners(true)
   ```
-- cacheDetectedListeners - Whether the listeners that were automatically registered should be cached
+- whatsappTextPreviewPolicy - Whether a media preview should be generated for text messages containing links
   ```java
-  .cacheDetectedListeners(true)
-  ```
-- textPreviewSetting - Whether a media preview should be generated for text messages containing links
-  ```java
-  .textPreviewSetting(TextPreviewSetting.ENABLED_WITH_INFERENCE)
+  .whatsappTextPreviewPolicy(TextPreviewSetting.ENABLED_WITH_INFERENCE)
   ```
 - checkPatchMacs - Whether patch macs coming from app state pulls should be validated
   ```java
@@ -263,6 +246,10 @@ Now you can connect to your session:
   ```
 to connect to Whatsapp.
 Remember to handle the result using, for example, `join` to await the connection's result.
+Finally, if you want to pause the current thread until the connection is closed, use:
+  ```java
+  .awaitDisconnection()
+  ```
 </details>
 
 <details>
@@ -270,13 +257,14 @@ Remember to handle the result using, for example, `join` to await the connection
 
   ```java
   Whatsapp.webBuilder() // Use the Web api
-        .lastConnection() // Deserialize the last connection, or create a new one if it doesn't exist
+        .newConnection() // Create a new connection
         .unregistered(QrHandler.toTerminal()) // Print the QR to the terminal
         .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
         .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
         .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
         .connect() // Connect to Whatsapp asynchronously
-        .join(); // Await the result
+        .join() // Await the result
+        .awaitDisconnection(); // Wait 
   ```
 </details>
 
@@ -285,16 +273,17 @@ Remember to handle the result using, for example, `join` to await the connection
 
   ```java
   System.out.println("Enter the phone number(include the country code prefix, but no +, spaces or parenthesis):")
-  var scanner = new Scanner(System.in);
-  var phoneNumber = scanner.nextLong();
+var scanner = new Scanner(System.in);
+var phoneNumber = scanner.nextLong();
   Whatsapp.webBuilder() // Use the Web api
-        .lastConnection() // Deserialize the last connection, or create a new one if it doesn't exist
+        .newConnection() // Create a new connection
         .unregistered(phoneNumber, PairingCodeHandler.toTerminal()) // Print the pairing code to the terminal
         .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
         .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
         .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
         .connect() // Connect to Whatsapp asynchronously
-        .join(); // Await the result
+        .join() // Await the result
+        .awaitDisconnection(); // Wait 
   ```
 </details>
 
@@ -303,25 +292,27 @@ Remember to handle the result using, for example, `join` to await the connection
 
   ```java
   System.out.println("Enter the phone number(include the country code prefix, but no +, spaces or parenthesis):")
-  var scanner = new Scanner(System.in);
-  var phoneNumber = scanner.nextLong();
+var scanner = new Scanner(System.in);
+var phoneNumber = scanner.nextLong();
   Whatsapp.mobileBuilder() // Use the Mobile api
-        .lastConnection() // Deserialize the last connection, or create a new one if it doesn't exist
+        .newConnection() // Create a new connection
         .device(CompanionDevice.ios(false)) // Use a non-business iOS account
         .unregistered() // If the connection was just created, it needs to be registered
         .verificationCodeMethod(VerificationCodeMethod.SMS) // If the connection was just created, send an SMS OTP
         .verificationCodeSupplier(() -> { // Called when the OTP needs to be sent to Whatsapp
-            System.out.println("Enter OTP: "); 
-            var scanner = new Scanner(System.in);
+        System.out.println("Enter OTP: ");
+var scanner = new Scanner(System.in);
             return scanner.nextLine();
         })
-        .register(phoneNumber) // Register the phone number asynchronously, if necessary
+                .register(phoneNumber) // Register the phone number asynchronously, if necessary
         .join() // Await the result
+        .whatsapp() // Access the Whatsapp instance
         .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
         .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
         .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
         .connect() // Connect to Whatsapp asynchronously
-        .join(); // Await the result
+        .join() // Await the result
+        .awaitDisconnection(); // Wait 
   ```
 </details>
 
@@ -330,7 +321,7 @@ Remember to handle the result using, for example, `join` to await the connection
 There are three ways to close a connection:
 
 1. Disconnect
-   
+
    ```java
    api.disconnect();
    ```
@@ -356,15 +347,15 @@ Listeners are crucial to handle events related to Whatsapp and implement logic f
 Listeners can be used either as:
 
 1. Standalone concrete implementation
-   
-   If your application is complex enough, 
+
+   If your application is complex enough,
    it's preferable to divide your listeners' logic across multiple specialized classes.
    To create a new concrete listener, declare a class or record that implements the Listener interface:
 
    ```java
-   import it.auties.whatsapp.listener.Listener;
+   import it.auties.whatsapp.api.WhatsappListener;
 
-   public class MyListener implements Listener {
+   public class MyListener implements WhatsappListener {
     @Override
     public void onLoggedIn() {
         System.out.println("Hello :)");
@@ -372,62 +363,22 @@ Listeners can be used either as:
    }
    ```
 
-   Remember to manually register this listener:
+   Remember to register this listener:
 
    ```java
    api.addListener(new MyListener());
    ```
 
-   Or to register it automatically using the `@RegisterListener` annotation:
-
-   ```java
-   import it.auties.whatsapp.listener.RegisterListener;
-   import it.auties.whatsapp.listener.Listener;
-
-   @RegisterListener // Automatically registers this listener
-   public class MyListener implements Listener {
-    @Override
-    public void onLoggedIn() {
-        System.out.println("Hello :)");
-    }
-   }
-   ```
-   
-   Listeners often need access to the Whatsapp instance that registered them to, for example, send messages. 
-   If your listener is marked with @RegisterListener and a single argument constructor that takes a Whatsapp instance as a parameter exists,
-   the latter can be injected automatically, regardless of if your implementation uses a class or a record.
-   Records, though, are usually more elegant:
-
-   ```java
-   import it.auties.whatsapp.listener.RegisterListener;
-   import it.auties.whatsapp.api.Whatsapp;
-   import it.auties.whatsapp.listener.Listener;
-
-   @RegisterListener // Automatically registers this listener
-   public record MyListener(Whatsapp api) implements Listener { // A non-null whatsapp instance is injected
-    @Override
-    public void onLoggedIn() {
-        System.out.println("Hello :)");
-    }
-   }
-   ```
-
-   > **_IMPORTANT:_** Only non-abstract classes that provide a no arguments constructor or
-   > a single parameter constructor of type Whatsapp can be registered automatically
-   
-   > **_IMPORTANT:_** In some environments @RegisterListener might not work. 
-   > Before opening an issue, try to disable `cacheDetectedListeners`.
-   
 2. Functional interface
-   
-   If your application is very simple or only requires this library in small operations, 
+
+   If your application is very simple or only requires this library in small operations,
    it's preferable to add a listener using a lambda instead of using full-fledged classes.
    To declare a new functional listener, call the method add followed by the name of the listener that you want to implement without the on suffix:
    ```java
    api.addDisconnectedListener(reason -> System.out.println("Goodbye: " + reason));
    ```
 
-   All lambda listeners can access the instance of `Whatsapp` that called them: 
+   All lambda listeners can access the instance of `Whatsapp` that called them:
    ```java
    api.addDisconnectedListener((whatsapp, reason) -> System.out.println("Goodbye: " + reason));
    ```
@@ -449,7 +400,7 @@ In practice, this means that this data needs to be serialized somewhere.
 The same is true for the mobile api.
 
 By default, this library serializes data regarding a session at `$HOME/.whatsapp4j/[web|mobile]/<session_id>`.
-The data is stored in gzipped .smile files to reduce disk usage. 
+The data is stored in protobuf files.
 
 If your application needs to serialize data in a different way, for example in a database create a custom implementation of ControllerSerializer.
 Then make sure to specify your implementation in the `Whatsapp` builder.
@@ -462,23 +413,23 @@ These are the three reasons that can cause a disconnect:
 
 1. DISCONNECTED
 
-    A normal disconnection.
-    This doesn't indicate any error being thrown.
+   A normal disconnection.
+   This doesn't indicate any error being thrown.
 
-2. RECONNECT
+2. RECONNECTING
 
-    The client is being disconnected but only to reopen the connection.
-    This always happens when the QR is first scanned for example.
+   The client is being disconnected but only to reopen the connection.
+   This always happens when the QR is first scanned for example.
 
 3. LOGGED_OUT
 
-    The client was logged out by itself or by its companion.
-    By default, no error is thrown if this happens, though this behaviour can be changed easily:
+   The client was logged out by itself or by its companion.
+   By default, no error is thrown if this happens, though this behaviour can be changed easily:
     ```java
-    import it.auties.whatsapp.api.DisconnectReason;
-    import it.auties.whatsapp.listener.Listener;
+    import it.auties.whatsapp.api.WhatsappDisconnectReason;
+    import it.auties.whatsapp.api.WhatsappListener;
 
-    class ThrowOnLogOut implements Listener {
+    class ThrowOnLogOut implements WhatsappListener {
         @Override
         public void onDisconnected(DisconnectReason reason) {
             if (reason != SocketEvent.LOGGED_OUT) {
@@ -489,6 +440,10 @@ These are the three reasons that can cause a disconnect:
         }
     }
     ```
+
+4. BANNED
+
+   The client was banned by Whatsapp, usually happens when sending spam messages to people that aren't in your contact list
 
 ### How to query chats, contacts, messages and status
 
@@ -521,40 +476,40 @@ var status = store.status();
 Data can also be easily queried by using these methods:
 
 - Chats
-   - Query a chat by its jid
-     ```java
-     var chat = store.findChatByJid(jid);
-     ```
-  - Query a chat by its name
-    ```java
-    var chat = store.findChatByName(name);
-    ```  
-  - Query a chat by a message inside it
-    ```java
-    var chat = store.findChatByMessage(message);
-    ```   
-  - Query all chats that match a name
-    ```java
-    var chats = store.findChatsByName(name);
-    ```  
+    - Query a chat by its jid
+      ```java
+      var chat = store.findChatByJid(jid);
+      ```
+    - Query a chat by its name
+      ```java
+      var chat = store.findChatByName(name);
+      ```  
+    - Query a chat by a message inside it
+      ```java
+      var chat = store.findChatByMessage(message);
+      ```   
+    - Query all chats that match a name
+      ```java
+      var chats = store.findChatsByName(name);
+      ```  
 - Contacts
-   - Query a contact by its jid
-     ```java
-     var chat = store.findContactByJid(jid);
-     ```  
-  - Query a contact by its name
-    ```java
-    var contact = store.findContactByName(name);
-    ```
-   - Query all contacts that match a name
-     ```java
-     var contacts = store.findContactsByName(name);
-     ```     
+    - Query a contact by its jid
+      ```java
+      var chat = store.findContactByJid(jid);
+      ```  
+    - Query a contact by its name
+      ```java
+      var contact = store.findContactByName(name);
+      ```
+    - Query all contacts that match a name
+      ```java
+      var contacts = store.findContactsByName(name);
+      ```     
 - Media status
-  - Query status by sender
-    ```java
-    var chat = store.findStatusBySender(contact);
-    ```  
+    - Query status by sender
+      ```java
+      var chat = store.findStatusBySender(contact);
+      ```  
 
 ### How to query other data
 
@@ -579,7 +534,7 @@ Access keys store associated with a connection by calling the keys method:
 ```java
 var keys = api.keys();
 ```
-There are several methods to access and query cryptographic data, but as it's only necessary for advanced users, 
+There are several methods to access and query cryptographic data, but as it's only necessary for advanced users,
 please check the javadocs if this is what you need.
 
 ### How to send messages
@@ -683,82 +638,82 @@ All types of messages supported by Whatsapp are supported by this library:
 
 - Media
 
-    > **_IMPORTANT:_**
-    > 
-    > The thumbnail for videos and gifs is generated automatically only if ffmpeg is installed on the host machine.
-    > 
-    > The length of videos, gifs and audios in seconds is computed automatically only if ffprobe is installed on the host machine.
+  > **_IMPORTANT:_**
+  >
+  > The thumbnail for videos and gifs is generated automatically only if ffmpeg is installed on the host machine.
+  >
+  > The length of videos, gifs and audios in seconds is computed automatically only if ffprobe is installed on the host machine.
 
-    To send a media, start by reading the content inside a byte array.
-    You might want to read it from a file:
+  To send a media, start by reading the content inside a byte array.
+  You might want to read it from a file:
 
     ```java
     var media = Files.readAllBytes(Path.of("somewhere"));
     ```
 
-    Or from a URL:
+  Or from a URL:
 
     ```java
     var media = new URL(url).openStream().readAllBytes();
     ```
-   
-   All medias supported by Whatsapp are supported by this library:
 
-   - Image
-  
-     ```java
-     var image = new ImageMessageSimpleBuilder() // Create a new image message builder
-           .media(media) // Set the image of this message
-           .caption("A nice image") // Set the caption of this message
-           .build(); // Create the message
-     api.sendMessage(chat,  image);
-     ```
+  All medias supported by Whatsapp are supported by this library:
 
-  - Audio or voice
+    - Image
 
-    ```java
-     var audio = new AudioMessageSimpleBuilder() // Create a new audio message builder
-           .media(urlMedia) // Set the audio of this message
-           .voiceMessage(false) // Set whether this message is a voice message
-           .build(); // Create the message
-     api.sendMessage(chat,  audio);
-    ```
+      ```java
+      var image = new ImageMessageSimpleBuilder() // Create a new image message builder
+            .media(media) // Set the image of this message
+            .caption("A nice image") // Set the caption of this message
+            .build(); // Create the message
+      api.sendMessage(chat,  image);
+      ```
 
-  -  Video
+    - Audio or voice
 
-     ```java
-     var video = new VideoMessageSimpleBuilder() // Create a new video message builder
-           .media(urlMedia) // Set the video of this message
-           .caption("A nice video") // Set the caption of this message
-           .width(100) // Set the width of the video
-           .height(100) // Set the height of the video
-           .build(); // Create the message
-     api.sendMessage(chat,  video); 
-     ```
-     
-  -  GIF(Video)
+      ```java
+       var audio = new AudioMessageSimpleBuilder() // Create a new audio message builder
+             .media(urlMedia) // Set the audio of this message
+             .voiceMessage(false) // Set whether this message is a voice message
+             .build(); // Create the message
+       api.sendMessage(chat,  audio);
+      ```
 
-     ```java
-     var gif = new GifMessageSimpleBuilder() // Create a new gif message builder
-           .media(urlMedia) // Set the gif of this message
-           .caption("A nice gif") // Set the caption of this message
-           .gifAttribution(VideoMessageAttribution.TENOR) // Set the source of the gif
-           .build(); // Create the message
-     api.sendMessage(chat,  gif);
-     ```
-     > **_IMPORTANT:_** Whatsapp doesn't support conventional gifs. Instead, videos can be played as gifs if particular attributes are set. Sending a conventional gif will result in an exception if detected or in undefined behaviour.
+    -  Video
 
-  -  Document
+       ```java
+       var video = new VideoMessageSimpleBuilder() // Create a new video message builder
+             .media(urlMedia) // Set the video of this message
+             .caption("A nice video") // Set the caption of this message
+             .width(100) // Set the width of the video
+             .height(100) // Set the height of the video
+             .build(); // Create the message
+       api.sendMessage(chat,  video); 
+       ```
 
-     ```java
-     var document = new DocumentMessageSimpleBuilder() // Create a new document message builder
-           .media(urlMedia) // Set the document of this message
-           .title("A nice pdf") // Set the title of the document
-           .fileName("pdf-test.pdf") // Set the name of the document
-           .pageCount(1) // Set the number of pages of the document
-           .build(); // Create the message
-     api.sendMessage(chat,  document);
-     ```
+    -  GIF(Video)
+
+       ```java
+       var gif = new GifMessageSimpleBuilder() // Create a new gif message builder
+             .media(urlMedia) // Set the gif of this message
+             .caption("A nice gif") // Set the caption of this message
+             .gifAttribution(VideoMessageAttribution.TENOR) // Set the source of the gif
+             .build(); // Create the message
+       api.sendMessage(chat,  gif);
+       ```
+       > **_IMPORTANT:_** Whatsapp doesn't support conventional gifs. Instead, videos can be played as gifs if particular attributes are set. Sending a conventional gif will result in an exception if detected or in undefined behaviour.
+
+    -  Document
+
+       ```java
+       var document = new DocumentMessageSimpleBuilder() // Create a new document message builder
+             .media(urlMedia) // Set the document of this message
+             .title("A nice pdf") // Set the title of the document
+             .fileName("pdf-test.pdf") // Set the name of the document
+             .pageCount(1) // Set the number of pages of the document
+             .build(); // Create the message
+       api.sendMessage(chat,  document);
+       ```
 - Reaction
 
     - Send a reaction
@@ -1027,26 +982,6 @@ var future = api.revokeGroupInvite(group);
 var future = api.acceptGroupInvite(inviteCode);
 ```
 
-### Companions (Mobile api only)
-
-##### Link a companion
-
-``` java
-var future = api.linkCompanion(qrCode);
-```
-
-##### Unlink a companion
-
-``` java
-var future = api.unlinkCompanion(companionJid);
-```
-
-##### Unlink all companions
-
-``` java
-var future = api.unlinkCompanions();
-```
-
 ### 2FA (Mobile api only)
 
 ##### Enable 2FA
@@ -1079,12 +1014,167 @@ var future = api.stopCall(contact);
 
 ### Communities
 
-> **_IMPORTANT:_** Fully supported, but not documented here. Check the Javadocs.
+-   **Create a community:**
+    ```java
+    var future = api.createCommunity("New Community Name", "Optional community description");
+    ```
+    
+-   **Query community metadata:**
+    ```java
+    var future = api.queryCommunityMetadata(communityJid);
+    ```
+    
+-   **Deactivate a community:**
+    ```java
+    var future = api.deactivateCommunity(communityJid);
+    ```
+-   **Change community picture:**
+    ```java
+    byte[] imageBytes = ...; // Or use URI
+    var future = api.changeCommunityPicture(communityJid, imageBytes);
+    var removeFuture = api.changeCommunityPicture(communityJid, (byte[]) null); // Remove picture
+    ```
+    
+-   **Change community subject (name):**
+    ```java
+    var future = api.changeCommunitySubject(communityJid, "Updated Community Name");
+    ```
+    
+-   **Change community description:**
+    ```java
+    var future = api.changeCommunityDescription(communityJid, "Updated description");
+    var removeFuture = api.changeCommunityDescription(communityJid, null); // Remove description
+    ```
+    
+-   **Change community setting:**
+    ```java
+    // Who can add groups (MODIFY_GROUPS) or add participants (ADD_PARTICIPANTS)
+    var future = api.changeCommunitySetting(communityJid, CommunitySetting.MODIFY_GROUPS, ChatSettingPolicy.ADMINS);
+    ```
+    
+-   **Link groups to a community:**
+    ```java
+    var future = api.addCommunityGroups(communityJid, groupJid1, groupJid2);
+    ```
+    
+-   **Unlink a group from a community:**
+    ```java
+    var future = api.removeCommunityGroup(communityJid, groupJid);
+    ```
+    
+-   **Promote participants to admin in a community:**
+    ```java
+    var future = api.promoteCommunityParticipants(communityJid, contactJid1, contactJid2);
+    ```
+    
+-   **Demote participants to member in a community:**
+    ```java
+    var future = api.demoteCommunityParticipants(communityJid, contactJid1, contactJid2);
+    ```
+    
+-   **Add participants to a community:** (Adds to announcement group)
+    ```java
+    var future = api.addCommunityParticipants(communityJid, contactJid1, contactJid2);
+    ```
+    
+-   **Remove participants from a community:**
+    ```java
+    var future = api.removeCommunityParticipants(communityJid, contactJid1, contactJid2);
+    ```
+    
+-   **Leave a community:** (Leaves community and all linked groups)
+    ```java
+    var future = api.leaveCommunity(communityJid);
+    ```
 
-### Newsletters
+### Newsletters / Channels
 
-> **_IMPORTANT:_** Fully supported, but not documented here. Check the Javadocs.
+-   **Query recommended newsletters:**
+    ```java
+    var future = api.queryRecommendedNewsletters("US", 50); // Country code and limit
+    ```
+    
+-   **Query newsletter messages:**
+    ```java
+    var future = api.queryNewsletterMessages(newsletterJid, 100); // Query last 100 messages
+    ```
+    
+-   **Subscribe to newsletter reactions:**
+    ```java
+    var future = api.subscribeToNewsletterReactions(newsletterJid);
+    ```
+    
+-   **Create a newsletter:**
+    ```java
+    byte[] pictureBytes = ...; // Optional picture
+    var future = api.createNewsletter("My Newsletter", "Description", pictureBytes);
+    var simpleFuture = api.createNewsletter("Simple Newsletter"); // Name only
+    ```
+    
+-   **Change newsletter description:**
+    ```java
+    var future = api.changeNewsletterDescription(newsletterJid, "New Description");
+    var removeFuture = api.changeNewsletterDescription(newsletterJid, null); // Remove description
+    ```
+    
+-   **Join a newsletter:**
+    ```java
+    var future = api.joinNewsletter(newsletterJid);
+    ```
+    
+-   **Leave a newsletter:**
+    ```java
+    var future = api.leaveNewsletter(newsletterJid);
+    ```
+    
+-   **Query newsletter subscribers count:**
+    ```java
+    var future = api.queryNewsletterSubscribers(newsletterJid);
+    ```
+    
+-   **Invite newsletter admins:** (Sends an invite message to the user)
+    ```java
+    var future = api.inviteNewsletterAdmins(newsletterJid, "Join as admin!", adminJid1, adminJid2);
+    ```
+    
+-   **Revoke newsletter admin invite:**
+    ```java
+    var future = api.revokeNewsletterAdminInvite(newsletterJid, adminJid);
+    ```
+    
+-   **Accept newsletter admin invite:**
+    ```java
+    var future = api.acceptNewsletterAdminInvite(newsletterJid);
+    ```
+    
+-   **Query newsletter metadata:**
+    ```java
+    // Role required depends on what info you need (e.g., GUEST, SUBSCRIBER, ADMIN)
+    var future = api.queryNewsletter(newsletterJid, NewsletterViewerRole.SUBSCRIBER);
+    ```
+    
+-   **Send newsletter message:**
+    ```java
+    var future = api.sendNewsletterMessage(newsletterJid, message);
+    ```
+    
+-   **Edit newsletter message:**
+    ```java
+    var future = api.editMessage(oldMessage, newContent);
+    ```
+    
+-   **Delete newsletter message:**
+    ```java
+    var future = api.deleteMessage(messageToDelete);
+    
+    ```
+-   **Download newsletter media:**
+    ```java
+    var future = api.downloadMedia(mediaMessageInfo);
+    ```
 
 Some methods may not be listed here, all contributions are welcomed to this documentation!
+
 Some methods may not be supported on the mobile api, please report them, so I can fix them.
+
 Ideally I'd like all of them to work.

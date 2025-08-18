@@ -9,31 +9,81 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificate;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.Optional;
-
 
 /**
  * A model class that holds the information related to the identity of a business account.
  */
 @ProtobufMessage(name = "BizIdentityInfo")
-public record BusinessIdentityInfo(
-        @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
-        VerifiedLevel level,
-        @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-        BusinessVerifiedNameCertificate certificate,
-        @ProtobufProperty(index = 3, type = ProtobufType.BOOL)
-        boolean signed,
-        @ProtobufProperty(index = 4, type = ProtobufType.BOOL)
-        boolean revoked,
-        @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
-        HostStorageType hostStorage,
-        @ProtobufProperty(index = 6, type = ProtobufType.ENUM)
-        ActorsType actualActors,
-        @ProtobufProperty(index = 7, type = ProtobufType.UINT64)
-        long privacyModeTimestampSeconds,
-        @ProtobufProperty(index = 8, type = ProtobufType.UINT64)
-        long featureControls
-) implements Info {
+public final class BusinessIdentityInfo implements Info {
+    @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
+    final VerifiedLevel level;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
+    final BusinessVerifiedNameCertificate certificate;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.BOOL)
+    final boolean signed;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.BOOL)
+    final boolean revoked;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
+    final HostStorageType hostStorage;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.ENUM)
+    final ActorsType actualActors;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.UINT64)
+    final long privacyModeTimestampSeconds;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.UINT64)
+    final long featureControls;
+
+    BusinessIdentityInfo(VerifiedLevel level, BusinessVerifiedNameCertificate certificate, boolean signed, boolean revoked, HostStorageType hostStorage, ActorsType actualActors, long privacyModeTimestampSeconds, long featureControls) {
+        this.level = Objects.requireNonNullElse(level, VerifiedLevel.UNKNOWN);
+        this.certificate = Objects.requireNonNull(certificate, "certificate cannot be null");
+        this.signed = signed;
+        this.revoked = revoked;
+        this.hostStorage = Objects.requireNonNull(hostStorage, "hostStorage cannot be null");
+        this.actualActors = Objects.requireNonNull(actualActors, "actualActors cannot be null");
+        this.privacyModeTimestampSeconds = privacyModeTimestampSeconds;
+        this.featureControls = featureControls;
+    }
+
+    public VerifiedLevel level() {
+        return level;
+    }
+
+    public BusinessVerifiedNameCertificate certificate() {
+        return certificate;
+    }
+
+    public boolean signed() {
+        return signed;
+    }
+
+    public boolean revoked() {
+        return revoked;
+    }
+
+    public HostStorageType hostStorage() {
+        return hostStorage;
+    }
+
+    public ActorsType actualActors() {
+        return actualActors;
+    }
+
+    public long privacyModeTimestampSeconds() {
+        return privacyModeTimestampSeconds;
+    }
+
+    public long featureControls() {
+        return featureControls;
+    }
+
     /**
      * Returns the privacy mode timestampSeconds
      *
@@ -41,6 +91,39 @@ public record BusinessIdentityInfo(
      */
     public Optional<ZonedDateTime> privacyModeTimestamp() {
         return Clock.parseSeconds(privacyModeTimestampSeconds);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof BusinessIdentityInfo that
+                && Objects.equals(level, that.level)
+                && Objects.equals(certificate, that.certificate)
+                && signed == that.signed
+                && revoked == that.revoked
+                && Objects.equals(hostStorage, that.hostStorage)
+                && Objects.equals(actualActors, that.actualActors)
+                && privacyModeTimestampSeconds == that.privacyModeTimestampSeconds
+                && featureControls == that.featureControls;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(level, certificate, signed, revoked, hostStorage, actualActors,
+                privacyModeTimestampSeconds, featureControls);
+    }
+
+    @Override
+    public String toString() {
+        return "BusinessIdentityInfo[" +
+                "level=" + level +
+                ", certificate=" + certificate +
+                ", signed=" + signed +
+                ", revoked=" + revoked +
+                ", hostStorage=" + hostStorage +
+                ", actualActors=" + actualActors +
+                ", privacyModeTimestampSeconds=" + privacyModeTimestampSeconds +
+                ", featureControls=" + featureControls +
+                ']';
     }
 
     /**
@@ -61,10 +144,6 @@ public record BusinessIdentityInfo(
 
         ActorsType(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return index;
         }
     }
 
@@ -94,10 +173,6 @@ public record BusinessIdentityInfo(
         VerifiedLevel(@ProtobufEnumIndex int index) {
             this.index = index;
         }
-
-        public int index() {
-            return index;
-        }
     }
 
     @ProtobufEnum(name = "BizIdentityInfo.HostStorageType")
@@ -116,10 +191,6 @@ public record BusinessIdentityInfo(
 
         HostStorageType(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return index;
         }
     }
 }

@@ -3,43 +3,50 @@ package it.auties.whatsapp.model.action;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.sync.PatchType;
+
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A model class that contains the main Whatsapp version being used
  */
 @ProtobufMessage(name = "SyncActionValue.PrimaryVersionAction")
-public record PrimaryVersionAction(
-        @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-        String version
-) implements Action {
-    /**
-     * The name of this action
-     *
-     * @return a non-null string
-     */
+public final class PrimaryVersionAction implements Action {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    final String version;
+
+    PrimaryVersionAction(String version) {
+        this.version = version;
+    }
+
     @Override
     public String indexName() {
         return "primary_version";
     }
 
-    /**
-     * The version of this action
-     *
-     * @return a non-null string
-     */
     @Override
     public int actionVersion() {
         return 7;
     }
 
-    /**
-     * The type of this action
-     *
-     * @return a non-null string
-     */
+    public Optional<String> version() {
+        return Optional.ofNullable(version);
+    }
+
     @Override
-    public PatchType actionType() {
-        return null;
+    public boolean equals(Object o) {
+        return o instanceof PrimaryVersionAction that
+                && Objects.equals(version, that.version);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(version);
+    }
+
+    @Override
+    public String toString() {
+        return "PrimaryVersionAction[" +
+                "version=" + version + ']';
     }
 }

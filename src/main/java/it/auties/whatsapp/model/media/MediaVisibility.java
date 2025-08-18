@@ -27,8 +27,4 @@ public enum MediaVisibility {
     MediaVisibility(@ProtobufEnumIndex int index) {
         this.index = index;
     }
-
-    public int index() {
-        return index;
-    }
 }

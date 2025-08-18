@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.mobile;
 
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.util.Validate;
 
 import java.util.Base64;
 import java.util.Objects;
@@ -12,9 +11,14 @@ public record SixPartsKeys(PhoneNumber phoneNumber, SignalKeyPair noiseKeyPair, 
                            byte[] identityId) {
     public static SixPartsKeys of(String sixParts) {
         Objects.requireNonNull(sixParts, "Invalid six parts");
-        var parts = sixParts.replaceAll(" ", "").replaceAll("\n", "").split(",", 6);
-        Validate.isTrue(parts.length == 6, "Invalid format");
-        var phoneNumber = PhoneNumber.of(parts[0]);
+        var parts = sixParts.trim()
+                .replaceAll("\n", "")
+                .split(",", 6);
+        if (parts.length != 6) {
+            throw new IllegalArgumentException("Malformed six parts: " + sixParts);
+        }
+        var phoneNumber = PhoneNumber.of(parts[0])
+                .orElseThrow(() -> new IllegalArgumentException("Invalid phone number: " + parts[0]));
         var noisePublicKey = Base64.getDecoder().decode(parts[1]);
         var noisePrivateKey = Base64.getDecoder().decode(parts[2]);
         var identityPublicKey = Base64.getDecoder().decode(parts[3]);

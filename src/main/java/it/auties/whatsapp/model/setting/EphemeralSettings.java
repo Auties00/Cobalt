@@ -6,15 +6,22 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.util.Clock;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 @ProtobufMessage(name = "AvatarUserSetting")
-public record EphemeralSettings(
-        @ProtobufProperty(index = 1, type = ProtobufType.SFIXED32)
-        int duration,
-        @ProtobufProperty(index = 2, type = ProtobufType.SFIXED64)
-        long timestampSeconds
-) implements Setting {
+public final class EphemeralSettings implements Setting {
+    @ProtobufProperty(index = 1, type = ProtobufType.SFIXED32)
+    final int duration;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.SFIXED64)
+    final long timestampSeconds;
+
+    EphemeralSettings(int duration, long timestampSeconds) {
+        this.duration = duration;
+        this.timestampSeconds = timestampSeconds;
+    }
+
     /**
      * Returns when this setting was toggled
      *
@@ -22,6 +29,14 @@ public record EphemeralSettings(
      */
     public Optional<ZonedDateTime> timestamp() {
         return Clock.parseSeconds(timestampSeconds);
+    }
+
+    public int duration() {
+        return duration;
+    }
+
+    public long timestampSeconds() {
+        return timestampSeconds;
     }
 
     @Override
@@ -32,5 +47,24 @@ public record EphemeralSettings(
     @Override
     public String indexName() {
         throw new UnsupportedOperationException("Cannot send setting: no index name");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof EphemeralSettings that
+                && Objects.equals(duration, that.duration)
+                && Objects.equals(timestampSeconds, that.timestampSeconds);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(duration, timestampSeconds);
+    }
+
+    @Override
+    public String toString() {
+        return "EphemeralSettings[" +
+                "duration=" + duration + ", " +
+                "timestampSeconds=" + timestampSeconds + ']';
     }
 }

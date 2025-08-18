@@ -1,6 +1,8 @@
 package it.auties.whatsapp.model.info;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.jid.Jid;
@@ -13,33 +15,37 @@ import java.util.OptionalLong;
 /**
  * An immutable model class that represents a quoted message
  */
-public final class QuotedMessageInfo implements MessageInfo<QuotedMessageInfo> {
+@ProtobufMessage
+public final class QuotedMessageInfo implements MessageInfo {
     /**
      * The id of the message
      */
-    private final String id;
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    final String id;
 
     /**
      * The chat of the message
      */
-    private final Chat chat;
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
+    final Chat chat;
 
     /**
      * The sender of the message
      */
-    private final Contact sender;
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
+    final Contact sender;
 
     /**
      * The message
      */
-    private MessageContainer message;
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
+    MessageContainer message;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public QuotedMessageInfo(String id, Chat chat, Contact sender, MessageContainer message) {
-        this.id = id;
-        this.chat = chat;
+    QuotedMessageInfo(String id, Chat chat, Contact sender, MessageContainer message) {
+        this.id = Objects.requireNonNull(id, "id cannot be null");
+        this.chat = Objects.requireNonNull(chat, "chat cannot be null");
         this.sender = sender;
-        this.message = message;
+        this.message = Objects.requireNonNull(message, "message cannot be null");
     }
 
     /**
@@ -71,7 +77,11 @@ public final class QuotedMessageInfo implements MessageInfo<QuotedMessageInfo> {
      */
     @Override
     public Jid senderJid() {
-        return Objects.requireNonNullElseGet(sender.jid(), this::parentJid);
+        if(sender != null) {
+            return sender.jid();
+        }else {
+            return chat.jid();
+        }
     }
 
     /**
@@ -98,9 +108,8 @@ public final class QuotedMessageInfo implements MessageInfo<QuotedMessageInfo> {
     }
 
     @Override
-    public QuotedMessageInfo setMessage(MessageContainer message) {
+    public void setMessage(MessageContainer message) {
         this.message = message;
-        return this;
     }
 
     @Override

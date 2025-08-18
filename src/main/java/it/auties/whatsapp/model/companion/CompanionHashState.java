@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.companion;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -18,16 +17,16 @@ import static it.auties.whatsapp.model.node.Node.of;
 @ProtobufMessage
 public final class CompanionHashState {
     @ProtobufProperty(index = 1, type = ProtobufType.ENUM)
-    private PatchType type;
+    PatchType type;
 
     @ProtobufProperty(index = 2, type = ProtobufType.INT64)
-    private long version;
+    long version;
 
     @ProtobufProperty(index = 3, type = ProtobufType.BYTES)
-    private byte[] hash;
+    byte[] hash;
 
-    @ProtobufProperty(index = 4, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.BYTES)
-    private Map<String, byte[]> indexValueMap;
+    @ProtobufProperty(index = 4, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.BYTES)
+    Map<Integer, byte[]> indexValueMap;
 
     public CompanionHashState(PatchType type) {
         this(type, 0);
@@ -40,15 +39,14 @@ public final class CompanionHashState {
         this.indexValueMap = new HashMap<>();
     }
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public CompanionHashState(PatchType type, long version, byte[] hash, Map<String, byte[]> indexValueMap) {
+    public CompanionHashState(PatchType type, long version, byte[] hash, Map<Integer, byte[]> indexValueMap) {
         this.type = type;
         this.version = version;
         this.hash = hash;
         this.indexValueMap = indexValueMap;
     }
 
-    private static boolean checkIndexEntryEquality(CompanionHashState that, String thisKey, byte[] thisValue) {
+    private static boolean checkIndexEntryEquality(CompanionHashState that, int thisKey, byte[] thisValue) {
         var thatValue = that.indexValueMap().get(thisKey);
         return thatValue != null && Arrays.equals(thatValue, thisValue);
     }
@@ -87,28 +85,24 @@ public final class CompanionHashState {
         return this.hash;
     }
 
-    public Map<String, byte[]> indexValueMap() {
+    public Map<Integer, byte[]> indexValueMap() {
         return this.indexValueMap;
     }
 
-    public CompanionHashState setType(PatchType name) {
+    public void setType(PatchType name) {
         this.type = name;
-        return this;
     }
 
-    public CompanionHashState setVersion(long version) {
+    public void setVersion(long version) {
         this.version = version;
-        return this;
     }
 
-    public CompanionHashState setHash(byte[] hash) {
+    public void setHash(byte[] hash) {
         this.hash = hash;
-        return this;
     }
 
-    public CompanionHashState setIndexValueMap(Map<String, byte[]> indexValueMap) {
+    public void setIndexValueMap(Map<Integer, byte[]> indexValueMap) {
         this.indexValueMap = indexValueMap;
-        return this;
     }
 
 

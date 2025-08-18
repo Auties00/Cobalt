@@ -5,8 +5,6 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageCategory;
-import it.auties.whatsapp.model.message.model.MessageType;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -16,29 +14,38 @@ import java.util.Optional;
  * A model class that represents a message holding a live location inside
  */
 @ProtobufMessage(name = "Message.LiveLocationMessage")
-public final class LiveLocationMessage implements ContextualMessage<LiveLocationMessage> {
+public final class LiveLocationMessage implements ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.DOUBLE)
-    private final double latitude;
-    @ProtobufProperty(index = 2, type = ProtobufType.DOUBLE)
-    private final double longitude;
-    @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
-    private final int accuracy;
-    @ProtobufProperty(index = 4, type = ProtobufType.FLOAT)
-    private final float speed;
-    @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
-    private final int magneticNorthOffset;
-    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-    private final String caption;
-    @ProtobufProperty(index = 7, type = ProtobufType.UINT64)
-    private final long sequenceNumber;
-    @ProtobufProperty(index = 8, type = ProtobufType.UINT32)
-    private final int timeOffset;
-    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
-    private final byte[] thumbnail;
-    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    final double latitude;
 
-    public LiveLocationMessage(double latitude, double longitude, int accuracy, float speed, int magneticNorthOffset, String caption, long sequenceNumber, int timeOffset, byte[] thumbnail, ContextInfo contextInfo) {
+    @ProtobufProperty(index = 2, type = ProtobufType.DOUBLE)
+    final double longitude;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
+    final int accuracy;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.FLOAT)
+    final float speed;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.UINT32)
+    final int magneticNorthOffset;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+    final String caption;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.UINT64)
+    final long sequenceNumber;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.UINT32)
+    final int timeOffset;
+
+    @ProtobufProperty(index = 16, type = ProtobufType.BYTES)
+    final byte[] thumbnail;
+
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    LiveLocationMessage(double latitude, double longitude, int accuracy, float speed, int magneticNorthOffset, String caption, long sequenceNumber, int timeOffset, byte[] thumbnail, ContextInfo contextInfo) {
         this.latitude = latitude;
         this.longitude = longitude;
         this.accuracy = accuracy;
@@ -52,13 +59,13 @@ public final class LiveLocationMessage implements ContextualMessage<LiveLocation
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.LIVE_LOCATION;
+    public Type type() {
+        return Type.LIVE_LOCATION;
     }
 
     @Override
-    public MessageCategory category() {
-        return MessageCategory.STANDARD;
+    public Category category() {
+        return Category.STANDARD;
     }
 
     public double latitude() {
@@ -103,9 +110,8 @@ public final class LiveLocationMessage implements ContextualMessage<LiveLocation
     }
 
     @Override
-    public LiveLocationMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

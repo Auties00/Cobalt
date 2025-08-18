@@ -7,6 +7,6 @@ import it.auties.whatsapp.model.message.button.TemplateReplyMessage;
 /**
  * A model interface that represents a reply to a button message
  */
-public sealed interface ButtonReplyMessage<T extends ButtonReplyMessage<T>> extends ContextualMessage<T>, ButtonMessage permits ListResponseMessage, TemplateReplyMessage, ButtonsResponseMessage {
+public sealed interface ButtonReplyMessage<T extends ButtonReplyMessage<T>> extends ContextualMessage, ButtonMessage permits ListResponseMessage, TemplateReplyMessage, ButtonsResponseMessage {
 
 }

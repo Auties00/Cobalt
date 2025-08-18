@@ -1,32 +1,36 @@
 package it.auties.whatsapp.model.sync;
 
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.sync.RecordSync.Operation;
-import it.auties.whatsapp.util.Json;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public record PatchRequest(PatchType type, List<PatchEntry> entries) {
     public record PatchEntry(ActionValueSync sync, String index, Operation operation) {
         public static PatchEntry of(ActionValueSync sync, Operation operation, String... args) {
-            var index = Json.writeValueAsString(createArguments(sync, args));
+            var index = JSON.toJSONString(toJsonArgs(sync, args));
             return new PatchEntry(sync, index, operation);
         }
 
-        private static List<String> createArguments(ActionValueSync sync, String... args) {
+        @SuppressWarnings("all")
+        private static List<String> toJsonArgs(ActionValueSync sync, String... args) {
             var action = sync.action();
             if (action.isPresent()) {
-                var index = new ArrayList<String>();
+                var index = new ArrayList<String>(args.length + 1);
                 index.add(action.get().indexName());
-                index.addAll(Arrays.asList(args));
+                for(var arg : args) {
+                    index.add(arg);
+                }
                 return index;
             }
+
             var setting = sync.setting();
             if (setting.isPresent()) {
                 return List.of(setting.get().indexName());
             }
-            throw new IllegalArgumentException("Cannot encode %s".formatted(sync));
+
+            return List.of();
         }
     }
 }

@@ -1,6 +1,5 @@
 package it.auties.whatsapp.model.signal.sender;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -10,10 +9,11 @@ import java.util.*;
 
 @ProtobufMessage
 public final class SenderKeyRecord {
-    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-    private final List<SenderKeyState> states;
+    private static final int MAX_STATES = 5;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
+    final List<SenderKeyState> states;
+
     public SenderKeyRecord(List<SenderKeyState> states) {
         this.states = states;
     }
@@ -22,29 +22,31 @@ public final class SenderKeyRecord {
         this.states = new ArrayList<>();
     }
 
-    public SenderKeyState firstState() {
-        return states.stream()
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Cannot get head state for empty record"));
+    public Optional<SenderKeyState> firstState() {
+        if(states.isEmpty()) {
+            return Optional.empty();
+        }else {
+            return Optional.ofNullable(states.getFirst());
+        }
     }
 
-    public List<SenderKeyState> findStatesById(int keyId) {
+    public Optional<SenderKeyState> findStateById(int keyId) {
         return states.stream()
                 .filter(entry -> entry.id() == keyId)
-                .toList();
+                .findFirst();
     }
 
-    public void addState(int id, byte[] signatureKey, int iteration, byte[] seed) {
-        addState(id, SignalKeyPair.of(signatureKey), iteration, seed);
+    public SenderKeyState addState(int id, byte[] signatureKey, int iteration, byte[] seed) {
+        return addState(id, SignalKeyPair.of(signatureKey), iteration, seed);
     }
 
-    public void addState(int id, SignalKeyPair signingKey, int iteration, byte[] seed) {
+    public SenderKeyState addState(int id, SignalKeyPair signingKey, int iteration, byte[] seed) {
         var state = new SenderKeyState(id, signingKey, iteration, seed);
         states.add(state);
-    }
-
-    public List<SenderKeyState> states() {
-        return Collections.unmodifiableList(states);
+        if (states.size() > MAX_STATES) {
+            states.removeFirst();
+        }
+        return state;
     }
 
     public boolean isEmpty() {

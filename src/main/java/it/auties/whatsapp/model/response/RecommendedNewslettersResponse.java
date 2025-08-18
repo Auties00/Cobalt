@@ -1,26 +1,54 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.util.Json;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public record RecommendedNewslettersResponse(@JsonProperty("result") List<Newsletter> newsletters) {
-    public static Optional<RecommendedNewslettersResponse> ofJson(String json) {
-        return Json.readValue(json, JsonResponse.class)
-                .data()
-                .map(JsonData::response);
+public final class RecommendedNewslettersResponse {
+    private final List<Newsletter> newsletters;
+
+    private RecommendedNewslettersResponse(List<Newsletter> newsletters) {
+        this.newsletters = newsletters;
     }
 
-    private record JsonResponse(Optional<JsonData> data) {
+    public static Optional<RecommendedNewslettersResponse> of(byte[] json) {
+        if(json == null) {
+            return Optional.empty();
+        }
 
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var newsletters = new ArrayList<Newsletter>();
+        for(var key : jsonObject.sequencedKeySet()) {
+            if(!key.startsWith("xwa2_newsletter_")) {
+                continue;
+            }
+
+            if(jsonObject.isArray(key)) {
+                var newsletterJsonArray = jsonObject.getJSONArray(key);
+                for(var i = 0; i < newsletterJsonArray.size(); i++) {
+                    var newsletterJsonObject = newsletterJsonArray.getJSONObject(i);
+                    Newsletter.ofJson(newsletterJsonObject)
+                            .ifPresent(newsletters::add);
+                }
+            } else {
+                var newsletterJsonObject = jsonObject.getJSONObject(key);
+                Newsletter.ofJson(newsletterJsonObject)
+                        .ifPresent(newsletters::add);
+            }
+        }
+        var result = new RecommendedNewslettersResponse(newsletters);
+        return Optional.of(result);
     }
 
-    private record JsonData(
-            @JsonAlias({"xwa2_newsletter_update", "xwa2_newsletter_create", "xwa2_newsletter_subscribed", "xwa2_newsletters_directory_list"}) RecommendedNewslettersResponse response) {
-
+    public List<Newsletter> newsletters() {
+        return Collections.unmodifiableList(newsletters);
     }
 }

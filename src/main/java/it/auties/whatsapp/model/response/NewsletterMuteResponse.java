@@ -1,32 +1,55 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.util.Json;
 
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
-public record NewsletterMuteResponse(@JsonProperty("id") Jid jid, @JsonProperty("mute") boolean mute) {
-    @JsonCreator
-    NewsletterMuteResponse(Map<String, String> json) {
-        this(Jid.of(json.get("id")), Objects.equals(json.get("mute"), "ON"));
+public final class NewsletterMuteResponse {
+    private final Jid jid;
+    private final boolean mute;
+
+    private NewsletterMuteResponse(Jid jid, boolean mute) {
+        this.jid = jid;
+        this.mute = mute;
     }
 
     public static Optional<NewsletterMuteResponse> ofJson(String json) {
-        return Json.readValue(json, JsonData.class)
-                .data()
-                .map(JsonResponse::response);
+        if (json == null) {
+            return Optional.empty();
+        }
+
+        var jsonObject = JSON.parseObject(json);
+        if (jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var data = jsonObject.getJSONObject("data");
+        if (data == null) {
+            return Optional.empty();
+        }
+
+        var response = data.getJSONObject("xwa2_notify_newsletter_on_mute_change");
+        if (response == null) {
+            return Optional.empty();
+        }
+
+        var id = response.getString("id");
+        if (id == null) {
+            return Optional.empty();
+        }
+
+        var jid = Jid.of(id);
+        var mute = response.getBooleanValue("mute", false);
+        var result = new NewsletterMuteResponse(jid, mute);
+        return Optional.of(result);
     }
 
-    private record JsonData(Optional<JsonResponse> data) {
-
+    public Jid jid() {
+        return jid;
     }
 
-    private record JsonResponse(
-            @JsonProperty("xwa2_notify_newsletter_on_mute_change") NewsletterMuteResponse response) {
-
+    public boolean mute() {
+        return mute;
     }
 }

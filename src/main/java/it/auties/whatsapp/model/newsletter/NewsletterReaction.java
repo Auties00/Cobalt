@@ -1,24 +1,44 @@
 package it.auties.whatsapp.model.newsletter;
 
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @ProtobufMessage
 public final class NewsletterReaction {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String content;
+    final String content;
+
     @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
-    private long count;
+    long count;
+
     @ProtobufProperty(index = 3, type = ProtobufType.BOOL)
-    private boolean fromMe;
+    boolean fromMe;
 
     public NewsletterReaction(String content, long count, boolean fromMe) {
-        this.content = content;
+        this.content = Objects.requireNonNull(content, "content cannot be null");
         this.count = count;
         this.fromMe = fromMe;
+    }
+
+    public static Optional<NewsletterReaction> ofJson(JSONObject jsonObject) {
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var content = jsonObject.getString("content");
+        if(content == null) {
+            return Optional.empty();
+        }
+
+        var count = jsonObject.getLongValue("count", 0);
+        var fromMe = jsonObject.getBooleanValue("fromMe", false);
+        var result = new NewsletterReaction(content, count, fromMe);
+        return Optional.of(result);
     }
 
     public String content() {
@@ -29,18 +49,16 @@ public final class NewsletterReaction {
         return count;
     }
 
-    public NewsletterReaction setCount(long count) {
+    public void setCount(long count) {
         this.count = count;
-        return this;
     }
 
     public boolean fromMe() {
         return fromMe;
     }
 
-    public NewsletterReaction setFromMe(boolean fromMe) {
+    public void setFromMe(boolean fromMe) {
         this.fromMe = fromMe;
-        return this;
     }
 
     @Override
@@ -61,6 +79,4 @@ public final class NewsletterReaction {
                 "count=" + count + ", " +
                 "fromMe=" + fromMe + ']';
     }
-
-
 }

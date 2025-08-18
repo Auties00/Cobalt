@@ -1,22 +1,16 @@
 package it.auties.whatsapp.model.message.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.api.ClientType;
-import it.auties.whatsapp.crypto.MD5;
-import it.auties.whatsapp.crypto.Sha256;
+import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.model.jid.JidServer;
 import it.auties.whatsapp.util.Bytes;
 
-import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.util.HexFormat;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * A container for unique identifiers and metadata linked to a {@link Message} and contained in
@@ -25,19 +19,21 @@ import java.util.Optional;
 @ProtobufMessage(name = "MessageKey")
 public final class ChatMessageKey {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private Jid chatJid;
-    @ProtobufProperty(index = 2, type = ProtobufType.BOOL)
-    private final boolean fromMe;
-    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
-    private final String id;
-    @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    private Jid senderJid;
+    Jid chatJid;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    @ProtobufProperty(index = 2, type = ProtobufType.BOOL)
+    final boolean fromMe;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.STRING)
+    final String id;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.STRING)
+    Jid senderJid;
+
     public ChatMessageKey(Jid chatJid, boolean fromMe, String id, Jid senderJid) {
         this.chatJid = chatJid;
         this.fromMe = fromMe;
-        this.id = Objects.requireNonNull(id);
+        this.id = Objects.requireNonNullElseGet(id, () -> UUID.randomUUID().toString());
         this.senderJid = senderJid;
     }
 
@@ -46,40 +42,10 @@ public final class ChatMessageKey {
      *
      * @return a non-null String
      */
-    public static String randomIdV2(Jid jid, ClientType clientType) {
+    public static String randomId(WhatsappClientType clientType) {
         return switch (clientType) {
-            case ClientType.WEB -> {
-                var meUser = "%s@%s".formatted(jid.user(), "@c.us");
-                var timeSeconds = Instant.now().getEpochSecond();
-                var randomBytes = Bytes.random(16);
-                var buffer = ByteBuffer.allocate(Long.BYTES + meUser.length() + randomBytes.length);
-                buffer.putLong(timeSeconds);
-                buffer.put(meUser.getBytes());
-                buffer.put(randomBytes);
-                yield "3EB0" + HexFormat.of().formatHex(Sha256.calculate(buffer.array()), 0, 9).toUpperCase();
-            }
-            case ClientType.MOBILE -> {
-                var meJid = Objects.requireNonNullElse(jid, Jid.ofServer(JidServer.WHATSAPP));
-                var meUser = meJid.toSimpleJid().toString().getBytes();
-                var timeMillis = System.currentTimeMillis();
-                var timeArray = new byte[8];
-                for (int i = 7; i >= 0; i--) {
-                    timeArray[i] = (byte) timeMillis;
-                    timeMillis >>= 8;
-                }
-                var digested = MD5.calculate(Bytes.concat(timeArray, meUser, Bytes.random(16)));
-                var cArr = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-                var cArr2 = new char[digested.length * 2];
-                var i = 0;
-                for (byte b : digested) {
-                    int i2 = b & 255;
-                    int i3 = i + 1;
-                    cArr2[i] = cArr[i2 >>> 4];
-                    i = i3 + 1;
-                    cArr2[i3] = cArr[i2 & 15];
-                }
-                yield new String(cArr2);
-            }
+            case WhatsappClientType.WEB -> "3EB0" + Bytes.randomHex(13);
+            case WhatsappClientType.MOBILE -> Bytes.randomHex(16);
         };
     }
     
@@ -87,9 +53,8 @@ public final class ChatMessageKey {
         return chatJid;
     }
 
-    public ChatMessageKey setChatJid(Jid chatJid) {
+    public void setChatJid(Jid chatJid) {
         this.chatJid = chatJid;
-        return this;
     }
 
     public boolean fromMe() {
@@ -104,14 +69,13 @@ public final class ChatMessageKey {
         return Optional.ofNullable(senderJid);
     }
 
-    public ChatMessageKey setSenderJid(Jid senderJid) {
+    public void setSenderJid(Jid senderJid) {
         this.senderJid = senderJid;
-        return this;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj instanceof ChatMessageKey other && Objects.equals(id(), other.id());
+    public boolean equals(Object o) {
+        return o instanceof ChatMessageKey that && fromMe == that.fromMe && Objects.equals(chatJid, that.chatJid) && Objects.equals(id, that.id) && Objects.equals(senderJid, that.senderJid);
     }
 
     @Override

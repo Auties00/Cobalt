@@ -1,28 +1,48 @@
 package it.auties.whatsapp.model.response;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.util.Json;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
-public record SubscribedNewslettersResponse(List<Newsletter> newsletters) {
-    @JsonCreator
-    SubscribedNewslettersResponse(Map<String, List<Newsletter>> json) {
-        this(json.values()
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Missing newsletters")));
+public final class SubscribedNewslettersResponse {
+    private final List<Newsletter> newsletters;
+
+    private SubscribedNewslettersResponse(List<Newsletter> newsletters) {
+        this.newsletters = newsletters;
     }
 
     public static Optional<SubscribedNewslettersResponse> ofJson(String json) {
-        return Json.readValue(json, JsonResponse.class).data();
+        if(json == null) {
+            return Optional.empty();
+        }
+
+        var jsonObject = JSON.parseObject(json);
+        if(jsonObject == null) {
+            return Optional.empty();
+        }
+
+        var data = jsonObject.getJSONObject("data");
+        if(data == null) {
+            return Optional.empty();
+        }
+
+        var newsletters = new ArrayList<Newsletter>(data.size());
+        for(var key : data.keySet()) {
+            var object = data.getJSONObject(key);
+            if(object != null) {
+                Newsletter.ofJson(object)
+                        .ifPresent(newsletters::add);
+            }
+        }
+        var result = new SubscribedNewslettersResponse(newsletters);
+        return Optional.of(result);
     }
 
-    private record JsonResponse(Optional<SubscribedNewslettersResponse> data) {
-
+    public List<Newsletter> newsletters() {
+        return Collections.unmodifiableList(newsletters);
     }
 }

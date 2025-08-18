@@ -14,7 +14,6 @@ public sealed interface HighlyStructuredDateTimeValue permits HighlyStructuredDa
      */
     Type dateType();
 
-
     /**
      * The constants of this enumerated type describe the various type of date types that a date time can wrap
      */
@@ -33,15 +32,10 @@ public sealed interface HighlyStructuredDateTimeValue permits HighlyStructuredDa
          */
         UNIX_EPOCH(2);
 
-
         final int index;
 
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return index;
         }
     }
 }

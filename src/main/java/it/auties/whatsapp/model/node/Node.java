@@ -1,7 +1,5 @@
 package it.auties.whatsapp.model.node;
 
-import it.auties.whatsapp.util.Json;
-
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,6 +13,8 @@ import java.util.stream.Stream;
  * @param content     a nullable object: a List of {@link Node}, a {@link String} or a {@link Number}
  */
 public record Node(String description, Attributes attributes, Object content) {
+    private static final Node EMPTY = new Node("xmlstreamend", Attributes.of(), null);
+
     /**
      * Constructs a Node that only provides a non-null tag
      *
@@ -169,6 +169,10 @@ public record Node(String description, Attributes attributes, Object content) {
         } catch (ClassCastException exception) {
             throw new IllegalArgumentException("Unexpected payload type: expected nodes collection", exception);
         }
+    }
+
+    public static Node empty() {
+        return EMPTY;
     }
 
     /**
@@ -348,7 +352,18 @@ public record Node(String description, Attributes attributes, Object content) {
      */
     @Override
     public boolean equals(Object other) {
-        return other instanceof Node that && Objects.equals(this.description(), that.description()) && Objects.equals(this.attributes(), that.attributes()) && (Objects.equals(this.content(), that.content()) || this.content() instanceof byte[] theseBytes && that.content() instanceof byte[] thoseBytes && Arrays.equals(theseBytes, thoseBytes));
+        return other instanceof Node(String otherDescription, Attributes otherAttributes, Object otherContent)
+                && Objects.equals(this.description, otherDescription)
+                && Objects.equals(this.attributes, otherAttributes)
+                && contentEquals(this.content, otherContent);
+    }
+
+    private boolean contentEquals(Object thisContent, Object otherContent) {
+        return thisContent == otherContent
+                || Objects.equals(thisContent, otherContent)
+                || (thisContent instanceof byte[] theseBytes
+                        && otherContent instanceof byte[] thoseBytes
+                        && Arrays.equals(theseBytes, thoseBytes));
     }
 
     /**
@@ -358,7 +373,7 @@ public record Node(String description, Attributes attributes, Object content) {
      */
     @Override
     public String toString() {
-        var description = this.description.isBlank() || this.description.isEmpty() ? "" : "description=%s".formatted(this.description);
+        var description = this.description.isBlank() ? "" : "description=%s".formatted(this.description);
         var attributes = this.attributes.toMap().isEmpty() ? "" : ", attributes=%s".formatted(this.attributes.toMap());
         var content = this.content == null ? "" : ", content=%s".formatted(contentToString());
         return "Node[%s%s%s]".formatted(description, attributes, content);
@@ -371,14 +386,5 @@ public record Node(String description, Attributes attributes, Object content) {
 
         return hasDescription("result") || hasDescription("query") || hasDescription("body")
                 ? new String(bytes) : Arrays.toString(bytes);
-    }
-
-    /**
-     * Converts this node into a JSON String
-     *
-     * @return a non null String
-     */
-    public String toJson() {
-        return Json.writeValueAsString(this, true);
     }
 }

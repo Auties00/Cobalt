@@ -11,7 +11,6 @@ import it.auties.whatsapp.model.button.base.ButtonText;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
-import it.auties.whatsapp.model.message.model.MessageType;
 
 import java.util.Optional;
 
@@ -22,15 +21,18 @@ import java.util.Optional;
 @ProtobufMessage(name = "Message.ButtonsResponseMessage")
 public final class ButtonsResponseMessage implements ButtonReplyMessage<ButtonsResponseMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String buttonId;
-    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final String buttonText;
-    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
-    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
-    private final ResponseType responseType;
+    final String buttonId;
 
-    public ButtonsResponseMessage(String buttonId, String buttonText, ContextInfo contextInfo, ResponseType responseType) {
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    final String buttonText;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
+    final ResponseType responseType;
+
+    ButtonsResponseMessage(String buttonId, String buttonText, ContextInfo contextInfo, ResponseType responseType) {
         this.buttonId = buttonId;
         this.buttonText = buttonText;
         this.contextInfo = contextInfo;
@@ -47,8 +49,8 @@ public final class ButtonsResponseMessage implements ButtonReplyMessage<ButtonsR
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.BUTTONS_RESPONSE;
+    public Type type() {
+        return Type.BUTTONS_RESPONSE;
     }
 
     public String buttonId() {
@@ -65,9 +67,8 @@ public final class ButtonsResponseMessage implements ButtonReplyMessage<ButtonsR
     }
 
     @Override
-    public ButtonsResponseMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     public ResponseType responseType() {
@@ -93,10 +94,6 @@ public final class ButtonsResponseMessage implements ButtonReplyMessage<ButtonsR
 
         ResponseType(@ProtobufEnumIndex int index) {
             this.index = index;
-        }
-
-        public int index() {
-            return index;
         }
     }
 }

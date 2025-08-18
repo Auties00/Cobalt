@@ -1,7 +1,6 @@
 package it.auties.whatsapp.model.newsletter;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -18,42 +17,59 @@ import java.util.Optional;
 @ProtobufMessage
 public final class Newsletter implements JidProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final Jid jid;
-    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    private NewsletterState state;
-    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    private NewsletterMetadata metadata;
-    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    private final NewsletterViewerMetadata viewerMetadata;
-    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    private final ConcurrentLinkedSet<NewsletterMessageInfo> messages;
+    final Jid jid;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    Newsletter(
-            @JsonProperty("id")
-            Jid jid,
-            @JsonProperty("state")
-            NewsletterState state,
-            @JsonProperty("thread_metadata")
-            NewsletterMetadata metadata,
-            @JsonProperty("viewer_metadata")
-            NewsletterViewerMetadata viewerMetadata,
-            @JsonProperty("messages")
-            ConcurrentLinkedSet<NewsletterMessageInfo> messages
-    ) {
-        this.jid = jid;
+    @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
+    NewsletterState state;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
+    NewsletterMetadata metadata;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
+    final NewsletterViewerMetadata viewerMetadata;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
+    final ConcurrentLinkedSet<NewsletterMessageInfo> messages;
+
+    Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, ConcurrentLinkedSet<NewsletterMessageInfo> messages) {
+        this.jid = Objects.requireNonNull(jid, "jid cannot be null");
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
         this.messages = Objects.requireNonNullElseGet(messages, ConcurrentLinkedSet::new);
     }
 
-    public Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata) {
-        this.jid = jid;
-        this.state = state;
-        this.metadata = metadata;
-        this.viewerMetadata = viewerMetadata;
-        this.messages = new ConcurrentLinkedSet<>();
+    public static Optional<Newsletter> ofJson(JSONObject newsletter) {
+        if(newsletter == null) {
+            return Optional.empty();
+        }
+
+        var jidValue = newsletter.getString("id");
+        if(jidValue == null) {
+            return Optional.empty();
+        }
+
+        var jid = Jid.of(jidValue);
+        var stateJsonObject = newsletter.getJSONObject("state");
+        var state = NewsletterState.ofJson(stateJsonObject)
+                .orElse(null);
+        var metadataJsonObject = newsletter.getJSONObject("thread_metadata");
+        var metadata = NewsletterMetadata.ofJson(metadataJsonObject)
+                .orElse(null);
+        var viewerMetadataJsonObject = newsletter.getJSONObject("viewer_metadata");
+        var viewerMetadata = NewsletterViewerMetadata.ofJson(viewerMetadataJsonObject)
+                .orElse(null);
+        var messagesJsonObjects = newsletter.getJSONArray("messages");
+        var messages = new ConcurrentLinkedSet<NewsletterMessageInfo>();
+        if(messagesJsonObjects != null) {
+            for (var i = 0; i < messagesJsonObjects.size(); i++) {
+                var messageJsonObject = messagesJsonObjects.getJSONObject(i);
+                NewsletterMessageInfo.ofJson(messageJsonObject)
+                        .ifPresent(messages::add);
+            }
+        }
+        var result = new Newsletter(jid, state, metadata, viewerMetadata, messages);
+        return Optional.of(result);
     }
 
     public void addMessage(NewsletterMessageInfo message) {
@@ -93,18 +109,16 @@ public final class Newsletter implements JidProvider {
         return Optional.ofNullable(state);
     }
 
-    public Newsletter setState(NewsletterState state) {
+    public void setState(NewsletterState state) {
         this.state = state;
-        return this;
     }
 
-    public Newsletter setMetadata(NewsletterMetadata metadata) {
+    public void setMetadata(NewsletterMetadata metadata) {
         this.metadata = metadata;
-        return this;
     }
 
-    public NewsletterMetadata metadata() {
-        return metadata;
+    public Optional<NewsletterMetadata> metadata() {
+        return Optional.ofNullable(metadata);
     }
 
     public Optional<NewsletterViewerMetadata> viewerMetadata() {
@@ -112,8 +126,18 @@ public final class Newsletter implements JidProvider {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Newsletter that && Objects.equals(this.jid(), that.jid());
+    public boolean equals(Object o) {
+        return o instanceof Newsletter that &&
+                Objects.equals(jid, that.jid) &&
+                Objects.equals(state, that.state) &&
+                Objects.equals(metadata, that.metadata) &&
+                Objects.equals(viewerMetadata, that.viewerMetadata) &&
+                Objects.equals(messages, that.messages);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(jid, state, metadata, viewerMetadata, messages);
     }
 
     @Override
@@ -125,10 +149,5 @@ public final class Newsletter implements JidProvider {
                 ", viewerMetadata=" + viewerMetadata +
                 ", messages=" + messages +
                 '}';
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(jid);
     }
 }

@@ -3,43 +3,49 @@ package it.auties.whatsapp.model.action;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.sync.PatchType;
+
+import java.util.Objects;
 
 /**
  * A model clas that represents unsupported actions for android
  */
 @ProtobufMessage(name = "SyncActionValue.AndroidUnsupportedActions")
-public record AndroidUnsupportedActions(
-        @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
-        boolean allowed
-) implements Action {
-    /**
-     * The name of this action
-     *
-     * @return a non-null string
-     */
+public final class AndroidUnsupportedActions implements Action {
+    @ProtobufProperty(index = 1, type = ProtobufType.BOOL)
+    final boolean allowed;
+
+    AndroidUnsupportedActions(boolean allowed) {
+        this.allowed = allowed;
+    }
+
     @Override
     public String indexName() {
         return "android_unsupported_actions";
     }
 
-    /**
-     * The version of this action
-     *
-     * @return a non-null string
-     */
     @Override
     public int actionVersion() {
         return 4;
     }
 
-    /**
-     * The type of this action
-     *
-     * @return a non-null string
-     */
+    public boolean allowed() {
+        return allowed;
+    }
+
     @Override
-    public PatchType actionType() {
-        return null;
+    public boolean equals(Object o) {
+        return o instanceof AndroidUnsupportedActions that
+                && allowed == that.allowed;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(allowed);
+    }
+
+    @Override
+    public String toString() {
+        return "AndroidUnsupportedActions[" +
+                "allowed=" + allowed + ']';
     }
 }

@@ -8,7 +8,7 @@ import it.auties.whatsapp.model.message.standard.EncryptedReactionMessage;
  */
 public sealed interface ServerMessage extends Message permits DeviceSentMessage, DeviceSyncMessage, EncryptedReactionMessage, ProtocolMessage, SenderKeyDistributionMessage, StickerSyncRMRMessage {
     @Override
-    default MessageCategory category() {
-        return MessageCategory.SERVER;
+    default Category category() {
+        return Category.SERVER;
     }
 }

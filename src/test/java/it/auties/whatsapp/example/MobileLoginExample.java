@@ -17,7 +17,8 @@ public class MobileLoginExample {
             case 2 -> false;
             default -> throw new IllegalStateException("Unexpected value: " + scanner.nextInt());
         };
-        Whatsapp.mobileBuilder()
+        Whatsapp.builder()
+                .mobileClient()
                 .newConnection(SixPartsKeys.of(sixParts))
                 // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
                 .device(CompanionDevice.ios(business)) // Make sure to select the correct account type(business or personal) or you'll get error 401
@@ -27,7 +28,6 @@ public class MobileLoginExample {
                 .addNodeSentListener(outgoing -> System.out.printf("Sent node %s%n", outgoing))
                 .addLoggedInListener(api -> System.out.println("Logged in"))
                 .connect() // If you get error 403 o 503 the account is banned
-                .join()
-                .awaitDisconnection();
+                .waitForDisconnection();
     }
 }

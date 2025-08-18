@@ -54,9 +54,5 @@ public sealed interface HydratedFourRowTemplateTitle permits DocumentMessage, Hy
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
         }
-
-        public int index() {
-            return index;
-        }
     }
 }

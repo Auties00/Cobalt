@@ -6,10 +6,8 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.Button;
 import it.auties.whatsapp.model.info.ContextInfo;
-import it.auties.whatsapp.model.message.button.ButtonsMessageHeader.Type;
 import it.auties.whatsapp.model.message.model.ButtonMessage;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
-import it.auties.whatsapp.model.message.model.MessageType;
 import it.auties.whatsapp.model.message.standard.DocumentMessage;
 import it.auties.whatsapp.model.message.standard.ImageMessage;
 import it.auties.whatsapp.model.message.standard.LocationMessage;
@@ -22,30 +20,38 @@ import java.util.Optional;
  * A model class that represents a message that contains buttons inside
  */
 @ProtobufMessage(name = "Message.ButtonsMessage")
-public final class ButtonsMessage implements ButtonMessage, ContextualMessage<ButtonsMessage> {
+public final class ButtonsMessage implements ButtonMessage, ContextualMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final ButtonsMessageHeaderText headerText;
+    final ButtonsMessageHeaderText headerText;
+
     @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    private final DocumentMessage headerDocument;
+    final DocumentMessage headerDocument;
+
     @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    private final ImageMessage headerImage;
+    final ImageMessage headerImage;
+
     @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    private final VideoOrGifMessage headerVideo;
+    final VideoOrGifMessage headerVideo;
+
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    private final LocationMessage headerLocation;
+    final LocationMessage headerLocation;
+
     @ProtobufProperty(index = 6, type = ProtobufType.STRING)
-    private final String body;
+    final String body;
+
     @ProtobufProperty(index = 7, type = ProtobufType.STRING)
-    private final String footer;
+    final String footer;
+
     @ProtobufProperty(index = 8, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
+    ContextInfo contextInfo;
+
     @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
-    private final List<Button> buttons;
+    final List<Button> buttons;
+
     @ProtobufProperty(index = 10, type = ProtobufType.ENUM)
-    private final Type headerType;
+    final ButtonsMessageHeader.Type headerType;
 
-
-    public ButtonsMessage(ButtonsMessageHeaderText headerText, DocumentMessage headerDocument, ImageMessage headerImage, VideoOrGifMessage headerVideo, LocationMessage headerLocation, String body, String footer, ContextInfo contextInfo, List<Button> buttons, Type headerType) {
+    ButtonsMessage(ButtonsMessageHeaderText headerText, DocumentMessage headerDocument, ImageMessage headerImage, VideoOrGifMessage headerVideo, LocationMessage headerLocation, String body, String footer, ContextInfo contextInfo, List<Button> buttons, ButtonsMessageHeader.Type headerType) {
         this.headerText = headerText;
         this.headerDocument = headerDocument;
         this.headerImage = headerImage;
@@ -67,16 +73,16 @@ public final class ButtonsMessage implements ButtonMessage, ContextualMessage<Bu
                 .buttons(buttons);
         switch (header) {
             case ButtonsMessageHeaderText textMessage -> builder.headerText(textMessage)
-                    .headerType(Type.TEXT);
+                    .headerType(ButtonsMessageHeader.Type.TEXT);
             case DocumentMessage documentMessage -> builder.headerDocument(documentMessage)
-                    .headerType(Type.DOCUMENT);
+                    .headerType(ButtonsMessageHeader.Type.DOCUMENT);
             case ImageMessage imageMessage -> builder.headerImage(imageMessage)
-                    .headerType(Type.IMAGE);
+                    .headerType(ButtonsMessageHeader.Type.IMAGE);
             case VideoOrGifMessage videoMessage -> builder.headerVideo(videoMessage)
-                    .headerType(Type.VIDEO);
+                    .headerType(ButtonsMessageHeader.Type.VIDEO);
             case LocationMessage locationMessage -> builder.headerLocation(locationMessage)
-                    .headerType(Type.LOCATION);
-            case null -> builder.headerType(Type.UNKNOWN);
+                    .headerType(ButtonsMessageHeader.Type.LOCATION);
+            case null -> builder.headerType(ButtonsMessageHeader.Type.UNKNOWN);
         }
 
         return builder.build();
@@ -88,8 +94,8 @@ public final class ButtonsMessage implements ButtonMessage, ContextualMessage<Bu
      * @return a non-null type
      */
     @Override
-    public MessageType type() {
-        return MessageType.BUTTONS;
+    public Type type() {
+        return Type.BUTTONS;
     }
 
     /**
@@ -100,21 +106,17 @@ public final class ButtonsMessage implements ButtonMessage, ContextualMessage<Bu
     public Optional<? extends ButtonsMessageHeader> header() {
         if (headerText != null) {
             return Optional.of(headerText);
-        }
-
-        if (headerDocument != null) {
+        }else if (headerDocument != null) {
             return Optional.of(headerDocument);
-        }
-
-        if (headerImage != null) {
+        }else if (headerImage != null) {
             return Optional.of(headerImage);
-        }
-
-        if (headerVideo != null) {
+        }else if (headerVideo != null) {
             return Optional.of(headerVideo);
+        }else if(headerLocation != null){
+            return Optional.of(headerLocation);
+        }else {
+            return Optional.empty();
         }
-
-        return Optional.ofNullable(headerLocation);
     }
 
     public Optional<ButtonsMessageHeaderText> headerText() {
@@ -154,14 +156,13 @@ public final class ButtonsMessage implements ButtonMessage, ContextualMessage<Bu
         return buttons;
     }
 
-    public Type headerType() {
+    public ButtonsMessageHeader.Type headerType() {
         return headerType;
     }
 
     @Override
-    public ButtonsMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     @Override

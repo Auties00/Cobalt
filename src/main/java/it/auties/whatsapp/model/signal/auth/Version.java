@@ -1,19 +1,13 @@
 package it.auties.whatsapp.model.signal.auth;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.crypto.MD5;
-import it.auties.whatsapp.util.Validate;
 
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import static java.lang.Integer.parseInt;
-
 
 @ProtobufMessage(name = "ClientPayload.UserAgent.AppVersion")
 public record Version(
@@ -36,10 +30,12 @@ public record Version(
         this(primary, secondary, tertiary, null, null);
     }
 
-    @JsonCreator
     public static Version of(String version) {
         var tokens = version.split("\\.", 5);
-        Validate.isTrue(tokens.length <= 5, "Invalid number of tokens for version %s: %s", version, tokens);
+        if (tokens.length > 5) {
+            throw new IllegalArgumentException("Invalid number of tokens for version %s: %s".formatted(version, tokens));
+        }
+
         var primary = tokens.length > 0 ? parseInt(tokens[0]) : null;
         var secondary = tokens.length > 1 ? parseInt(tokens[1]) : null;
         var tertiary = tokens.length > 2 ? parseInt(tokens[2]) : null;
@@ -49,15 +45,45 @@ public record Version(
     }
 
     public byte[] toHash() {
-        return MD5.calculate(toString());
+        try {
+            var digest = MessageDigest.getInstance("MD5");
+            digest.update(toString().getBytes());
+            return digest.digest();
+        } catch (NoSuchAlgorithmException exception) {
+            throw new UnsupportedOperationException("Missing md5 implementation", exception);
+        }
     }
 
     @Override
-    @JsonValue
     public String toString() {
-        return Stream.of(primary, secondary, tertiary, quaternary, quinary)
-                .filter(Objects::nonNull)
-                .map(String::valueOf)
-                .collect(Collectors.joining("."));
+        var result = new StringBuilder();
+        if(primary != null) {
+            result.append(primary);
+        }
+        if(secondary != null) {
+            if(!result.isEmpty()) {
+                result.append('.');
+            }
+            result.append(secondary);
+        }
+        if(tertiary != null) {
+            if(!result.isEmpty()) {
+                result.append('.');
+            }
+            result.append(tertiary);
+        }
+        if(quaternary != null) {
+            if(!result.isEmpty()) {
+                result.append('.');
+            }
+            result.append(quaternary);
+        }
+        if(quinary != null) {
+            if(!result.isEmpty()) {
+                result.append('.');
+            }
+            result.append(quinary);
+        }
+        return result.toString();
     }
 }

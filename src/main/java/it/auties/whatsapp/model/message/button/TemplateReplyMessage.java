@@ -6,7 +6,6 @@ import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredMessage;
 import it.auties.whatsapp.model.info.ContextInfo;
 import it.auties.whatsapp.model.message.model.ButtonReplyMessage;
-import it.auties.whatsapp.model.message.model.MessageType;
 
 import java.util.Optional;
 
@@ -18,15 +17,18 @@ import java.util.Optional;
 @ProtobufMessage(name = "Message.TemplateButtonReplyMessage")
 public final class TemplateReplyMessage implements ButtonReplyMessage<TemplateReplyMessage> {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
-    private final String id;
-    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
-    private final String buttonText;
-    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
-    private ContextInfo contextInfo;
-    @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
-    private final int index;
+    final String id;
 
-    public TemplateReplyMessage(String id, String buttonText, ContextInfo contextInfo, int index) {
+    @ProtobufProperty(index = 2, type = ProtobufType.STRING)
+    final String buttonText;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.UINT32)
+    final int index;
+
+    TemplateReplyMessage(String id, String buttonText, ContextInfo contextInfo, int index) {
         this.id = id;
         this.buttonText = buttonText;
         this.contextInfo = contextInfo;
@@ -34,8 +36,8 @@ public final class TemplateReplyMessage implements ButtonReplyMessage<TemplateRe
     }
 
     @Override
-    public MessageType type() {
-        return MessageType.TEMPLATE_REPLY;
+    public Type type() {
+        return Type.TEMPLATE_REPLY;
     }
 
     public String id() {
@@ -52,9 +54,8 @@ public final class TemplateReplyMessage implements ButtonReplyMessage<TemplateRe
     }
 
     @Override
-    public TemplateReplyMessage setContextInfo(ContextInfo contextInfo) {
+    public void setContextInfo(ContextInfo contextInfo) {
         this.contextInfo = contextInfo;
-        return this;
     }
 
     public int index() {

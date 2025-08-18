@@ -12,11 +12,10 @@ import java.util.Optional;
  * that implement this interface must provide an accessor named contextInfo to access said
  * property.
  */
-public sealed interface ContextualMessage<T extends ContextualMessage<T>> extends Message
+public sealed interface ContextualMessage extends Message
         permits ButtonsMessage, InteractiveMessage, InteractiveResponseMessage, ListMessage,
         TemplateMessage, ButtonReplyMessage, MediaMessage, PaymentOrderMessage, ContactMessage, ContactsMessage,
         GroupInviteMessage, LiveLocationMessage, LocationMessage, PollCreationMessage, ProductMessage, RequestPhoneNumberMessage, TextMessage {
     Optional<ContextInfo> contextInfo();
-
-    T setContextInfo(ContextInfo contextInfo);
+    void setContextInfo(ContextInfo contextInfo);
 }
