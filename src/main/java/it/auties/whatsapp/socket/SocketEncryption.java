@@ -236,7 +236,7 @@ final class SocketEncryption {
                 yield new ClientPayloadBuilder()
                         .username(phoneNumber)
                         .passive(false)
-                        .pushName(socketConnection.keys().initialAppSync() ? socketConnection.store().name() : null)
+                        .pushName(socketConnection.keys().registered() ? socketConnection.store().name() : null)
                         .userAgent(agent)
                         .shortConnect(true)
                         .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)

@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.LOGIN;
-import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.STREAM;
 
 final class IqHandler extends NodeHandler.Dispatcher {
     private static final int PING_INTERVAL = 30;
@@ -87,11 +86,7 @@ final class IqHandler extends NodeHandler.Dispatcher {
                 .put("to", JidServer.user().toJid())
                 .toMap();
         var request = Node.of("iq", attributes, content);
-        try {
-            socketConnection.sendNodeWithNoResponse(request);
-        } catch (Exception throwable) {
-            socketConnection.handleFailure(STREAM, throwable);
-        }
+        socketConnection.sendNodeWithNoResponse(request);
     }
 
     private void schedulePing() {

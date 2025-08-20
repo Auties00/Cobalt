@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.info.MessageInfoParent;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
@@ -15,7 +16,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @ProtobufMessage
-public final class Newsletter implements JidProvider {
+public final class Newsletter implements JidProvider, MessageInfoParent {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
 

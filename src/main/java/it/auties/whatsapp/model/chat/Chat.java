@@ -7,6 +7,7 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
+import it.auties.whatsapp.model.info.MessageInfoParent;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
 import it.auties.whatsapp.model.jid.JidServer;
@@ -30,7 +31,7 @@ import java.util.function.Predicate;
  */
 @ProtobufMessage(name = "Conversation")
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Chat implements JidProvider {
+public final class Chat implements JidProvider, MessageInfoParent {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
 

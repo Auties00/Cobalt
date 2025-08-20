@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
+import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.MessageContainer;
 import it.auties.whatsapp.model.message.model.MessageStatus;
@@ -15,7 +16,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 @ProtobufMessage
-public final class NewsletterMessageInfo implements MessageInfo, MessageStatusInfo {
+public final class NewsletterMessageInfo implements MessageInfo {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final String id;
 
@@ -77,10 +78,12 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
     }
 
     public void setNewsletter(Newsletter newsletter) {
+        Objects.requireNonNull(newsletter, "Newsletter cannot be null");
         this.newsletter = newsletter;
     }
 
     public Jid newsletterJid() {
+        Objects.requireNonNull(newsletter, "Newsletter cannot be null");
         return newsletter.jid();
     }
 
@@ -90,12 +93,38 @@ public final class NewsletterMessageInfo implements MessageInfo, MessageStatusIn
     }
 
     @Override
+    public Optional<MessageInfoParent> parent() {
+        return Optional.ofNullable(newsletter);
+    }
+
+    @Override
+    public void setParent(MessageInfoParent parent) {
+        if(parent == null) {
+            this.newsletter = null;
+        }else if(!(parent instanceof Newsletter parentNewsletter)) {
+            throw new IllegalArgumentException("Parent is not a newsletter");
+        }else {
+            this.newsletter = parentNewsletter;
+        }
+    }
+
+    @Override
+    public Optional<Contact> sender() {
+        return Optional.empty();
+    }
+
+    @Override
+    public void setSender(Contact sender) {
+
+    }
+
+    @Override
     public Jid senderJid() {
         return newsletterJid();
     }
 
     public Newsletter newsletter() {
-        return newsletter;
+        return Objects.requireNonNull(newsletter, "newsletter cannot be null when accessed");
     }
 
     public String id() {

@@ -8,7 +8,6 @@ import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.message.model.ContextualMessage;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.model.newsletter.NewsletterBuilder;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.ImmutableLinkedList;
 
@@ -386,9 +385,7 @@ abstract class FileControllerSerializer implements ControllerSerializer {
             var newsletterName = newsletterFile.getFileName().toString()
                     .replaceFirst(CHAT_PREFIX, "")
                     .replace(fileExtension(), "");
-            store.addNewsletter(new NewsletterBuilder()
-                    .jid(Jid.of(newsletterName))
-                    .build());
+            store.addNewNewsletter(Jid.of(newsletterName));
         }
     }
 
@@ -424,9 +421,9 @@ abstract class FileControllerSerializer implements ControllerSerializer {
     }
 
     private void attributeStoreContextInfo(Store store, ContextInfo contextInfo) {
-        contextInfo.quotedMessageChatJid()
+        contextInfo.quotedMessageParentJid()
                 .flatMap(store::findChatByJid)
-                .ifPresent(contextInfo::setQuotedMessageChat);
+                .ifPresent(contextInfo::setQuotedMessageParent);
         contextInfo.quotedMessageSenderJid()
                 .flatMap(store::findContactByJid)
                 .ifPresent(contextInfo::setQuotedMessageSender);

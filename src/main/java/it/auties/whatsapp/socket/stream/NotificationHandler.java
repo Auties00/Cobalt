@@ -51,8 +51,6 @@ final class NotificationHandler extends NodeHandler.Dispatcher {
 
     @Override
     void execute(Node node) {
-        var from = node.attributes()
-                .getRequiredJid("from");
         try {
             var type = node.attributes().getString("type", null);
             switch (type) {
@@ -63,15 +61,17 @@ final class NotificationHandler extends NodeHandler.Dispatcher {
                 case "picture" -> handlePictureNotification(node);
                 case "registration" -> handleRegistrationNotification(node);
                 case "link_code_companion_reg" -> handleCompanionRegistration(node);
-                case "newsletter" -> handleNewsletter(from, node);
+                case "newsletter" -> handleNewsletter(node);
                 case "mex" -> handleMexNamespace(node);
             }
         } finally {
-            socketConnection.sendMessageAck(from, node);
+            socketConnection.sendAck(node);
         }
     }
 
-    private void handleNewsletter(Jid newsletterJid, Node node) {
+    private void handleNewsletter(Node node) {
+        var newsletterJid = node.attributes()
+                .getRequiredJid("from");
         var newsletter = socketConnection.store()
                 .findNewsletterByJid(newsletterJid);
         if (newsletter.isEmpty()) {
@@ -446,16 +446,12 @@ final class NotificationHandler extends NodeHandler.Dispatcher {
     }
 
     private void handleServerSyncNotification(Node node) {
-        if(!socketConnection.keys().initialAppSync()) {
-            return;
-        }
-
         var patches = node.listChildren("collection")
                 .stream()
                 .map(entry -> entry.attributes().getRequiredString("name"))
                 .map(PatchType::of)
                 .toArray(PatchType[]::new);
-        socketConnection.pullPatch(patches);
+        socketConnection.pullPatch(false, patches);
     }
 
 

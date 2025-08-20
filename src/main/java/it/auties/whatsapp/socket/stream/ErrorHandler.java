@@ -16,7 +16,7 @@ final class ErrorHandler extends NodeHandler.Dispatcher {
     private final AtomicBoolean retriedConnection;
 
     ErrorHandler(SocketConnection socketConnection) {
-        super(socketConnection, "error");
+        super(socketConnection, "stream:error");
         this.retriedConnection = new AtomicBoolean(false);
     }
 
@@ -47,7 +47,7 @@ final class ErrorHandler extends NodeHandler.Dispatcher {
                 var type = child.attributes().getString("type");
                 var reason = child.attributes().getString("reason", type);
                 if (!Objects.equals(reason, "device_removed")) {
-                    socketConnection.handleFailure(STREAM, new RuntimeException(reason));
+                    socketConnection.handleFailure(STREAM, new SessionConflictException());
                 } else {
                     socketConnection.disconnect(WhatsappDisconnectReason.LOGGED_OUT);
                 }

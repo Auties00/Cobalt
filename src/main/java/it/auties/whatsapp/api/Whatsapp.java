@@ -1534,13 +1534,20 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public ChatMessageInfo markMessagePlayed(ChatMessageInfo info) {
-        if (store().findPrivacySetting(PrivacySettingType.READ_RECEIPTS).value() != PrivacySettingValue.EVERYONE) {
-            return info;
+    public void markMessagePlayed(ChatMessageInfo info) {
+        if(info.senderJid().hasServer(JidServer.newsletter())) {
+            return;
         }
-        socketConnection.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.id()), "played");
+
+        var policy = store()
+                .findPrivacySetting(PrivacySettingType.READ_RECEIPTS)
+                .value();
+        if(policy != PrivacySettingValue.EVERYONE) {
+            return;
+        }
+
+        sendMessageReceipt(info, "played");
         info.setStatus(MessageStatus.PLAYED);
-        return info;
     }
 
     /**
@@ -1677,18 +1684,37 @@ public class Whatsapp {
      * @param info the target message
      * @return a CompletableFuture
      */
-    public ChatMessageInfo markMessageRead(ChatMessageInfo info) {
-        var type = store().findPrivacySetting(PrivacySettingType.READ_RECEIPTS)
-                .value() == PrivacySettingValue.EVERYONE ? "read" : "read-self";
-        socketConnection.sendReceipt(info.chatJid(), info.senderJid(), List.of(info.id()), type);
-        info.chat().ifPresent(chat -> {
-            var count = chat.unreadMessagesCount();
-            if (count > 0) {
-                chat.setUnreadMessagesCount(count - 1);
-            }
-        });
+    public void markMessageRead(MessageInfo info) {
+        var policy = store()
+                .findPrivacySetting(PrivacySettingType.READ_RECEIPTS)
+                .value();
+        var type = !info.senderJid().hasServer(JidServer.newsletter()) && policy == PrivacySettingValue.EVERYONE
+                ? "read"
+                : "read-self";
+        sendMessageReceipt(info, type);
         info.setStatus(MessageStatus.READ);
-        return info;
+    }
+
+    private void sendMessageReceipt(MessageInfo info, String type) {
+        var attributes = new  HashMap<String, Object>();
+
+        var id = info.id();
+        attributes.put("id", id);
+
+        attributes.put("type", type);
+        var parentJid = info.parentJid();
+
+        attributes.put("to", parentJid);
+
+        var timestamp = Clock.nowSeconds();
+        attributes.put("t", timestamp);
+
+        var senderJid = info.senderJid();
+        if(!Objects.equals(parentJid.user(), senderJid.user()) && !senderJid.hasServer(JidServer.lid())) {
+            attributes.put("participant", senderJid.withoutData());
+        }
+
+        socketConnection.sendNodeWithNoResponse(Node.of("receipt", attributes));
     }
     //</editor-fold>  
 

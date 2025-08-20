@@ -30,11 +30,6 @@ final class ReceiptHandler extends NodeHandler.Dispatcher {
     void execute(Node node) {
         var senderJid = node.attributes()
                 .getRequiredJid("from");
-        updateReceipt(node, senderJid);
-        socketConnection.sendMessageAck(senderJid, node);
-    }
-
-    private void updateReceipt(Node node, Jid senderJid) {
         getReceiptsMessageIds(node).forEachOrdered(messageId -> {
             var message = socketConnection.store().findMessageById(senderJid, messageId);
             if (message.isEmpty()) {
@@ -47,6 +42,7 @@ final class ReceiptHandler extends NodeHandler.Dispatcher {
                 default -> throw new IllegalStateException("Unexpected value: " + message.get());
             }
         });
+        socketConnection.sendAck(node);
     }
 
     private void updateChatReceipt(Node node, Jid chatJid, ChatMessageInfo message) {

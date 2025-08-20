@@ -6,15 +6,16 @@ import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
 import it.auties.whatsapp.api.WhatsappTextPreviewPolicy;
-import it.auties.whatsapp.crypto.*;
+import it.auties.whatsapp.crypto.Hkdf;
+import it.auties.whatsapp.crypto.SignalSession;
 import it.auties.whatsapp.model.action.ContactActionBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredFourRowTemplate;
 import it.auties.whatsapp.model.button.template.hydrated.HydratedFourRowTemplate;
 import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatEphemeralTimer;
-import it.auties.whatsapp.model.chat.GroupOrCommunityMetadata;
 import it.auties.whatsapp.model.chat.ChatParticipant;
+import it.auties.whatsapp.model.chat.GroupOrCommunityMetadata;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactStatus;
 import it.auties.whatsapp.model.info.*;
@@ -44,10 +45,7 @@ import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
 import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
 import it.auties.whatsapp.model.signal.sender.SenderKeyName;
-import it.auties.whatsapp.model.sync.HistorySync;
-import it.auties.whatsapp.model.sync.HistorySyncNotification;
-import it.auties.whatsapp.model.sync.HistorySyncSpec;
-import it.auties.whatsapp.model.sync.PushName;
+import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.socket.SocketConnection;
 import it.auties.whatsapp.util.*;
 
@@ -367,8 +365,7 @@ public final class MessageComponent {
                     && interactiveMessage.header().get().attachment().isPresent()
                     && interactiveMessage.header().get().attachment().get() instanceof MediaMessage interactiveMedia ->
                     attributeMediaMessage(chatJid, interactiveMedia);
-            default -> {
-            }
+            default -> {}
         }
     }
 
@@ -869,7 +866,10 @@ public final class MessageComponent {
                     .orElseThrow(() -> new NoSuchElementException("Missing from"));
             var messageId = messageNode.attributes()
                     .getRequiredString("id");
-            sendPlainMessageSuccessReceipt(messageNode, notify, newsletterJid, messageId);
+            if(notify) {
+                socketConnection.sendAck(messageNode);
+                socketConnection.sendReceipt(messageId, newsletterJid, null, false);
+            }
 
             var newsletter = socketConnection.store()
                     .findNewsletterByJid(newsletterJid);
@@ -937,7 +937,10 @@ public final class MessageComponent {
                     .orElseThrow(() -> new NoSuchElementException("Missing from"));
             var isSender = messageNode.attributes()
                     .getBoolean("is_sender");
-            sendPlainMessageSuccessReceipt(messageNode, notify, newsletterJid, messageId);
+            if(notify) {
+                socketConnection.sendAck(messageNode);
+                socketConnection.sendReceipt(messageId, newsletterJid, null, false);
+            }
 
             var newsletter = socketConnection.store()
                     .findNewsletterByJid(newsletterJid);
@@ -994,7 +997,8 @@ public final class MessageComponent {
                     .id(id);
             if (from.hasServer(JidServer.user()) || from.hasServer(JidServer.legacyUser())) {
                 var recipient = infoNode.attributes()
-                        .getOptionalJid("recipient")
+                        .getOptionalJid("recipient_pn")
+                        .or(() -> infoNode.attributes().getOptionalJid("recipient"))
                         .orElse(from);
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
@@ -1013,8 +1017,8 @@ public final class MessageComponent {
                 keyBuilder.fromMe(Objects.equals(senderJid.withoutData(), selfJid.withoutData()));
             } else if(from.hasServer(JidServer.groupOrCommunity()) || from.hasServer(JidServer.broadcast()) || from.hasServer(JidServer.newsletter())) {
                 var participant = infoNode.attributes()
-                        .getOptionalJid("participant")
-                        .or(() -> infoNode.attributes().getOptionalJid("sender_pn"))
+                        .getOptionalJid("participant_pn")
+                        .or(() -> infoNode.attributes().getOptionalJid("participant"))
                         .orElseThrow(() -> new NoSuchElementException("Missing sender"));
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
@@ -1024,7 +1028,10 @@ public final class MessageComponent {
                 throw new RuntimeException("Unknown jid server: " + from.server());
             }
             chatMessageKey = keyBuilder.build();
-            if (selfJid.equals(chatMessageKey.senderJid().orElse(null))) {
+
+            var senderJid = chatMessageKey.senderJid()
+                    .orElseThrow(() -> new InternalError("Missing sender"));
+            if (selfJid.equals(senderJid)) {
                 return;
             }
 
@@ -1056,10 +1063,13 @@ public final class MessageComponent {
         } catch (Throwable throwable) {
             socketConnection.handleFailure(MESSAGE, throwable);
         }finally {
+            socketConnection.sendAck(infoNode);
             if(chatMessageKey != null) {
-                sendEncMessageSuccessReceipt(
-                        infoNode,
-                        chatMessageKey
+                socketConnection.sendReceipt(
+                        chatMessageKey.id(),
+                        chatMessageKey.chatJid(),
+                        chatMessageKey.senderJid().orElse(null),
+                        chatMessageKey.fromMe()
                 );
             }
         }
@@ -1077,48 +1087,6 @@ public final class MessageComponent {
         }
 
         return decodeMessageBytes(messageKey, type, encodedMessage.get());
-    }
-
-    private void sendEncMessageSuccessReceipt(Node infoNode, ChatMessageKey key) {
-        socketConnection.sendMessageAck(key.chatJid(), infoNode);
-        if (!socketConnection.store().automaticMessageReceipts()) {
-            return;
-        }
-
-        var participant = key.fromMe() && key.senderJid().isEmpty() ? key.chatJid() : key.senderJid().get();
-        var category = infoNode.attributes().getString("category");
-        var receiptType = getReceiptType(category, key.fromMe());
-        socketConnection.sendReceipt(key.chatJid(), participant, List.of(key.id()), receiptType);
-    }
-
-    private void sendPlainMessageSuccessReceipt(Node messageNode, boolean notify, Jid newsletterJid, String messageId) {
-        if (!notify) {
-            return;
-        }
-
-        socketConnection.sendMessageAck(newsletterJid, messageNode);
-        if (!socketConnection.store().automaticMessageReceipts()) {
-            return;
-        }
-
-        var receiptType = getReceiptType("newsletter", false);
-        socketConnection.sendReceipt(newsletterJid, null, List.of(messageId), receiptType);
-    }
-
-    private String getReceiptType(String category, boolean fromMe) {
-        if (Objects.equals(category, "peer")) {
-            return "peer_msg";
-        }
-
-        if (fromMe) {
-            return "sender";
-        }
-
-        if (!socketConnection.store().online()) {
-            return "inactive";
-        }
-
-        return null;
     }
 
     private MessageContainer decodeMessageBytes(ChatMessageKey messageKey, String type, byte[] encodedMessage) {
@@ -1250,7 +1218,7 @@ public final class MessageComponent {
                 .orElseThrow(() -> new IllegalStateException("The session isn't connected"));
         socketConnection.keys()
                 .addAppKeys(self, data.keys());
-        socketConnection.pullInitialPatches();
+        socketConnection.pullPatch(true, PatchType.values());
     }
 
     private void onHistorySyncNotification(ChatMessageInfo info, ProtocolMessage protocolMessage) {
@@ -1261,7 +1229,7 @@ public final class MessageComponent {
         } catch (Throwable throwable) {
             socketConnection.handleFailure(HISTORY_SYNC, throwable);
         } finally {
-            socketConnection.sendReceipt(info.chatJid(), null, List.of(info.id()), "hist_sync");
+            socketConnection.sendReceipt(info.id(), info.chatJid(), "hist_sync");
         }
     }
 
@@ -1349,6 +1317,8 @@ public final class MessageComponent {
             socketConnection.store().addStatus(messageInfo);
         }
         socketConnection.onStatus();
+        socketConnection.store()
+                .setSyncedStatus(true);
     }
 
     private void handlePushNames(HistorySync history) {
@@ -1356,6 +1326,8 @@ public final class MessageComponent {
             handNewPushName(pushName);
         }
         socketConnection.onContacts();
+        socketConnection.store()
+                .setSyncedContacts(true);
     }
 
     private void handNewPushName(PushName pushName) {
@@ -1393,6 +1365,8 @@ public final class MessageComponent {
 
         handleConversations(history);
         socketConnection.onChats();
+        socketConnection.store()
+                .setSyncedChats(true);
     }
 
     private void handleChatsSync(HistorySync history, boolean recent) {
@@ -1491,13 +1465,21 @@ public final class MessageComponent {
 
     private void attributeContext(ContextInfo contextInfo) {
         contextInfo.quotedMessageSenderJid().ifPresent(senderJid -> attributeContextSender(contextInfo, senderJid));
-        contextInfo.quotedMessageChatJid().ifPresent(chatJid -> attributeContextChat(contextInfo, chatJid));
+        contextInfo.quotedMessageParentJid().ifPresent(parentJid -> attributeContextParent(contextInfo, parentJid));
     }
 
-    private void attributeContextChat(ContextInfo contextInfo, Jid chatJid) {
-        var chat = socketConnection.store().findChatByJid(chatJid)
-                .orElseGet(() -> socketConnection.store().addNewChat(chatJid));
-        contextInfo.setQuotedMessageChat(chat);
+    private void attributeContextParent(ContextInfo contextInfo, Jid parentJid) {
+        if(parentJid.hasServer(JidServer.newsletter())) {
+            var newsletter = socketConnection.store()
+                    .findNewsletterByJid(parentJid)
+                    .orElseGet(() -> socketConnection.store().addNewNewsletter(parentJid));
+            contextInfo.setQuotedMessageParent(newsletter);
+        }else {
+            var chat = socketConnection.store()
+                    .findChatByJid(parentJid)
+                    .orElseGet(() -> socketConnection.store().addNewChat(parentJid));
+            contextInfo.setQuotedMessageParent(chat);
+        }
     }
 
     private void attributeContextSender(ContextInfo contextInfo, Jid senderJid) {

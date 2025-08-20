@@ -1,6 +1,5 @@
 package it.auties.whatsapp.api;
 
-import it.auties.whatsapp.exception.HmacValidationException;
 import it.auties.whatsapp.exception.MalformedNodeException;
 import it.auties.whatsapp.exception.SessionBadMacException;
 import it.auties.whatsapp.exception.SessionConflictException;
@@ -97,9 +96,8 @@ public interface WhatsappErrorHandler {
      */
     private static boolean isCriticalError(Location location, Throwable throwable) {
         return location == LOGIN // Can't log in
-                || location == INITIAL_APP_STATE_SYNC // Web app state sync failed
+                || location == INITIAL_WEB_APP_STATE_SYNC // Web app state sync failed
                 || location == CRYPTOGRAPHY // Can't encrypt/decrypt a node
-                || (location == MESSAGE && throwable instanceof HmacValidationException) // Can't validate the HMAC of a message
                 || (location == STREAM && (throwable instanceof SessionConflictException || throwable instanceof SessionBadMacException || throwable instanceof MalformedNodeException)); // Something went wrong in the stream
     }
 
@@ -129,23 +127,23 @@ public interface WhatsappErrorHandler {
          */
         STREAM,
         /**
+         * Called when an error is thrown while pulling initial app data
+         */
+        INITIAL_WEB_APP_STATE_SYNC,
+        /**
          * Called when an error is thrown while pulling app data
          */
-        PULL_APP_STATE,
+        PULL_WEB_APP_STATE,
         /**
          * Called when an error is thrown while pushing app data
          */
-        PUSH_APP_STATE,
-        /**
-         * Called when an error is thrown while pulling initial app data
-         */
-        INITIAL_APP_STATE_SYNC,
+        PUSH_WEB_APP_STATE,
         /**
          * Called when an error occurs when serializing or deserializing a Whatsapp message
          */
         MESSAGE,
         /**
-         * Called when syncing messages after first QR scan
+         * Called when syncing messages afte
          */
         HISTORY_SYNC,
         /**

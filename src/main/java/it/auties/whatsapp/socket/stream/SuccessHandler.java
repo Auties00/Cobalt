@@ -7,6 +7,7 @@ import it.auties.whatsapp.model.media.MediaConnection;
 import it.auties.whatsapp.model.node.Attributes;
 import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.socket.SocketConnection;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
@@ -44,10 +45,14 @@ final class SuccessHandler extends NodeHandler.Dispatcher {
 
     private void finishWebLogin() {
         try {
-            if (socketConnection.keys().initialAppSync()) {
-                notifyStore();
-            } else {
+            notifyStore();
+            if(!socketConnection.store().syncedChats()) {
                 socketConnection.queryGroups();
+            }
+            if(socketConnection.keys().hasPreKeys() && !socketConnection.store().syncedWebAppState()) {
+                socketConnection.pullPatch(true, PatchType.values());
+                socketConnection.store()
+                        .setSyncedWebAppState(true);
             }
             setActiveConnection();
             sendInitialPreKeys();
@@ -59,6 +64,10 @@ final class SuccessHandler extends NodeHandler.Dispatcher {
             queryInitialDisappearingMode();
             queryInitialBlockList();
             onInitialInfo();
+            if(!socketConnection.store().syncedNewsletters()) {
+                socketConnection.queryNewsletters();
+                socketConnection.onNewsletters();
+            }
         } catch (Exception throwable) {
             socketConnection.handleFailure(LOGIN, throwable);
         }
@@ -70,9 +79,18 @@ final class SuccessHandler extends NodeHandler.Dispatcher {
                 socketConnection.store()
                         .serializer()
                         .finishDeserializeStore(socketConnection.store());
-                socketConnection.onChats();
-                socketConnection.onContacts();
-                socketConnection.onNewsletters();
+                if(socketConnection.store().syncedChats()) {
+                    socketConnection.onChats();
+                }
+                if(socketConnection.store().syncedContacts()) {
+                    socketConnection.onContacts();
+                }
+                if(socketConnection.store().syncedNewsletters()) {
+                    socketConnection.onNewsletters();
+                }
+                if(socketConnection.store().syncedStatus()) {
+                    socketConnection.onStatus();
+                }
             } catch (Exception exception) {
                 socketConnection.handleFailure(LOGIN, exception);
             }
@@ -93,7 +111,7 @@ final class SuccessHandler extends NodeHandler.Dispatcher {
 
     private void finishMobileLogin() {
         try {
-            if (!socketConnection.keys().initialAppSync()) {
+            if (!socketConnection.store().syncedChats()) {
                 socketConnection.store()
                         .jid()
                         .map(Jid::withoutData)
@@ -125,7 +143,11 @@ final class SuccessHandler extends NodeHandler.Dispatcher {
                 initMobileSessionPresence(true);
                 getInviteSender();
                 queryMobileSessionInitMex();
-                socketConnection.keys().setInitialAppSync(true);
+                socketConnection.queryNewsletters();
+                socketConnection.store().setSyncedChats(true);
+                socketConnection.store().setSyncedContacts(true);
+                socketConnection.store().setSyncedNewsletters(true);
+                socketConnection.store().setSyncedStatus(true);
                 socketConnection.disconnect(WhatsappDisconnectReason.RECONNECTING);
             }else {
                 notifyStore();
@@ -348,12 +370,8 @@ final class SuccessHandler extends NodeHandler.Dispatcher {
             return;
         }
 
-        try {
-            socketConnection.sendNodeWithNoResponse(Node.of("presence", Map.of("name", socketConnection.store().name(), "type", "available")));
-            onPresenceUpdated();
-        } catch (Exception exception) {
-            socketConnection.handleFailure(STREAM, exception);
-        }
+        socketConnection.sendNodeWithNoResponse(Node.of("presence", Map.of("name", socketConnection.store().name(), "type", "available")));
+        onPresenceUpdated();
     }
 
     private void onPresenceUpdated() {

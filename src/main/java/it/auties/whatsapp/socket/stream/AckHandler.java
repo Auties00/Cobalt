@@ -44,14 +44,9 @@ final class AckHandler extends NodeHandler.Dispatcher {
 
         if (error != 0) {
             match.setStatus(MessageStatus.ERROR);
-            return;
+        }else if (match.status() == MessageStatus.UNKNOWN || match.status().ordinal() < MessageStatus.SERVER_ACK.ordinal()) {
+            match.setStatus(MessageStatus.SERVER_ACK);
         }
-
-        if (match.status().ordinal() >= MessageStatus.SERVER_ACK.ordinal()) {
-            return;
-        }
-
-        match.setStatus(MessageStatus.SERVER_ACK);
     }
 
     private void digestCallAck(Node node) {

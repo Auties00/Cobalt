@@ -12,6 +12,10 @@ import java.util.Optional;
 @ProtobufEnum
 public enum MessageStatus {
     /**
+     * Unknown status (used as a default value)
+     */
+    UNKNOWN(999),
+    /**
      * Erroneous status(no ticks)
      */
     ERROR(0),

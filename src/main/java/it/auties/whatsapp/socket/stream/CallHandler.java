@@ -13,9 +13,7 @@ final class CallHandler extends NodeHandler.Dispatcher {
 
     @Override
     void execute(Node node) {
-        var from = node.attributes()
-                .getRequiredJid("from");
-        socketConnection.sendMessageAck(from, node);
+        socketConnection.sendAck(node);
         var callNode = node.children().peekFirst();
         if (callNode == null) {
             return;
@@ -25,6 +23,8 @@ final class CallHandler extends NodeHandler.Dispatcher {
             return;
         }
 
+        var from = node.attributes()
+                .getRequiredJid("from");
         var callId = callNode.attributes()
                 .getString("call-id");
         var caller = callNode.attributes()

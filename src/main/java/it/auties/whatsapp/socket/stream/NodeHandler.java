@@ -7,6 +7,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.STREAM;
+
 abstract sealed class NodeHandler {
     protected final SocketConnection socketConnection;
     private final Set<String> descriptions;
@@ -53,7 +55,13 @@ abstract sealed class NodeHandler {
 
         @Override
         final void handle(Node node) {
-            Thread.startVirtualThread(() -> execute(node));
+            Thread.startVirtualThread(() -> {
+                try {
+                    execute(node);
+                }catch (Throwable throwable) {
+                    socketConnection.handleFailure(STREAM, throwable);
+                }
+            });
         }
 
         @Override

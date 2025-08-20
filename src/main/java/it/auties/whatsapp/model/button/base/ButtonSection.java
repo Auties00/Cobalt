@@ -6,6 +6,7 @@ import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A model class that represents a section of buttons
@@ -19,12 +20,12 @@ public final class ButtonSection {
     final List<ButtonRow> rows;
 
     ButtonSection(String title, List<ButtonRow> rows) {
-        this.title = Objects.requireNonNull(title, "title cannot be null");
+        this.title = title;
         this.rows = Objects.requireNonNullElse(rows, List.of());
     }
 
-    public String title() {
-        return title;
+    public Optional<String> title() {
+        return Optional.ofNullable(title);
     }
 
     public List<ButtonRow> rows() {

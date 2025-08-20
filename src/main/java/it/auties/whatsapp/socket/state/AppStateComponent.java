@@ -62,16 +62,6 @@ public final class AppStateComponent {
         if (clientType == WhatsappClientType.WEB) {
             pull(jid, getPatchesTypes(patches));
         }
-        sendPush(jid, patches, clientType != WhatsappClientType.MOBILE);
-    }
-
-    private Set<PatchType> getPatchesTypes(List<PatchRequest> patches) {
-        return patches.stream()
-                .map(PatchRequest::type)
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    private void sendPush(Jid jid, List<PatchRequest> patches, boolean readPatches) {
         try {
             pushSemaphore.acquire();
             var requests = patches.stream()
@@ -87,12 +77,18 @@ public final class AppStateComponent {
             var sync = Node.of("sync", syncAttributes, body);
             var resultNode = socketConnection.sendQuery("set", "w:sync:app:state", sync);
             parseSyncRequest(resultNode);
-            onPush(jid, requests, readPatches);
+            onPush(jid, requests, clientType != WhatsappClientType.MOBILE);
         } catch (Throwable throwable) {
-            socketConnection.handleFailure(PUSH_APP_STATE, throwable);
+            socketConnection.handleFailure(PUSH_WEB_APP_STATE, throwable);
         } finally {
             pushSemaphore.release();
         }
+    }
+
+    private Set<PatchType> getPatchesTypes(List<PatchRequest> patches) {
+        return patches.stream()
+                .map(PatchRequest::type)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private PushRequest createPushRequest(Jid jid, PatchRequest request) {
@@ -199,7 +195,7 @@ public final class AppStateComponent {
         });
     }
 
-    public void pull(PatchType... patchTypes) {
+    public void pull(boolean initial, PatchType... patchTypes) {
         if (patchTypes == null || patchTypes.length == 0) {
             return;
         }
@@ -211,60 +207,13 @@ public final class AppStateComponent {
 
         try {
             var success = pull(jid.get(), Set.of(patchTypes));
-            onPull(false, success);
+            if(success) {
+                attempts.clear();
+            }
         } catch (Throwable exception) {
-            onPullError(false, exception);
+            attempts.clear();
+            socketConnection.handleFailure(initial ? INITIAL_WEB_APP_STATE_SYNC : PULL_WEB_APP_STATE, exception);
         }
-    }
-
-    public void pullInitial() {
-        if (socketConnection.keys().initialAppSync()) {
-            return;
-        }
-
-        var jid = socketConnection.store().jid();
-        if (jid.isPresent()) {
-            try {
-                var success = pull(jid.get(), Set.of(PatchType.values()));
-                onPull(true, success);
-            } catch (Throwable exception) {
-                onPullError(true, exception);
-            }
-        }
-    }
-
-    private void onPull(boolean initial, boolean success) {
-        if (!socketConnection.keys().initialAppSync()) {
-            var result = (initial && success) || isSyncComplete();
-            if(result) {
-                socketConnection.keys().setInitialAppSync(true);
-                socketConnection.queryNewsletters();
-            }
-        }
-
-        attempts.clear();
-    }
-
-    private boolean isSyncComplete() {
-        return Arrays.stream(PatchType.values())
-                .allMatch(this::isSyncComplete);
-    }
-
-    private boolean isSyncComplete(PatchType entry) {
-        var jid = socketConnection.store().jid();
-        return jid.isPresent() && socketConnection.keys()
-                .findHashStateByName(jid.get(), entry)
-                .filter(type -> type.version() > 0)
-                .isPresent();
-    }
-
-    private void onPullError(boolean initial, Throwable exception) {
-        attempts.clear();
-        if (initial) {
-            socketConnection.handleFailure(INITIAL_APP_STATE_SYNC, exception);
-            return;
-        }
-        socketConnection.handleFailure(PULL_APP_STATE, exception);
     }
 
     private boolean pull(Jid jid, Set<PatchType> patchTypes) {

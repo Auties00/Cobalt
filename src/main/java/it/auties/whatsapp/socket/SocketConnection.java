@@ -7,7 +7,6 @@ import it.auties.whatsapp.api.WhatsappVerificationHandler.Web.PairingCode;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.crypto.PairingCodeSession;
-import it.auties.whatsapp.socket.io.NodeDecoder;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
@@ -42,11 +41,13 @@ import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
+import it.auties.whatsapp.socket.io.NodeDecoder;
 import it.auties.whatsapp.socket.message.MessageComponent;
 import it.auties.whatsapp.socket.state.AppStateComponent;
 import it.auties.whatsapp.socket.stream.StreamComponent;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
+import it.auties.whatsapp.util.MetaBots;
 import it.auties.whatsapp.util.Streams;
 
 import java.net.URI;
@@ -269,12 +270,8 @@ public final class SocketConnection {
         appStateHandler.push(jid, List.of(request));
     }
 
-    public void pullPatch(PatchType... patchTypes) {
-        appStateHandler.pull(patchTypes);
-    }
-
-    public void pullInitialPatches() {
-        appStateHandler.pullInitial();
+    public void pullPatch(boolean initial, PatchType... patchTypes) {
+        appStateHandler.pull(initial, patchTypes);
     }
 
     public void decodeMessage(Node node, JidProvider chatOverride, boolean notify) {
@@ -441,38 +438,32 @@ public final class SocketConnection {
     }
 
     public void queryNewsletters() {
-        try {
-            var request = NewsletterRequests.subscribedNewsletters();
-            var result = sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), request));
-            if (!store().webHistorySetting().hasNewsletters()) {
-                return;
-            }
+        var request = NewsletterRequests.subscribedNewsletters();
+        var result = sendQuery("get", "w:mex", Node.of("query", Map.of("query_id", "6388546374527196"), request));
+        if (!store().webHistorySetting().hasNewsletters()) {
+            return;
+        }
 
-            var newslettersPayload = result.findChild("result")
-                    .flatMap(Node::contentAsString);
-            if (newslettersPayload.isEmpty()) {
-                return;
-            }
+        var newslettersPayload = result.findChild("result")
+                .flatMap(Node::contentAsString);
+        if (newslettersPayload.isEmpty()) {
+            return;
+        }
 
-            SubscribedNewslettersResponse.ofJson(newslettersPayload.get()).ifPresent(response -> {
-                var noMessages = store().webHistorySetting().isZero();
-                var data = response.newsletters();
-                for (var newsletter : data) {
-                    store().addNewsletter(newsletter);
-                    if (!noMessages) {
-                        try {
-                            queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES);
-                        } catch (Throwable throwable) {
-                            handleFailure(MESSAGE, throwable);
-                        }
+        SubscribedNewslettersResponse.ofJson(newslettersPayload.get()).ifPresent(response -> {
+            var noMessages = store().webHistorySetting().isZero();
+            var data = response.newsletters();
+            for (var newsletter : data) {
+                store().addNewsletter(newsletter);
+                if (!noMessages) {
+                    try {
+                        queryNewsletterMessages(newsletter, DEFAULT_NEWSLETTER_MESSAGES);
+                    } catch (Throwable throwable) {
+                        handleFailure(MESSAGE, throwable);
                     }
                 }
-
-                onNewsletters();
-            });
-        }catch (Throwable throwable) {
-            handleFailure(HISTORY_SYNC, throwable);
-        }
+            }
+        });
     }
 
     public void queryGroups() {
@@ -633,66 +624,71 @@ public final class SocketConnection {
         return sendQuery(null, to, method, category, null, body);
     }
 
-    public void sendReceipt(Jid jid, Jid participant, List<String> messages, String type) {
-        if (messages.isEmpty()) {
-            return;
+    public void sendReceipt(String id, Jid parentJid, Jid senderJid, boolean fromMe) {
+        var attributes = new HashMap<String, Object>();
+
+        attributes.put("id", id);
+
+        if(fromMe) {
+            attributes.put("type", "sender");
+        }else if(!store.automaticMessageReceipts()){
+            attributes.put("type", "inactive");
         }
 
-        if(jid.hasServer(JidServer.bot())
-                || (participant != null && participant.hasServer(JidServer.bot()))) {
-            // TODO: Implement BOT
-            return;
+        if(parentJid.hasServer(JidServer.groupOrCommunity())) {
+            attributes.put("to", parentJid);
+            attributes.put("participant", senderJid);
+        }else if(fromMe) {
+            attributes.put("to", parentJid);
+            attributes.put("recipient", senderJid);
+        } else {
+            attributes.put("to", senderJid);
         }
 
-        var attributes = Attributes.of()
-                .put("id", messages.getFirst())
-                .put("t", Clock.nowMilliseconds(), () -> Objects.equals(type, "read") || Objects.equals(type, "read-self"))
-                .put("to", jid.withAgent(0))
-                .put("type", type, Objects::nonNull);
-        if (Objects.equals(type, "sender") && jid.hasServer(JidServer.user())) {
-            Objects.requireNonNull(participant);
-            attributes.put("recipient", jid.withAgent(0));
-            attributes.put("to", participant.withAgent(0));
-        }
-
-        var receipt = Node.of("receipt", attributes.toMap(), toMessagesNode(messages));
-        sendNodeWithNoResponse(receipt);
+        sendNodeWithNoResponse(Node.of("receipt", attributes));
     }
 
-    private List<Node> toMessagesNode(List<String> messages) {
-        if (messages.size() <= 1) {
-            return null;
-        }
-        return messages.subList(1, messages.size())
-                .stream()
-                .map(id -> Node.of("item", Map.of("id", id)))
-                .toList();
-    }
-
-    public void sendMessageAck(Jid from, Node node) {
-        var attrs = node.attributes();
-        var type = attrs.getOptionalString("type")
-                .filter(entry -> !Objects.equals(entry, "message"))
+    public void sendReceipt(String id, Jid from, String type) {
+        var me = store.jid()
                 .orElse(null);
-        var participant = attrs.getOptionalJid("participant")
-                .orElse(null);
-        var recipient = attrs.getOptionalJid("recipient")
-                .orElse(null);
-        if(from.hasServer(JidServer.bot())
-                || (participant != null && participant.hasServer(JidServer.bot()))
-                || (recipient != null && recipient.hasServer(JidServer.bot()))) {
-            // TODO: Implement BOT
+        if(me == null) {
             return;
         }
 
-        var attributes = Attributes.of()
-                .put("id", node.id())
-                .put("to", from.withAgent(0))
-                .put("class", node.description())
-                .put("participant", participant != null ? participant.withAgent(0) : null, Objects::nonNull)
-                .put("recipient", recipient != null ? recipient.withAgent(0) : null, Objects::nonNull)
-                .put("type", type, Objects::nonNull)
-                .toMap();
+        var attributes = new  HashMap<String, Object>();
+        attributes.put("id", id);
+        attributes.put("type", type);
+        attributes.put("to", from);
+        sendNodeWithNoResponse(Node.of("receipt", attributes));
+    }
+
+    public void sendAck(Node node) {
+        var attributes = new HashMap<String, Object>();
+
+        var ackId = node.id();
+        attributes.put("id", ackId);
+
+        var ackClass = node.description();
+        var isMessage = ackClass.equals("message");
+        attributes.put("class", ackClass);
+
+        var ackTo = node.attributes()
+                .getRequiredJid("from");
+        attributes.put("to", ackTo);
+
+        node.attributes()
+                .getOptionalJid("participant")
+                .map(jid -> jid.hasServer(JidServer.bot()) && isMessage ? MetaBots.translate(jid) : jid)
+                .ifPresent(receiptParticipant -> attributes.put("recipient", receiptParticipant));
+
+        if(!isMessage) {
+            var ackType = node.attributes()
+                    .getNullableString("type");
+            if(ackType != null) {
+                attributes.put("type", ackType);
+            }
+        }
+
         sendNodeWithNoResponse(Node.of("ack", attributes));
     }
 
@@ -931,6 +927,8 @@ public final class SocketConnection {
     }
 
     private void dispose() {
+        store.serialize();
+        keys.serialize();
         streamComponent.dispose();
         messageComponent.dispose();
         appStateHandler.dispose();
@@ -1238,7 +1236,7 @@ public final class SocketConnection {
         return webVerificationHandler;
     }
 
-    public void handle(WhatsappVerificationHandler.Web.PairingCode webHandler) {
+    public void handle(PairingCode webHandler) {
         pairingCodeSession.accept(webHandler);
     }
 

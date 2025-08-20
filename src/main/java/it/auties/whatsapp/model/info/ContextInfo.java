@@ -4,7 +4,6 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.button.base.ButtonActionLink;
-import it.auties.whatsapp.model.chat.Chat;
 import it.auties.whatsapp.model.chat.ChatDisappear;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.jid.Jid;
@@ -42,7 +41,7 @@ public final class ContextInfo implements Info { // TODO: Check me
      * The jid of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
-    final Jid quotedMessageChatJid;
+    final Jid quotedMessageParentJid;
 
     /**
      * A list of the contacts' jids mentioned in this ContextualMessage
@@ -178,15 +177,15 @@ public final class ContextInfo implements Info { // TODO: Check me
     private Contact quotedMessageSender;
 
     /**
-     * The contact that sent the message that this ContextualMessage quotes
+     * The parent who stores the message that this ContextualMessage quotes
      */
-    private Chat quotedMessageChat;
+    private MessageInfoParent quotedMessageParent;
 
-    ContextInfo(String quotedMessageId, Jid quotedMessageSenderJid, MessageContainer quotedMessage, Jid quotedMessageChatJid, List<Jid> mentions, String conversionSource, byte[] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, AdReplyInfo quotedAd, ChatMessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte[] ephemeralSharedSecret, ExternalAdReplyInfo externalAdReply, String entryPointConversionSource, String entryPointConversionApp, int entryPointConversionDelaySeconds, ChatDisappear disappearingMode, ButtonActionLink actionLink, String groupSubject, Jid parentGroup, String trustBannerType, int trustBannerAction) {
+    ContextInfo(String quotedMessageId, Jid quotedMessageSenderJid, MessageContainer quotedMessage, Jid quotedMessageParentJid, List<Jid> mentions, String conversionSource, byte[] conversionData, int conversionDelaySeconds, int forwardingScore, boolean forwarded, AdReplyInfo quotedAd, ChatMessageKey placeholderKey, int ephemeralExpiration, long ephemeralSettingTimestamp, byte[] ephemeralSharedSecret, ExternalAdReplyInfo externalAdReply, String entryPointConversionSource, String entryPointConversionApp, int entryPointConversionDelaySeconds, ChatDisappear disappearingMode, ButtonActionLink actionLink, String groupSubject, Jid parentGroup, String trustBannerType, int trustBannerAction) {
         this.quotedMessageId = quotedMessageId;
         this.quotedMessageSenderJid = quotedMessageSenderJid;
         this.quotedMessage = quotedMessage;
-        this.quotedMessageChatJid = quotedMessageChatJid;
+        this.quotedMessageParentJid = quotedMessageParentJid;
         this.mentions = mentions;
         this.conversionSource = conversionSource;
         this.conversionData = conversionData;
@@ -215,7 +214,7 @@ public final class ContextInfo implements Info { // TODO: Check me
                 .quotedMessageId(quotedMessage.id())
                 .quotedMessageSenderJid(quotedMessage.senderJid())
                 .quotedMessage(quotedMessage.message())
-                .quotedMessageChatJid(quotedMessage.parentJid())
+                .quotedMessageParentJid(quotedMessage.parentJid())
                 .mentions(new ArrayList<>())
                 .build();
     }
@@ -226,7 +225,7 @@ public final class ContextInfo implements Info { // TODO: Check me
                 .quotedMessageId(quotedMessage.id())
                 .quotedMessageSenderJid(quotedMessage.senderJid())
                 .quotedMessage(quotedMessage.message())
-                .quotedMessageChatJid(quotedMessage.parentJid())
+                .quotedMessageParentJid(quotedMessage.parentJid())
                 .mentions(new ArrayList<>())
                 .conversionSource(contextInfo.conversionSource)
                 .conversionData(contextInfo.conversionData)
@@ -276,8 +275,9 @@ public final class ContextInfo implements Info { // TODO: Check me
      *
      * @return an optional
      */
-    public Optional<Jid> quotedMessageChatJid() {
-        return Optional.ofNullable(quotedMessageChatJid).or(this::quotedMessageSenderJid);
+    public Optional<Jid> quotedMessageParentJid() {
+        return Optional.ofNullable(quotedMessageParentJid)
+                .or(this::quotedMessageSenderJid);
     }
 
     /**
@@ -297,7 +297,7 @@ public final class ContextInfo implements Info { // TODO: Check me
     public boolean hasQuotedMessage() {
         return quotedMessageId().isPresent()
                 && quotedMessage().isPresent()
-                && quotedMessageChat().isPresent();
+                && quotedMessageParent().isPresent();
     }
 
     /**
@@ -323,13 +323,13 @@ public final class ContextInfo implements Info { // TODO: Check me
      *
      * @return an optional
      */
-    public Optional<Chat> quotedMessageChat() {
-        return Optional.ofNullable(quotedMessageChat);
+    public Optional<MessageInfoParent> quotedMessageParent() {
+        return Optional.ofNullable(quotedMessageParent);
     }
 
 
-    public void setQuotedMessageChat(Chat quotedMessageChat) {
-        this.quotedMessageChat = quotedMessageChat;
+    public void setQuotedMessageParent(MessageInfoParent quotedMessageParent) {
+        this.quotedMessageParent = quotedMessageParent;
     }
 
     public List<Jid> mentions() {

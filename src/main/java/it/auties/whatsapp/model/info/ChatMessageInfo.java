@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNullElseGet;
  * A model class that holds the information related to a {@link Message}.
  */
 @ProtobufMessage(name = "WebMessageInfo")
-public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo { // TODO: Check me
+public final class ChatMessageInfo implements MessageInfo { // TODO: Check me
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     final ChatMessageKey key;
 
@@ -534,10 +534,28 @@ public final class ChatMessageInfo implements MessageInfo, MessageStatusInfo { /
         this.chat = chat;
     }
 
+    @Override
+    public Optional<MessageInfoParent> parent() {
+        return Optional.ofNullable(chat);
+    }
+
+    @Override
+    public void setParent(MessageInfoParent parent) {
+        if(parent == null) {
+            this.chat = null;
+        }else if(!(parent instanceof Chat parentChat)) {
+            throw new IllegalArgumentException("Parent is not a chat");
+        }else {
+            this.chat = parentChat;
+        }
+    }
+
+    @Override
     public Optional<Contact> sender() {
         return Optional.ofNullable(sender);
     }
 
+    @Override
     public void setSender(Contact sender) {
         this.sender = sender;
     }

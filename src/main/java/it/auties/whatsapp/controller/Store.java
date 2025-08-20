@@ -3,7 +3,10 @@ package it.auties.whatsapp.controller;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.api.*;
+import it.auties.whatsapp.api.WhatsappClientType;
+import it.auties.whatsapp.api.WhatsappListener;
+import it.auties.whatsapp.api.WhatsappTextPreviewPolicy;
+import it.auties.whatsapp.api.WhatsappWebHistoryPolicy;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
 import it.auties.whatsapp.model.chat.Chat;
@@ -13,7 +16,7 @@ import it.auties.whatsapp.model.companion.CompanionDevice;
 import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.contact.ContactBuilder;
 import it.auties.whatsapp.model.info.ChatMessageInfo;
-import it.auties.whatsapp.model.info.MessageStatusInfo;
+import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.NewsletterMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
@@ -23,6 +26,7 @@ import it.auties.whatsapp.model.message.model.ChatMessageKey;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.newsletter.Newsletter;
+import it.auties.whatsapp.model.newsletter.NewsletterBuilder;
 import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
@@ -290,7 +294,41 @@ public final class Store extends Controller {
     @ProtobufProperty(index = 39, type = ProtobufType.BOOL)
     boolean checkPatchMacs;
 
-    Store(UUID uuid, PhoneNumber phoneNumber, WhatsappClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, WhatsappTextPreviewPolicy whatsappTextPreviewPolicy, WhatsappWebHistoryPolicy historyLength, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs) {
+    /**
+     * Whether chats where synced.
+     * On web, this happens through a history sync; on mobile it's always true after bootstrap.
+     */
+    @ProtobufProperty(index = 42, type = ProtobufType.BOOL)
+    boolean syncedChats;
+
+    /**
+     * Whether contact where synced.
+     * On web, this happens through a history sync; on mobile it's always true after bootstrap.
+     */
+    @ProtobufProperty(index = 43, type = ProtobufType.BOOL)
+    boolean syncedContacts;
+
+    /**
+     * Whether newsletters where synced.
+     * On both platforms a w:mex query is used.
+     */
+    @ProtobufProperty(index = 44, type = ProtobufType.BOOL)
+    boolean syncedNewsletters;
+
+    /**
+     * Whether status was synced.
+     * On web, this happens through a history sync; on mobile it's always true after bootstrap.
+     */
+    @ProtobufProperty(index = 45, type = ProtobufType.BOOL)
+    boolean syncedStatus;
+
+    /**
+     * Whether web app state was synced.
+     */
+    @ProtobufProperty(index = 46, type = ProtobufType.BOOL)
+    boolean syncedWebAppState;
+
+    Store(UUID uuid, PhoneNumber phoneNumber, WhatsappClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, WhatsappTextPreviewPolicy whatsappTextPreviewPolicy, WhatsappWebHistoryPolicy historyLength, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs, boolean syncedChats, boolean syncedContacts, boolean syncedNewsletters, boolean syncedStatus, boolean syncedWebAppState) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.proxy = proxy;
         this.online = online;
@@ -330,6 +368,11 @@ public final class Store extends Controller {
         this.releaseChannel = Objects.requireNonNullElse(releaseChannel, ReleaseChannel.RELEASE);
         this.device = device;
         this.checkPatchMacs = checkPatchMacs;
+        this.syncedChats = syncedChats;
+        this.syncedContacts = syncedContacts;
+        this.syncedNewsletters = syncedNewsletters;
+        this.syncedStatus = syncedStatus;
+        this.syncedWebAppState = syncedWebAppState;
     }
 
     public static Store of(UUID uuid, PhoneNumber phoneNumber, Collection<String> alias, WhatsappClientType clientType) {
@@ -424,7 +467,7 @@ public final class Store extends Controller {
      * @param id       the jid to search
      * @return a non-null optional
      */
-    public Optional<? extends MessageStatusInfo> findMessageById(JidProvider provider, String id) {
+    public Optional<? extends MessageInfo> findMessageById(JidProvider provider, String id) {
         if (provider == null || id == null) {
             return Optional.empty();
         }
@@ -720,6 +763,20 @@ public final class Store extends Controller {
     public Contact addContact(Contact contact) {
         contacts.put(contact.jid(), contact);
         return contact;
+    }
+
+    /**
+     * Adds a chat in memory
+     *
+     * @param chatJid the chat to add
+     * @return the input chat
+     */
+    public Newsletter addNewNewsletter(Jid newseltterJid) {
+        var newsletter = new NewsletterBuilder()
+                .jid(newseltterJid)
+                .build();
+        addNewsletter(newsletter);
+        return newsletter;
     }
 
     /**
@@ -1313,6 +1370,46 @@ public final class Store extends Controller {
         this.automaticMessageReceipts = automaticMessageReceipts;
     }
 
+    public boolean syncedChats() {
+        return syncedChats;
+    }
+
+    public void setSyncedChats(boolean syncedChats) {
+        this.syncedChats = syncedChats;
+    }
+
+    public boolean syncedContacts() {
+        return syncedContacts;
+    }
+
+    public void setSyncedContacts(boolean syncedContacts) {
+        this.syncedContacts = syncedContacts;
+    }
+
+    public boolean syncedNewsletters() {
+        return syncedNewsletters;
+    }
+
+    public void setSyncedNewsletters(boolean syncedNewsletters) {
+        this.syncedNewsletters = syncedNewsletters;
+    }
+
+    public boolean syncedStatus() {
+        return syncedStatus;
+    }
+
+    public void setSyncedStatus(boolean syncedStatus) {
+        this.syncedStatus = syncedStatus;
+    }
+
+    public boolean syncedWebAppState() {
+        return syncedWebAppState;
+    }
+
+    public void setSyncedWebAppState(boolean syncedWebAppState) {
+        this.syncedWebAppState = syncedWebAppState;
+    }
+
     @Override
     public boolean equals(Object o) {
         return o instanceof Store store &&
@@ -1350,11 +1447,16 @@ public final class Store extends Controller {
                 whatsappTextPreviewPolicy == store.whatsappTextPreviewPolicy &&
                 Objects.equals(historyLength, store.historyLength) &&
                 releaseChannel == store.releaseChannel &&
-                Objects.equals(device, store.device);
+                Objects.equals(device, store.device) &&
+                syncedChats == store.syncedChats &&
+                syncedContacts == store.syncedContacts &&
+                syncedNewsletters == store.syncedNewsletters &&
+                syncedStatus == store.syncedStatus &&
+                syncedWebAppState == store.syncedWebAppState;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(proxy, version, online, locale, name, verifiedName, businessAddress, businessLongitude, businessLatitude, businessDescription, businessWebsite, businessEmail, businessCategory, deviceHash, linkedDevicesKeys, profilePicture, about, jid, lid, properties, contacts, status, privacySettings, calls, unarchiveChats, twentyFourHourFormat, initializationTimeStamp, newChatsEphemeralTimer, whatsappTextPreviewPolicy, historyLength, automaticPresenceUpdates, automaticMessageReceipts, releaseChannel, device, checkPatchMacs);
+        return Objects.hash(proxy, version, online, locale, name, verifiedName, businessAddress, businessLongitude, businessLatitude, businessDescription, businessWebsite, businessEmail, businessCategory, deviceHash, linkedDevicesKeys, profilePicture, about, jid, lid, properties, contacts, status, privacySettings, calls, unarchiveChats, twentyFourHourFormat, initializationTimeStamp, newChatsEphemeralTimer, whatsappTextPreviewPolicy, historyLength, automaticPresenceUpdates, automaticMessageReceipts, releaseChannel, device, checkPatchMacs, syncedChats, syncedContacts, syncedNewsletters, syncedStatus, syncedWebAppState);
     }
 }
