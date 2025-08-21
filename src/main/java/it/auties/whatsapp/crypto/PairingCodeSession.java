@@ -16,7 +16,7 @@ import java.util.Objects;
 public final class PairingCodeSession {
     private final String pairingKey;
     public PairingCodeSession() {
-        this.pairingKey = Bytes.randomHex(5);
+        this.pairingKey = Bytes.randomHex(8);
     }
 
     public void accept(WhatsappVerificationHandler.Web.PairingCode handler) {
