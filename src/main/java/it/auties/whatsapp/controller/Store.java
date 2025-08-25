@@ -1176,7 +1176,7 @@ public final class Store extends Controller {
     }
 
     public Version version() {
-        return Objects.requireNonNullElseGet(version, () -> version = AppMetadata.getVersion(device.platform(), proxy));
+        return Objects.requireNonNullElseGet(version, () -> version = AppMetadata.getVersion(device.platform()));
     }
 
     public boolean online() {
