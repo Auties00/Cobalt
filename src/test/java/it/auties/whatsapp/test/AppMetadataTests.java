@@ -56,14 +56,14 @@ public class AppMetadataTests {
     }
 
     private static Version getVersion(PlatformType platformType) {
-        return AppMetadata.getVersion(platformType, null);
+        return AppMetadata.getVersion(platformType);
     }
 
     private static String getToken(PlatformType platformType) {
         return AppMetadata.getToken(
                 PHONE_NUMBER_MOCK,
                 platformType,
-                AppMetadata.getVersion(platformType, null)
+                AppMetadata.getVersion(platformType)
         );
     }
 }

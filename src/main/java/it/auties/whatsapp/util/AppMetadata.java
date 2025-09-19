@@ -15,7 +15,6 @@ import net.dongliu.apk.parser.bean.CertificateMeta;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -61,10 +60,10 @@ public final class AppMetadata {
        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
    }
 
-    public static Version getVersion(PlatformType platform, URI proxy) {
+    public static Version getVersion(PlatformType platform) {
         return switch (platform) {
             case WINDOWS, MACOS ->
-                    getWebVersion(proxy);
+                    getWebVersion();
             case ANDROID ->
                     getPersonalAndroidData().version();
             case ANDROID_BUSINESS ->
@@ -76,7 +75,7 @@ public final class AppMetadata {
         };
     }
 
-    private static Version getWebVersion(URI proxy) {
+    private static Version getWebVersion() {
         if (webVersion == null) {
             synchronized (webVersionLock) {
                 if(webVersion == null) {
@@ -160,21 +159,26 @@ public final class AppMetadata {
     }
 
     private static AndroidData downloadAndroidData(boolean business) {
-        HttpsURLConnection connection = null;
-        try {
-            var uri = business ? MOBILE_BUSINESS_ANDROID_URL : MOBILE_PERSONAL_ANDROID_URL;
-            connection = (HttpsURLConnection) uri.toURL().openConnection();
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", MOBILE_ANDROID_USER_AGENT);
-            connection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-            connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
-            connection.setRequestProperty("Sec-Fetch-Dest", "document");
-            connection.setRequestProperty("Sec-Fetch-Mode", "navigate");
-            connection.setRequestProperty("Sec-Fetch-Site", "none");
-            connection.setRequestProperty("Sec-Fetch-User", "?1");
-            // TODO: Can this become an input stream?
-            //       Something like ApkInputStream
-            try (var apkFile = new ByteArrayApkFile(connection.getInputStream().readAllBytes())) {
+        try(var httpClient = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.ALWAYS)
+                .build()) {
+            var request = HttpRequest.newBuilder()
+                    .uri(business ? MOBILE_BUSINESS_ANDROID_URL : MOBILE_PERSONAL_ANDROID_URL)
+                    .GET()
+                    .header("User-Agent", MOBILE_ANDROID_USER_AGENT)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+                    .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Sec-Fetch-Dest", "document")
+                    .header("Sec-Fetch-Mode", "navigate")
+                    .header("Sec-Fetch-Site", "none")
+                    .header("Sec-Fetch-User", "?1")
+                    .build();
+            var response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() != 200) {
+                throw new IOException("HTTP request failed with status code: " + response.statusCode());
+            }
+
+            try (var apkFile = new ByteArrayApkFile(response.body())) {
                 var version = Version.of(apkFile.getApkMeta().getVersionName());
                 var digest = MessageDigest.getInstance("MD5");
                 digest.update(apkFile.getFileData("classes.dex"));
@@ -183,12 +187,8 @@ public final class AppMetadata {
                 var certificates = getCertificates(apkFile);
                 return new AndroidData(version, md5Hash, secretKey, certificates, business);
             }
-        } catch (IOException | GeneralSecurityException exception) {
+        } catch (IOException | GeneralSecurityException | InterruptedException exception) {
             throw new RuntimeException("Cannot extract data from APK", exception);
-        }finally {
-            if(connection != null) {
-                connection.disconnect();
-            }
         }
     }
 
@@ -292,37 +292,38 @@ public final class AppMetadata {
     }
 
     private static Version queryIosVersion(boolean business) {
-        HttpsURLConnection connection = null;
-        try {
-            var uri = business ? MOBILE_BUSINESS_IOS_URL : MOBILE_PERSONAL_IOS_URL;
-            connection = (HttpsURLConnection) uri.toURL().openConnection();
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", MOBILE_IOS_USER_AGENT);
-            try (var inputStream = connection.getInputStream()) {
-                var jsonObject = JSON.parseObject(inputStream);
-                var results = jsonObject.getJSONArray("results");
-                if (results == null || results.isEmpty()) {
-                    return null;
-                }
-
-                var result = results.getJSONObject(0);
-                var version = result.getString("version");
-                if (version == null) {
-                    return null;
-                }
-
-                if (!version.startsWith("2.")) {
-                    version = "2." + version;
-                }
-
-                return Version.of(version);
+        try(var httpClient = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.ALWAYS)
+                .build()) {
+            var request = HttpRequest.newBuilder()
+                    .uri(business ? MOBILE_BUSINESS_IOS_URL : MOBILE_PERSONAL_IOS_URL)
+                    .header("User-Agent", MOBILE_IOS_USER_AGENT)
+                    .GET()
+                    .build();
+            var response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            if (response.statusCode() != 200) {
+                throw new IOException("HTTP request failed with status code: " + response.statusCode());
             }
-        } catch (IOException exception) {
-            throw new RuntimeException("Cannot query ios version", exception);
-        }finally {
-            if(connection != null) {
-                connection.disconnect();
+
+            var jsonObject = JSON.parseObject(response.body());
+            var results = jsonObject.getJSONArray("results");
+            if (results == null || results.isEmpty()) {
+                return null;
             }
+
+            var result = results.getJSONObject(0);
+            var version = result.getString("version");
+            if (version == null) {
+                return null;
+            }
+
+            if (!version.startsWith("2.")) {
+                version = "2." + version;
+            }
+
+            return Version.of(version);
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Cannot query iOS version", e);
         }
     }
 
