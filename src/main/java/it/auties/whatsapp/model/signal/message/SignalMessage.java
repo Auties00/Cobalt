@@ -5,18 +5,23 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
-import it.auties.whatsapp.crypto.Hmac;
+import it.auties.whatsapp.model.signal.key.SignalPublicKey;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
-import static it.auties.whatsapp.util.SignalConstants.*;
+import static it.auties.whatsapp.model.signal.SignalProtocol.CURRENT_VERSION;
 
 @ProtobufMessage(name = "SignalMessage")
 public final class SignalMessage {
-    private int version;
+    private static final Integer MAC_LENGTH = 8;
+
+    private Integer version;
 
     @ProtobufProperty(index = 1, type = ProtobufType.BYTES)
-    final byte[] ephemeralPublicKey;
+    final SignalPublicKey senderRatchetKey;
 
     @ProtobufProperty(index = 2, type = ProtobufType.UINT32)
     final Integer counter;
@@ -27,77 +32,77 @@ public final class SignalMessage {
     @ProtobufProperty(index = 4, type = ProtobufType.BYTES)
     final byte[] ciphertext;
 
-    private byte[] signature;
+    private byte[] mac;
 
-    public static SignalMessage ofSigned(int version, byte[] ephemeralPublicKey, Integer counter, Integer previousCounter, byte[] ciphertext, byte[] identityPublicKey, byte[] signalRemoteIdentityKey, byte[] hmacKey) {
-        if(identityPublicKey == null || identityPublicKey.length != KEY_LENGTH) {
-            throw new IllegalArgumentException("Invalid identityPublicKey");
-        }
-
-        if(signalRemoteIdentityKey == null || signalRemoteIdentityKey.length != KEY_LENGTH + 1 || signalRemoteIdentityKey[0] != KEY_TYPE) {
-            throw new IllegalArgumentException("Invalid signalRemoteIdentityKey");
-        }
-
-        var message = new SignalMessage(ephemeralPublicKey, counter, previousCounter, ciphertext);
-        message.version = version;
-        var messageLength = SignalMessageSpec.sizeOf(message);
-        var macInput = new byte[1 + identityPublicKey.length + signalRemoteIdentityKey.length + 1 + messageLength];
-        macInput[0] = KEY_TYPE;
-        System.arraycopy(identityPublicKey, 0, macInput, 1, identityPublicKey.length);
-        System.arraycopy(signalRemoteIdentityKey, 0, macInput, 1 + identityPublicKey.length, signalRemoteIdentityKey.length);
-        macInput[1 + identityPublicKey.length + signalRemoteIdentityKey.length] = message.serializedVersion();
-        SignalMessageSpec.encode(message, ProtobufOutputStream.toBytes(macInput, 1 + identityPublicKey.length + signalRemoteIdentityKey.length + 1));
-        var signature = Hmac.calculateSha256(macInput, hmacKey);
-        message.signature =  Arrays.copyOf(signature, MAC_LENGTH);
-        return message;
-    }
-
-    SignalMessage(byte[] ephemeralPublicKey, Integer counter, Integer previousCounter, byte[] ciphertext) {
-        this.ephemeralPublicKey = ephemeralPublicKey;
+    SignalMessage(SignalPublicKey senderRatchetKey, Integer counter, Integer previousCounter, byte[] ciphertext) {
+        // Don't set the version, it will be set by ofSerialized
+        this.senderRatchetKey = senderRatchetKey;
         this.counter = counter;
         this.previousCounter = previousCounter;
         this.ciphertext = ciphertext;
     }
 
     public static SignalMessage ofSerialized(byte[] serialized) {
-        var signature = Arrays.copyOfRange(serialized, serialized.length - MAC_LENGTH, serialized.length);
+        var mac = Arrays.copyOfRange(serialized, serialized.length - MAC_LENGTH, serialized.length);
         var result = SignalMessageSpec.decode(ProtobufInputStream.fromBytes(serialized, 1, serialized.length - 1 - MAC_LENGTH));
         result.version = Byte.toUnsignedInt(serialized[0]) >> 4;
-        result.signature = signature;
+        result.mac = mac;
         return result;
+    }
+
+    public SignalMessage(Integer version, SignalPublicKey senderRatchetKey, Integer counter, Integer previousCounter, byte[] ciphertext,
+                         SignalPublicKey localIdentityKey, SignalPublicKey remoteIdentityKey, byte[] macKey) {
+        this.version = version;
+
+        this.senderRatchetKey = senderRatchetKey;
+        this.counter = counter;
+        this.previousCounter = previousCounter;
+        this.ciphertext = ciphertext;
+
+        var messageLength = SignalMessageSpec.sizeOf(this);
+        var macInput = new byte[SignalPublicKey.length() + SignalPublicKey.length() + 1 + messageLength];
+
+        var offset = localIdentityKey.writePoint(macInput, 0);
+        offset = remoteIdentityKey.writePoint(macInput, SignalPublicKey.length());
+        macInput[offset++] = (byte) (version << 4 | CURRENT_VERSION);
+        SignalMessageSpec.encode(this, ProtobufOutputStream.toBytes(macInput, offset));
+
+        try {
+            var hmacSHA256 = Mac.getInstance("HmacSHA256");
+            var keySpec = new SecretKeySpec(macKey, "HmacSHA256");
+            hmacSHA256.init(keySpec);
+            var mac = hmacSHA256.doFinal(macInput);
+            this.mac = Arrays.copyOf(mac, MAC_LENGTH);
+        } catch (GeneralSecurityException exception) {
+            throw new IllegalArgumentException("Cannot calculate hmac", exception);
+        }
     }
 
     public byte[] serialized() {
         var messageLength = SignalMessageSpec.sizeOf(this);
         var serialized = new byte[1 + messageLength + MAC_LENGTH];
-        serialized[0] = serializedVersion();
-        SignalMessageSpec.encode(this, ProtobufOutputStream.toBytes(serialized, 1));
-        if(signature == null || signature.length != MAC_LENGTH) {
+        if(version == null) {
             throw new InternalError();
         }
-
-        System.arraycopy(signature, 0, serialized, 1 + messageLength, signature.length);
+        serialized[0] = (byte) (version << 4 | CURRENT_VERSION);
+        SignalMessageSpec.encode(this, ProtobufOutputStream.toBytes(serialized, 1));
+        if(mac == null || mac.length != MAC_LENGTH) {
+            throw new InternalError();
+        }
+        System.arraycopy(mac, 0, serialized, 1 + messageLength, mac.length);
         return serialized;
     }
 
-    public int version() {
-        if(version == 0) {
+    public Integer version() {
+        if(version == null) {
             throw new InternalError();
         }
 
         return version;
     }
 
-    public byte serializedVersion() {
-        if(version == 0) {
-            throw new InternalError();
-        }
-
-        return (byte) (version << 4 | CURRENT_VERSION);
-    }
-
-    public byte[] ephemeralPublicKey() {
-        return ephemeralPublicKey;
+    public SignalPublicKey senderRatchetKey() {
+        return senderRatchetKey;
     }
 
     public Integer counter() {
@@ -113,6 +118,6 @@ public final class SignalMessage {
     }
 
     public byte[] signature() {
-        return signature;
+        return mac;
     }
 }

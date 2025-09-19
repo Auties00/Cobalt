@@ -5,9 +5,7 @@ import it.auties.linkpreview.LinkPreviewMatch;
 import it.auties.linkpreview.LinkPreviewMedia;
 import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
-import it.auties.whatsapp.api.WhatsappTextPreviewPolicy;
-import it.auties.whatsapp.crypto.Hkdf;
-import it.auties.whatsapp.crypto.SignalSession;
+import it.auties.whatsapp.api.WhatsappMessagePreviewHandler;
 import it.auties.whatsapp.model.action.ContactActionBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.button.template.highlyStructured.HighlyStructuredFourRowTemplate;
@@ -38,19 +36,21 @@ import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.poll.*;
 import it.auties.whatsapp.model.request.MessageRequest;
 import it.auties.whatsapp.model.setting.EphemeralSettingsBuilder;
-import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentitySpec;
-import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
-import it.auties.whatsapp.model.signal.message.SignalDistributionMessage;
+import it.auties.whatsapp.model.signal.SignalProtocol;
+import it.auties.whatsapp.model.signal.group.SignalSenderKeyName;
+import it.auties.whatsapp.model.signal.key.SignalKeyPair;
+import it.auties.whatsapp.model.signal.key.SignalSignedKeyPair;
+import it.auties.whatsapp.model.signal.message.SignalPreKeySignalMessage;
+import it.auties.whatsapp.model.signal.message.SignalSenderKeyDistributionMessage;
 import it.auties.whatsapp.model.signal.message.SignalMessage;
-import it.auties.whatsapp.model.signal.message.SignalPreKeyMessage;
-import it.auties.whatsapp.model.signal.sender.SenderKeyName;
 import it.auties.whatsapp.model.sync.*;
 import it.auties.whatsapp.socket.SocketConnection;
 import it.auties.whatsapp.util.*;
 
 import javax.crypto.Cipher;
+import javax.crypto.KDF;
 import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.HKDFParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -74,8 +74,8 @@ import java.util.zip.InflaterInputStream;
 
 import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.HISTORY_SYNC;
 import static it.auties.whatsapp.api.WhatsappErrorHandler.Location.MESSAGE;
-import static it.auties.whatsapp.util.SignalConstants.*;
 
+// TODO: Split this into sub components
 public final class MessageComponent {
     private static final int HISTORY_SYNC_MAX_TIMEOUT = 25;
     private static final Set<HistorySync.Type> REQUIRED_HISTORY_SYNC_TYPES = Set.of(HistorySync.Type.INITIAL_BOOTSTRAP, HistorySync.Type.PUSH_NAME, HistorySync.Type.NON_BLOCKING_DATA);
@@ -171,7 +171,7 @@ public final class MessageComponent {
     }
 
     private void attributeTextMessage(TextMessage textMessage) {
-        if (socketConnection.store().textPreviewSetting() == WhatsappTextPreviewPolicy.DISABLED) {
+        if (socketConnection.store().textPreviewSetting() == WhatsappMessagePreviewHandler.DISABLED) {
             return;
         }
 
@@ -189,7 +189,7 @@ public final class MessageComponent {
         }
 
         var uri = match.result().uri().toString();
-        if (socketConnection.store().textPreviewSetting() == WhatsappTextPreviewPolicy.ENABLED_WITH_INFERENCE
+        if (socketConnection.store().textPreviewSetting() == WhatsappMessagePreviewHandler.ENABLED_WITH_INFERENCE
                 && !Objects.equals(match.text(), uri)) {
             textMessage.setText(textMessage.text().replace(match.text(), uri));
         }
@@ -315,7 +315,11 @@ public final class MessageComponent {
             var useSecretPayload = pollCreationId + originalPollSenderJid + modificationSenderJid + pollUpdateMessage.secretName();
             var encryptionKey = originalPollMessage.encryptionKey()
                     .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
-            var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload.getBytes(), 32);
+            var hkdf = KDF.getInstance("HKDF-SHA256");
+            var params = HKDFParameterSpec.ofExtract()
+                    .addIKM(new SecretKeySpec(encryptionKey, "AES"))
+                    .thenExpand(useSecretPayload.getBytes(), 32);
+            var useCaseSecret = (byte[]) hkdf.deriveKey("AES", params);
             var cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(
                     Cipher.ENCRYPT_MODE,
@@ -448,7 +452,7 @@ public final class MessageComponent {
             throw new IllegalStateException("Cannot create message: user is not signed in");
         }
 
-        var senderName = new SenderKeyName(request.info().chatJid(), sender.toSignalAddress());
+        var senderName = new SignalSenderKeyName(request.info().chatJid(), sender.toSignalAddress());
         var signalMessage = sessionCipher.createOutgoing(senderName);
         var groupMessage = sessionCipher.encrypt(senderName, encodedMessage);
         var messageNode = createMessageNode(request, groupMessage);
@@ -768,7 +772,7 @@ public final class MessageComponent {
                 .orElseThrow(() -> new NoSuchElementException("Missing id"));
         var identity = node.findChild("identity")
                 .flatMap(Node::contentAsBytes)
-                .map(SignalConstants::createSignalKey)
+                .map(SignalProtocol::createSignalKey)
                 .orElseThrow(() -> new NoSuchElementException("Missing identity"));
         var signedKey = node.findChild("skey")
                 .flatMap(SignalSignedKeyPair::of)
@@ -1048,8 +1052,8 @@ public final class MessageComponent {
                         .message(message)
                         .build();
                 message.senderKeyDistributionMessage().ifPresent(keyDistributionMessage -> {
-                    var groupName = new SenderKeyName(keyDistributionMessage.groupJid(), info.senderJid().toSignalAddress());
-                    var signalDistributionMessage = SignalDistributionMessage.ofSerialized(keyDistributionMessage.data());
+                    var groupName = new SignalSenderKeyName(keyDistributionMessage.groupJid(), info.senderJid().toSignalAddress());
+                    var signalDistributionMessage = SignalSenderKeyDistributionMessage.ofSerialized(keyDistributionMessage.data());
                     sessionCipher.createIncoming(groupName, signalDistributionMessage);
                 });
             }finally {
@@ -1107,7 +1111,7 @@ public final class MessageComponent {
                     var signalAddress = messageKey.senderJid()
                             .orElse(messageKey.chatJid())
                             .toSignalAddress();
-                    var preKey = SignalPreKeyMessage.ofSerialized(encodedMessage);
+                    var preKey = SignalPreKeySignalMessage.ofSerialized(encodedMessage);
                     yield sessionCipher.decrypt(signalAddress, preKey);
                 }
                 case SKMSG -> {
@@ -1115,10 +1119,10 @@ public final class MessageComponent {
                     var signalAddress = messageKey.senderJid()
                             .orElseThrow(() -> new IllegalArgumentException("Missing sender jid"))
                             .toSignalAddress();
-                    var senderName = new SenderKeyName(groupJid, signalAddress);
+                    var senderName = new SignalSenderKeyName(groupJid, signalAddress);
                     yield sessionCipher.decrypt(senderName, encodedMessage);
                 }
-                default -> throw new IllegalArgumentException("Unsupported encoded message type: %s".formatted(type));
+                default -> throw new IllegalArgumentException("Unsupported encodedPoint message type: %s".formatted(type));
             };
             var messageLength = result.length - result[result.length - 1];
             return MessageContainerSpec.decode(ProtobufInputStream.fromBytes(result, 0, messageLength))
@@ -1548,7 +1552,11 @@ public final class MessageComponent {
             var useSecretPayload = originalPollId + originalPollSenderJid + modificationSenderJid + pollUpdateMessage.secretName();
             var encryptionKey = originalPollMessage.encryptionKey()
                     .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
-            var useCaseSecret = Hkdf.extractAndExpand(encryptionKey, useSecretPayload.getBytes(), 32);
+            var hkdf = KDF.getInstance("HKDF-SHA256");
+            var params = HKDFParameterSpec.ofExtract()
+                    .addIKM(new SecretKeySpec(encryptionKey, "AES"))
+                    .thenExpand(useSecretPayload.getBytes(), 32);
+            var useCaseSecret = (byte[]) hkdf.deriveKey("AES", params);
             var additionalData = "%s\0%s".formatted(
                     originalPollId,
                     modificationSenderJid

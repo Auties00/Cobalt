@@ -7,8 +7,8 @@ import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
-import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
-import it.auties.whatsapp.model.signal.auth.Version;
+import it.auties.whatsapp.model.auth.UserAgent.PlatformType;
+import it.auties.whatsapp.model.auth.Version;
 import net.dongliu.apk.parser.ByteArrayApkFile;
 import net.dongliu.apk.parser.bean.ApkSigner;
 import net.dongliu.apk.parser.bean.CertificateMeta;
@@ -374,7 +374,7 @@ public final class AppMetadata {
         var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
         var certificate = new BusinessVerifiedNameCertificateBuilder()
                 .encodedDetails(encodedDetails)
-                .signature(Curve25519.sign(keys.identityKeyPair().privateKey(), encodedDetails))
+                .signature(Curve25519.sign(keys.identityKeyPair().privateKey().encodedPoint(), encodedDetails))
                 .build();
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }

@@ -3,10 +3,8 @@ package it.auties.whatsapp.socket;
 import it.auties.curve25519.Curve25519;
 import it.auties.whatsapp.api.*;
 import it.auties.whatsapp.api.WhatsappErrorHandler.Location;
-import it.auties.whatsapp.api.WhatsappVerificationHandler.Web.PairingCode;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.PairingCodeSession;
 import it.auties.whatsapp.model.action.Action;
 import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
@@ -37,13 +35,14 @@ import it.auties.whatsapp.model.response.NewsletterResponse;
 import it.auties.whatsapp.model.response.SubscribedNewslettersResponse;
 import it.auties.whatsapp.model.response.UserAboutResponse;
 import it.auties.whatsapp.model.setting.Setting;
-import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
+import it.auties.whatsapp.model.signal.key.SignalPreKeyPair;
+import it.auties.whatsapp.model.signal.key.SignalSignedKeyPair;
 import it.auties.whatsapp.model.sync.PatchRequest;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.model.sync.PrimaryFeature;
 import it.auties.whatsapp.socket.io.NodeDecoder;
 import it.auties.whatsapp.socket.message.MessageComponent;
-import it.auties.whatsapp.socket.state.AppStateComponent;
+import it.auties.whatsapp.socket.state.WebAppStateComponent;
 import it.auties.whatsapp.socket.stream.StreamComponent;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Clock;
@@ -77,18 +76,16 @@ public final class SocketConnection {
     private final SocketEncryption socketEncryption;
     private final StreamComponent streamComponent;
     private final MessageComponent messageComponent;
-    private final AppStateComponent appStateHandler;
-    private final WhatsappVerificationHandler.Web webVerificationHandler;
+    private final WebAppStateComponent appStateHandler;
     private final WhatsappErrorHandler errorHandler;
-    private volatile ScheduledExecutorService scheduler;
     private final ConcurrentHashMap<String, Request> pendingRequests;
     private final ConcurrentMap<String, CompletableFuture<MessageInfo>> pendingMessages;
     private final Map<Jid, GroupOrCommunityMetadata> chatMetadataCache;
     private final AtomicBoolean serializable;
     private final AtomicReference<State> state;
-    private final PairingCodeSession pairingCodeSession;
     private final Keys keys;
     private final Store store;
+    private volatile ScheduledExecutorService scheduledExecutorService;
     private Thread shutdownHook;
 
     public SocketConnection(Whatsapp whatsapp, Store store, Keys keys, WhatsappErrorHandler errorHandler, WhatsappVerificationHandler.Web webVerificationHandler) {
@@ -98,15 +95,13 @@ public final class SocketConnection {
         this.state = new AtomicReference<>(State.DISCONNECTED);
         this.serializable = new AtomicBoolean(true);
         this.socketEncryption = new SocketEncryption(this);
-        this.streamComponent = new StreamComponent(this);
+        this.streamComponent = new StreamComponent(this, webVerificationHandler);
         this.messageComponent = new MessageComponent(this);
-        this.appStateHandler = new AppStateComponent(this);
-        this.webVerificationHandler = webVerificationHandler;
+        this.appStateHandler = new WebAppStateComponent(this);
         this.errorHandler = errorHandler;
         this.chatMetadataCache = new ConcurrentHashMap<>();
         this.pendingRequests = new ConcurrentHashMap<>();
         this.pendingMessages = new ConcurrentHashMap<>();
-        this.pairingCodeSession = webVerificationHandler instanceof PairingCode ? new PairingCodeSession() : null;
     }
 
     public void connect(WhatsappDisconnectReason reason)  {
@@ -175,9 +170,9 @@ public final class SocketConnection {
             store.dispose();
         }
 
-        if (scheduler != null) {
-            scheduler.shutdownNow();
-            this.scheduler = null;
+        if (scheduledExecutorService != null) {
+            scheduledExecutorService.shutdownNow();
+            this.scheduledExecutorService = null;
         }
 
         dispose();
@@ -663,10 +658,13 @@ public final class SocketConnection {
     }
 
     public void sendAck(Node node) {
+        sendAck(node.id(), node);
+    }
+
+    public void sendAck(String id, Node node) {
         var attributes = new HashMap<String, Object>();
 
-        var ackId = node.id();
-        attributes.put("id", ackId);
+        attributes.put("id", id);
 
         var ackClass = node.description();
         var isMessage = ackClass.equals("message");
@@ -979,28 +977,29 @@ public final class SocketConnection {
     @SuppressWarnings("SameParameterValue")
     public void scheduleAtFixedInterval(Runnable command, long initialDelay, long period) {
         if (state.getAcquire() == State.CONNECTED) {
-            createScheduler();
-            scheduler.scheduleAtFixedRate(command, initialDelay, period, SECONDS);
+            getOrCreateScheduledExecutorService()
+                    .scheduleAtFixedRate(command, initialDelay, period, SECONDS);
         }
     }
 
     public ScheduledFuture<?> scheduleDelayed(Runnable command, long delay) {
         if (state.getAcquire() == State.CONNECTED) {
-            createScheduler();
-            return scheduler.schedule(command, delay, SECONDS);
+            return getOrCreateScheduledExecutorService()
+                    .schedule(command, delay, SECONDS);
         } else {
             return null;
         }
     }
 
-    private void createScheduler() {
-        if (scheduler == null || scheduler.isShutdown()) {
+    private ScheduledExecutorService getOrCreateScheduledExecutorService() {
+        if (scheduledExecutorService == null || scheduledExecutorService.isShutdown()) {
             synchronized (this) {
-                if (scheduler == null || scheduler.isShutdown()) {
-                    this.scheduler = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
+                if (scheduledExecutorService == null || scheduledExecutorService.isShutdown()) {
+                    this.scheduledExecutorService = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
                 }
             }
         }
+        return scheduledExecutorService;
     }
 
     public Node sendPing()  {
@@ -1027,7 +1026,7 @@ public final class SocketConnection {
         var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
         var certificate = new BusinessVerifiedNameCertificateBuilder()
                 .encodedDetails(encodedDetails)
-                .signature(Curve25519.sign(keys().identityKeyPair().privateKey(), encodedDetails))
+                .signature(Curve25519.sign(keys().identityKeyPair().privateKey().encodedPoint(), encodedDetails))
                 .build();
         var result = sendQuery("set", "w:biz", Node.of("verified_name", Map.of("v", 2), BusinessVerifiedNameCertificateSpec.encode(certificate)));
         var verifiedName = result.findChild("verified_name")
@@ -1095,12 +1094,17 @@ public final class SocketConnection {
     }
 
     public void sendPreKeys(int size) {
-        var startId = keys.lastPreKeyId() + 1;
+        var startId = keys.hasPreKeys() ? keys.preKeys().getLast().id() + 1 : 1;
         var preKeys = IntStream.range(startId, startId + size)
                 .mapToObj(SignalPreKeyPair::random)
                 .peek(keys::addPreKey)
-                .map(SignalPreKeyPair::toNode)
+                .map(keyPair -> Node.of(
+                        "key",
+                        Node.of("id", keyPair.encodedId()),
+                        Node.of("value", keyPair.publicKey()))
+                )
                 .toList();
+        SignalSignedKeyPair keyPair = keys.signedKeyPair();
         sendQuery(
                 "set",
                 "encrypt",
@@ -1108,7 +1112,11 @@ public final class SocketConnection {
                 Node.of("type", KEY_BUNDLE_TYPE),
                 Node.of("identity", keys.identityKeyPair().publicKey()),
                 Node.of("list", preKeys),
-                keys.signedKeyPair().toNode()
+                Node.of("skey",
+                        Node.of("id", keyPair.encodedId()),
+                        Node.of("value", keyPair.publicKey()),
+                        Node.of("signature", keyPair.signature())
+                )
         );
     }
 
@@ -1222,22 +1230,6 @@ public final class SocketConnection {
                 listener.onProfilePictureChanged(user.withoutData());
             });
         }
-    }
-
-    public byte[] encryptPairingKey() {
-        return pairingCodeSession.encrypt(keys.companionKeyPair().publicKey());
-    }
-
-    public byte[] decryptPairingKey(byte[] primaryEphemeralPublicKeyWrapped) {
-        return pairingCodeSession.decrypt(primaryEphemeralPublicKeyWrapped);
-    }
-
-    public WhatsappVerificationHandler.Web webVerificationHandler() {
-        return webVerificationHandler;
-    }
-
-    public void handle(PairingCode webHandler) {
-        pairingCodeSession.accept(webHandler);
     }
 
     public void onPastParticipants(Jid chatJid, List<ChatPastParticipant> chatPastParticipants) {

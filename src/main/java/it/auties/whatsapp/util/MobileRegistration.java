@@ -6,7 +6,8 @@ import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
 import it.auties.whatsapp.exception.MobileRegistrationException;
 import it.auties.whatsapp.model.response.RegistrationResponse;
-import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.model.signal.key.SignalKeyPair;
+import it.auties.whatsapp.model.signal.key.SignalPublicKey;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -23,6 +24,7 @@ import java.util.*;
 public final class MobileRegistration {
     public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
+    private static final String SIGNAL_PUBLIC_KEY_TYPE = Base64.getUrlEncoder().encodeToString(new byte[]{SignalPublicKey.type()});
 
     private final HttpClient httpClient;
     private final Store store;
@@ -211,7 +213,7 @@ public final class MobileRegistration {
     private byte[] sendRequest(String path, String params) throws IOException, InterruptedException {
         try {
             var keypair = SignalKeyPair.random();
-            var key = Curve25519.sharedKey(REGISTRATION_PUBLIC_KEY, keypair.privateKey());
+            var key = Curve25519.sharedKey(REGISTRATION_PUBLIC_KEY, keypair.privateKey().encodedPoint());
             var cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(
                     Cipher.ENCRYPT_MODE,
@@ -219,7 +221,7 @@ public final class MobileRegistration {
                     new GCMParameterSpec(128, new byte[12])
             );
             var result = cipher.doFinal(params.getBytes(StandardCharsets.UTF_8));
-            var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey(), result));
+            var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey().encodedPoint(), result));
             var userAgent = store.device()
                     .toUserAgent(store.version())
                     .orElseThrow(() -> new NoSuchElementException("Missing user agent for registration"));
@@ -259,13 +261,13 @@ public final class MobileRegistration {
                 "rc", String.valueOf(store.releaseChannel().index()),
                 "lg", phoneNumber.countryCode().lg(),
                 "lc", phoneNumber.countryCode().lc(),
-                "authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey()),
+                "authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey().encodedPoint()),
                 "vname", certificate,
                 "e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()),
-                "e_keytype", Base64.getUrlEncoder().encodeToString(SignalConstants.KEY_BUNDLE_TYPE),
-                "e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey()),
+                "e_keytype", SIGNAL_PUBLIC_KEY_TYPE,
+                "e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey().encodedPoint()),
                 "e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()),
-                "e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey()),
+                "e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey().encodedPoint()),
                 "e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()),
                 "fdid", fdid,
                 "expid", Base64.getUrlEncoder().encodeToString(keys.deviceId()),

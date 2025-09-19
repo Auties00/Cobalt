@@ -159,7 +159,6 @@ public final class NodeDecoder {
             token = inputStream.read() & 0xFF;
             string[index] = alphabet.get(token >>> 4);
             string[index + 1] = alphabet.get(15 & token);
-
         }
         if (start != 0) {
             token = inputStream.read() & 0xFF;

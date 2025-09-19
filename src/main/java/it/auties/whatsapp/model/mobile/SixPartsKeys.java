@@ -1,6 +1,6 @@
 package it.auties.whatsapp.model.mobile;
 
-import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
+import it.auties.whatsapp.model.signal.key.SignalKeyPair;
 
 import java.util.Base64;
 import java.util.Objects;

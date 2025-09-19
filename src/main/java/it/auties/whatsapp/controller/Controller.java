@@ -25,7 +25,7 @@ public abstract sealed class Controller permits Store, Keys {
      * The phone number of the associated companion
      */
     @ProtobufProperty(index = 2, type = ProtobufType.UINT64)
-    private PhoneNumber phoneNumber;
+    protected PhoneNumber phoneNumber;
 
     /**
      * The serializer instance to use

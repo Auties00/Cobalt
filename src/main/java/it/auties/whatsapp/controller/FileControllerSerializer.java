@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNullElseGet;
 import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 
 // FIXME: There is a memory leak in here
+//        Or maybe not?
 abstract class FileControllerSerializer implements ControllerSerializer {
     private static final String CHAT_PREFIX = "chat_";
     private static final String NEWSLETTER_PREFIX = "newsletter_";

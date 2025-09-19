@@ -4,8 +4,8 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.WhatsappClientType;
-import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
-import it.auties.whatsapp.model.signal.auth.Version;
+import it.auties.whatsapp.model.auth.UserAgent.PlatformType;
+import it.auties.whatsapp.model.auth.Version;
 
 import java.util.List;
 import java.util.Objects;

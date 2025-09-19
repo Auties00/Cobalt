@@ -42,7 +42,7 @@ public final class CountryLocale {
     }
 
     public static Optional<CountryLocale> of(String encoded, String separator) {
-        Objects.requireNonNull(encoded, "Expected non-null encoded locale");
+        Objects.requireNonNull(encoded, "Expected non-null encodedPoint locale");
         var split = encoded.split(String.valueOf(separator));
         return split.length == 2 ? Optional.of(new CountryLocale(split[0], split[1], separator)) : Optional.empty();
     }

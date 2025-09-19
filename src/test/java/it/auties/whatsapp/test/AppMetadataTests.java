@@ -1,7 +1,7 @@
 package it.auties.whatsapp.test;
 
-import it.auties.whatsapp.model.signal.auth.UserAgent.PlatformType;
-import it.auties.whatsapp.model.signal.auth.Version;
+import it.auties.whatsapp.model.auth.UserAgent.PlatformType;
+import it.auties.whatsapp.model.auth.Version;
 import it.auties.whatsapp.util.AppMetadata;
 import org.junit.jupiter.api.Test;
 

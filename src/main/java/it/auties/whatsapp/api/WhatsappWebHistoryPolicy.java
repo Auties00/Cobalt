@@ -94,12 +94,10 @@ public final class WhatsappWebHistoryPolicy {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (WhatsappWebHistoryPolicy) obj;
-        return this.size == that.size &&
-                this.newsletters == that.newsletters;
+    public boolean equals(Object o) {
+        return o == this || o instanceof WhatsappWebHistoryPolicy that
+                && size == that.size
+                && newsletters == that.newsletters;
     }
 
     @Override

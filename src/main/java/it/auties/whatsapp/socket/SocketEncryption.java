@@ -4,20 +4,21 @@ import it.auties.curve25519.Curve25519;
 import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
 import it.auties.whatsapp.api.WhatsappClientType;
-import it.auties.whatsapp.crypto.Hkdf;
+import it.auties.whatsapp.model.auth.*;
+import it.auties.whatsapp.model.signal.key.SignalPublicKey;
 import it.auties.whatsapp.socket.io.NodeEncoder;
 import it.auties.whatsapp.socket.io.NodeTokens;
 import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
 import it.auties.whatsapp.model.node.Node;
-import it.auties.whatsapp.model.signal.auth.*;
 import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Scalar;
-import it.auties.whatsapp.util.SignalConstants;
 
 import javax.crypto.Cipher;
+import javax.crypto.KDF;
 import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.HKDFParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -67,13 +68,13 @@ final class SocketEncryption {
         this.writeCipherLock = new ReentrantLock(true);
     }
 
-    synchronized void startHandshake(byte[] publicKey) {
+    synchronized void startHandshake(SignalPublicKey publicKey) {
         if(readKey != null || writeKey != null) {
             throw new IllegalStateException("Handshake has already been completed");
         }
         var prologue = getHandshakePrologue();
         var clientHello = new ClientHelloBuilder()
-                .ephemeral(publicKey)
+                .ephemeral(publicKey.encodedPoint())
                 .build();
         var handshakeMessage = new HandshakeMessageBuilder()
                 .clientHello(clientHello)
@@ -93,16 +94,16 @@ final class SocketEncryption {
         var serverHandshake = HandshakeMessageSpec.decode(ProtobufInputStream.fromBuffer(serverHelloPayload));
         var serverHello = serverHandshake.serverHello();
         try(var handshake = new Handshake(getHandshakePrologue())) {
-            handshake.updateHash(socketConnection.keys().ephemeralKeyPair().publicKey());
+            handshake.updateHash(socketConnection.keys().ephemeralKeyPair().publicKey().encodedPoint());
             handshake.updateHash(serverHello.ephemeral());
-            var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketConnection.keys().ephemeralKeyPair().privateKey());
+            var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketConnection.keys().ephemeralKeyPair().privateKey().encodedPoint());
             handshake.mixIntoKey(sharedEphemeral);
             var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
-            var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketConnection.keys().ephemeralKeyPair().privateKey());
+            var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketConnection.keys().ephemeralKeyPair().privateKey().encodedPoint());
             handshake.mixIntoKey(sharedStatic);
             handshake.cipher(serverHello.payload(), false);
-            var encodedKey = handshake.cipher(socketConnection.keys().noiseKeyPair().publicKey(), true);
-            var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketConnection.keys().noiseKeyPair().privateKey());
+            var encodedKey = handshake.cipher(socketConnection.keys().noiseKeyPair().publicKey().encodedPoint(), true);
+            var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketConnection.keys().noiseKeyPair().privateKey().encodedPoint());
             handshake.mixIntoKey(sharedPrivate);
             var payload = createUserClientPayload();
             var encodedPayload = handshake.cipher(ClientPayloadSpec.encode(payload), true);
@@ -120,6 +121,8 @@ final class SocketEncryption {
             readCounter.set(0);
             writeKey = new SecretKeySpec(keys, 0, 32, "AES");
             readKey = new SecretKeySpec(keys, 32, 32, "AES");
+        }catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot finish handshake", exception);
         }
     }
 
@@ -276,10 +279,10 @@ final class SocketEncryption {
         var companion = new CompanionRegistrationDataBuilder()
                 .buildHash(socketConnection.store().version().toHash())
                 .eRegid(socketConnection.keys().encodedRegistrationId())
-                .eKeytype(Scalar.intToBytes(SignalConstants.KEY_TYPE, 1))
-                .eIdent(socketConnection.keys().identityKeyPair().publicKey())
+                .eKeytype(Scalar.intToBytes(SignalPublicKey.type(), 1))
+                .eIdent(socketConnection.keys().identityKeyPair().publicKey().encodedPoint())
                 .eSkeyId(socketConnection.keys().signedKeyPair().encodedId())
-                .eSkeyVal(socketConnection.keys().signedKeyPair().publicKey())
+                .eSkeyVal(socketConnection.keys().signedKeyPair().publicKey().encodedPoint())
                 .eSkeySig(socketConnection.keys().signedKeyPair().signature());
         if (socketConnection.store().clientType() == WhatsappClientType.WEB) {
             var props = createCompanionProps();
@@ -365,12 +368,25 @@ final class SocketEncryption {
             }
         }
 
-        private byte[] finish() {
-            return Hkdf.extractAndExpand(new byte[0], salt, null, 64);
+        private byte[] finish() throws GeneralSecurityException {
+            byte[] key = new byte[0];
+            var hkdf = KDF.getInstance("HKDF-SHA256");
+            var params = HKDFParameterSpec.ofExtract()
+                    .addSalt(salt)
+                    .addIKM(new SecretKeySpec(key, "AES"))
+                    .thenExpand(null, 64);
+            return hkdf.deriveKey("AES", params)
+                    .getEncoded();
         }
 
-        private void mixIntoKey(byte[] bytes) {
-            var expanded = Hkdf.extractAndExpand(bytes, salt, null, 64);
+        private void mixIntoKey(byte[] bytes) throws GeneralSecurityException {
+            var hkdf = KDF.getInstance("HKDF-SHA256");
+            var params = HKDFParameterSpec.ofExtract()
+                    .addSalt(salt)
+                    .addIKM(new SecretKeySpec(bytes, "AES"))
+                    .thenExpand(null, 64);
+            var expanded = hkdf.deriveKey("AES", params)
+                    .getEncoded();
             this.salt = Arrays.copyOfRange(expanded, 0, 32);
             this.cryptoKey = new SecretKeySpec(expanded, 32, 32, "AES");
             this.counter = 0;

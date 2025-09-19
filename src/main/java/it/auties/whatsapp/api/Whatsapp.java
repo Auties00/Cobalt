@@ -3,7 +3,6 @@ package it.auties.whatsapp.api;
 import com.alibaba.fastjson2.JSON;
 import it.auties.whatsapp.controller.Keys;
 import it.auties.whatsapp.controller.Store;
-import it.auties.whatsapp.crypto.Hkdf;
 import it.auties.whatsapp.model.action.*;
 import it.auties.whatsapp.model.business.*;
 import it.auties.whatsapp.model.call.Call;
@@ -43,7 +42,9 @@ import it.auties.whatsapp.util.Clock;
 import it.auties.whatsapp.util.Medias;
 
 import javax.crypto.Cipher;
+import javax.crypto.KDF;
 import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.HKDFParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.InputStream;
 import java.net.URI;
@@ -1134,13 +1135,17 @@ public class Whatsapp {
 
             var mediaKey = mediaMessage.mediaKey()
                     .orElseThrow(() -> new NoSuchElementException("Missing media key"));
-            var retryKey = Hkdf.extractAndExpand(mediaKey, "WhatsApp Media Retry Notification".getBytes(StandardCharsets.UTF_8), 32);
+            var hkdf = KDF.getInstance("HKDF-SHA256");
+            var params = HKDFParameterSpec.ofExtract()
+                    .addIKM(new SecretKeySpec(mediaKey, "AES"))
+                    .thenExpand("WhatsApp Media Retry Notification".getBytes(StandardCharsets.UTF_8), 32);
+            var retryKey = hkdf.deriveKey("AES", params);
             var receipt = ServerErrorReceiptSpec.encode(new ServerErrorReceipt(info.id()));
             var aad = info.key().id().getBytes(StandardCharsets.UTF_8);
             var encryptCipher = Cipher.getInstance("AES/GCM/NoPadding");
             encryptCipher.init(
                     Cipher.ENCRYPT_MODE,
-                    new SecretKeySpec(retryKey, "AES"),
+                    retryKey,
                     new GCMParameterSpec(128, Bytes.random(12))
             );
             encryptCipher.updateAAD(aad);
@@ -1167,7 +1172,7 @@ public class Whatsapp {
             var decryptCipher = Cipher.getInstance("AES/GCM/NoPadding");
             decryptCipher.init(
                     Cipher.DECRYPT_MODE,
-                    new SecretKeySpec(retryKey, "AES"),
+                    retryKey,
                     new GCMParameterSpec(128, mediaIv)
             );
             decryptCipher.updateAAD(aad);
@@ -1532,7 +1537,6 @@ public class Whatsapp {
      * Marks a message as played
      *
      * @param info the target message
-     * @return a CompletableFuture
      */
     public void markMessagePlayed(ChatMessageInfo info) {
         if(info.senderJid().hasServer(JidServer.newsletter())) {
@@ -1682,7 +1686,6 @@ public class Whatsapp {
      * Marks a message as read
      *
      * @param info the target message
-     * @return a CompletableFuture
      */
     public void markMessageRead(MessageInfo info) {
         var policy = store()
@@ -2381,9 +2384,7 @@ public class Whatsapp {
                 .flatMap(Node::contentAsBytes)
                 .flatMap(NewsletterResponse::ofJson)
                 .map(NewsletterResponse::newsletter);
-        if(result.isPresent()) {
-            subscribeToNewsletterReactions(result.get().jid());
-        }
+        result.ifPresent(newsletter -> subscribeToNewsletterReactions(newsletter.jid()));
         return result;
     }
 

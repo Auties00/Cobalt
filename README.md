@@ -152,9 +152,9 @@ You can now customize the API with these options:
   ```java
   .autodetectListeners(true)
   ```
-- whatsappTextPreviewPolicy - Whether a media preview should be generated for text messages containing links
+- whatsappMessagePreviewHandler - Whether a media preview should be generated for text messages containing links
   ```java
-  .whatsappTextPreviewPolicy(TextPreviewSetting.ENABLED_WITH_INFERENCE)
+  .whatsappMessagePreviewHandler(TextPreviewSetting.ENABLED_WITH_INFERENCE)
   ```
 - checkPatchMacs - Whether patch macs coming from app state pulls should be validated
   ```java
@@ -209,14 +209,14 @@ There are also platform specific options:
       .businessAddress("1600 Amphitheatre Pkwy, Mountain View")
        ```
 
-> **_IMPORTANT:_** All options are serialized: there is no need to specify them again when deserializing an existing session
+> **_IMPORTANT:_** All options are serialized: there is no need to specify them again when deserializing an existing sessionRecord
 
-Finally select the registration status of your session:
-- Creates a new registered session: this means that the QR code was already scanned / the OTP was already sent to Whatsapp
+Finally select the registration status of your sessionRecord:
+- Creates a new registered sessionRecord: this means that the QR code was already scanned / the OTP was already sent to Whatsapp
   ```java
   .registered()
   ```
-- Creates a new unregistered session: this means that the QR code wasn't scanned / the OTP wasn't sent to the companion's phone via SMS/Call/OTP
+- Creates a new unregistered sessionRecord: this means that the QR code wasn't scanned / the OTP wasn't sent to the companion's phone via SMS/Call/OTP
 
   If you are using the Web API, you can either register via QR code:
   ```java
@@ -239,7 +239,7 @@ Finally select the registration status of your session:
   .register(yourPhoneNumberWithCountryCode)
   ```
 
-Now you can connect to your session:
+Now you can connect to your sessionRecord:
   ```java
   .connect()
   ```
@@ -324,21 +324,21 @@ There are three ways to close a connection:
    ```java
    api.disconnect();
    ```
-   > **_IMPORTANT:_** The session remains valid for future uses
+   > **_IMPORTANT:_** The sessionRecord remains valid for future uses
 
 2. Reconnect
 
    ```java
    api.reconnect();
    ```
-   > **_IMPORTANT:_** The session remains valid for future uses
+   > **_IMPORTANT:_** The sessionRecord remains valid for future uses
 
 3. Log out
 
    ```java
    api.logout();
    ```
-   > **_IMPORTANT:_** The session doesn't remain valid for future uses
+   > **_IMPORTANT:_** The sessionRecord doesn't remain valid for future uses
 
 ### What is a listener and how to register it
 
@@ -398,16 +398,16 @@ The multi-device implementation, instead, sends all of this information progress
 In practice, this means that this data needs to be serialized somewhere.
 The same is true for the mobile api.
 
-By default, this library serializes data regarding a session at `$HOME/.whatsapp4j/[web|mobile]/<session_id>`.
+By default, this library serializes data regarding a sessionRecord at `$HOME/.whatsapp4j/[web|mobile]/<session_id>`.
 The data is stored in protobuf files.
 
 If your application needs to serialize data in a different way, for example in a database create a custom implementation of ControllerSerializer.
 Then make sure to specify your implementation in the `Whatsapp` builder.
 This is explained in the "How to create a connection" section.
 
-### How to handle session disconnects
+### How to handle sessionRecord disconnects
 
-When the session is closed, the onDisconnect method in any listener is invoked.
+When the sessionRecord is closed, the onDisconnect method in any listener is invoked.
 These are the three reasons that can cause a disconnect:
 
 1. DISCONNECTED

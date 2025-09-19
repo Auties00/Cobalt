@@ -5,7 +5,7 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.WhatsappClientType;
 import it.auties.whatsapp.api.WhatsappListener;
-import it.auties.whatsapp.api.WhatsappTextPreviewPolicy;
+import it.auties.whatsapp.api.WhatsappMessagePreviewHandler;
 import it.auties.whatsapp.api.WhatsappWebHistoryPolicy;
 import it.auties.whatsapp.model.business.BusinessCategory;
 import it.auties.whatsapp.model.call.Call;
@@ -30,8 +30,8 @@ import it.auties.whatsapp.model.newsletter.NewsletterBuilder;
 import it.auties.whatsapp.model.newsletter.NewsletterMetadata;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.privacy.PrivacySettingType;
-import it.auties.whatsapp.model.signal.auth.UserAgent.ReleaseChannel;
-import it.auties.whatsapp.model.signal.auth.Version;
+import it.auties.whatsapp.model.auth.UserAgent.ReleaseChannel;
+import it.auties.whatsapp.model.auth.Version;
 import it.auties.whatsapp.model.sync.HistorySyncMessage;
 import it.auties.whatsapp.util.AppMetadata;
 import it.auties.whatsapp.util.Clock;
@@ -253,12 +253,6 @@ public final class Store extends Controller {
     ChatEphemeralTimer newChatsEphemeralTimer;
 
     /**
-     * The setting to use when generating previews for text messages that contain links
-     */
-    @ProtobufProperty(index = 32, type = ProtobufType.ENUM)
-    WhatsappTextPreviewPolicy whatsappTextPreviewPolicy;
-
-    /**
      * Describes how much chat history Whatsapp should send
      */
     @ProtobufProperty(index = 33, type = ProtobufType.MESSAGE)
@@ -328,7 +322,7 @@ public final class Store extends Controller {
     @ProtobufProperty(index = 46, type = ProtobufType.BOOL)
     boolean syncedWebAppState;
 
-    Store(UUID uuid, PhoneNumber phoneNumber, WhatsappClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, WhatsappTextPreviewPolicy whatsappTextPreviewPolicy, WhatsappWebHistoryPolicy historyLength, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs, boolean syncedChats, boolean syncedContacts, boolean syncedNewsletters, boolean syncedStatus, boolean syncedWebAppState) {
+    Store(UUID uuid, PhoneNumber phoneNumber, WhatsappClientType clientType, Collection<String> alias, URI proxy, boolean online, CountryLocale locale, String name, String verifiedName, String businessAddress, Double businessLongitude, Double businessLatitude, String businessDescription, String businessWebsite, String businessEmail, BusinessCategory businessCategory, String deviceHash, LinkedHashMap<Jid, Integer> linkedDevicesKeys, URI profilePicture, String about, Jid jid, Jid lid, ConcurrentHashMap<String, String> properties, ConcurrentHashMap<Jid, Contact> contacts, KeySetView<ChatMessageInfo, Boolean> status, ConcurrentHashMap<String, PrivacySettingEntry> privacySettings, ConcurrentHashMap<String, Call> calls, boolean unarchiveChats, boolean twentyFourHourFormat, Long initializationTimeStamp, ChatEphemeralTimer newChatsEphemeralTimer, WhatsappWebHistoryPolicy historyLength, boolean automaticPresenceUpdates, boolean automaticMessageReceipts, ReleaseChannel releaseChannel, CompanionDevice device, boolean checkPatchMacs, boolean syncedChats, boolean syncedContacts, boolean syncedNewsletters, boolean syncedStatus, boolean syncedWebAppState) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.proxy = proxy;
         this.online = online;
@@ -361,7 +355,6 @@ public final class Store extends Controller {
         this.initializationTimeStamp = Objects.requireNonNullElseGet(initializationTimeStamp, Clock::nowSeconds);
         this.mediaConnectionLatch = new CountDownLatch(1);
         this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
-        this.whatsappTextPreviewPolicy = Objects.requireNonNullElse(whatsappTextPreviewPolicy, WhatsappTextPreviewPolicy.ENABLED_WITH_INFERENCE);
         this.historyLength = Objects.requireNonNullElseGet(historyLength, () -> WhatsappWebHistoryPolicy.standard(true));
         this.automaticPresenceUpdates = automaticPresenceUpdates;
         this.automaticMessageReceipts = automaticMessageReceipts;
@@ -766,10 +759,10 @@ public final class Store extends Controller {
     }
 
     /**
-     * Adds a chat in memory
+     * Adds a newsletter in memory
      *
-     * @param chatJid the chat to add
-     * @return the input chat
+     * @param newseltterJid the newsletter to add
+     * @return the input newsletter
      */
     public Newsletter addNewNewsletter(Jid newseltterJid) {
         var newsletter = new NewsletterBuilder()
@@ -1227,10 +1220,6 @@ public final class Store extends Controller {
         return this.newChatsEphemeralTimer;
     }
 
-    public WhatsappTextPreviewPolicy textPreviewSetting() {
-        return this.whatsappTextPreviewPolicy;
-    }
-
     public WhatsappWebHistoryPolicy webHistorySetting() {
         return this.historyLength;
     }
@@ -1329,10 +1318,6 @@ public final class Store extends Controller {
 
     public void setNewChatsEphemeralTimer(ChatEphemeralTimer newChatsEphemeralTimer) {
         this.newChatsEphemeralTimer = newChatsEphemeralTimer;
-    }
-
-    public void setTextPreviewSetting(WhatsappTextPreviewPolicy whatsappTextPreviewPolicy) {
-        this.whatsappTextPreviewPolicy = whatsappTextPreviewPolicy;
     }
 
     public void setWebHistorySetting(WhatsappWebHistoryPolicy whatsappWebHistoryPolicy) {
@@ -1444,7 +1429,6 @@ public final class Store extends Controller {
                 Objects.equals(calls, store.calls) &&
                 Objects.equals(initializationTimeStamp, store.initializationTimeStamp) &&
                 newChatsEphemeralTimer == store.newChatsEphemeralTimer &&
-                whatsappTextPreviewPolicy == store.whatsappTextPreviewPolicy &&
                 Objects.equals(historyLength, store.historyLength) &&
                 releaseChannel == store.releaseChannel &&
                 Objects.equals(device, store.device) &&
@@ -1457,6 +1441,6 @@ public final class Store extends Controller {
 
     @Override
     public int hashCode() {
-        return Objects.hash(proxy, version, online, locale, name, verifiedName, businessAddress, businessLongitude, businessLatitude, businessDescription, businessWebsite, businessEmail, businessCategory, deviceHash, linkedDevicesKeys, profilePicture, about, jid, lid, properties, contacts, status, privacySettings, calls, unarchiveChats, twentyFourHourFormat, initializationTimeStamp, newChatsEphemeralTimer, whatsappTextPreviewPolicy, historyLength, automaticPresenceUpdates, automaticMessageReceipts, releaseChannel, device, checkPatchMacs, syncedChats, syncedContacts, syncedNewsletters, syncedStatus, syncedWebAppState);
+        return Objects.hash(proxy, version, online, locale, name, verifiedName, businessAddress, businessLongitude, businessLatitude, businessDescription, businessWebsite, businessEmail, businessCategory, deviceHash, linkedDevicesKeys, profilePicture, about, jid, lid, properties, contacts, status, privacySettings, calls, unarchiveChats, twentyFourHourFormat, initializationTimeStamp, newChatsEphemeralTimer, historyLength, automaticPresenceUpdates, automaticMessageReceipts, releaseChannel, device, checkPatchMacs, syncedChats, syncedContacts, syncedNewsletters, syncedStatus, syncedWebAppState);
     }
 }

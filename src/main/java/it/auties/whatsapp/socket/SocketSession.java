@@ -21,7 +21,6 @@ abstract sealed class SocketSession {
     private static final String HOST_NAME = "g.whatsapp.net";
     private static final int PORT = 443;
     private static final int MAX_MESSAGE_LENGTH = 1048576;
-    private static final int DEFAULT_RCV_BUF = 8192;
     private static final int DEFAULT_READ_TIMEOUT = 10_000;
 
     SocketChannel channel;
@@ -676,18 +675,18 @@ abstract sealed class SocketSession {
         // Whether the connection is ready
         // If the client is not using a proxy, this is instantly true, otherwise only after the proxy auth is done this is true
         private boolean ready;
-        // List of buffers to read, used while tunneled = false
+        // List of buffers to read, used while ready = false
         private final Queue<PendingRead> pendingReads;
         // LIst of buffers to write, always used
         private final Queue<ByteBuffer> pendingWrites;
         // Buffer used to read the length of the current WhatsApp message
-        // Only used when tunneled = true
+        // Only used when ready = true
         private final ByteBuffer messageLengthBuffer;
         // Buffer used to read the current WhatsApp message
-        // Only used when tunneled = true
+        // Only used when ready = true
         private ByteBuffer messageBuffer;
         // Callback for a WhatsApp message
-        // ONly used whe tunneled = true
+        // ONly used whe ready = true
         private final Consumer<ByteBuffer> onMessage;
         // The dispatcher used for onMessage
         // Prevents the next message from being processed if the previous is not done processing

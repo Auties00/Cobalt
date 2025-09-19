@@ -2,7 +2,6 @@ package it.auties.whatsapp.util;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Random;
 
 public final class Bytes {
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
@@ -58,11 +57,16 @@ public final class Bytes {
     }
 
     public static String randomHex(int i) {
-        var result = new char[i];
-        var random = new Random();
-        while (i-- > 0) {
-            result[i] = HEX_ALPHABET[random.nextInt(0, HEX_ALPHABET.length)];
+        try {
+            var result = new char[i];
+            while (i-- > 0) {
+                var index = SecureRandom.getInstanceStrong()
+                        .nextInt(0, HEX_ALPHABET.length);
+                result[i] = HEX_ALPHABET[index];
+            }
+            return new String(result);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new RuntimeException("Cannot generate random bytes", exception);
         }
-        return new String(result);
     }
 }

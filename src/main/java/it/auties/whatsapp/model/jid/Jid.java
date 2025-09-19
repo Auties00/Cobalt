@@ -4,7 +4,7 @@ import it.auties.protobuf.annotation.ProtobufDeserializer;
 import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.protobuf.model.ProtobufString;
 import it.auties.whatsapp.exception.MalformedJidException;
-import it.auties.whatsapp.model.signal.session.SessionAddress;
+import it.auties.whatsapp.model.signal.SignalAddress;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -479,10 +479,10 @@ public final class Jid implements JidProvider {
     /**
      * Converts this jid to a signal address
      *
-     * @return a non-null {@link SessionAddress}
+     * @return a non-null {@link SignalAddress}
      */
-    public SessionAddress toSignalAddress() {
-        return new SessionAddress(user, device);
+    public SignalAddress toSignalAddress() {
+        return new SignalAddress(user, device);
     }
 
     /**

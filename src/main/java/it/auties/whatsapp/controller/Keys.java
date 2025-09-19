@@ -4,21 +4,18 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.api.WhatsappClientType;
+import it.auties.whatsapp.model.auth.SignedDeviceIdentity;
+import it.auties.whatsapp.model.auth.SignedDeviceIdentityHMAC;
 import it.auties.whatsapp.model.companion.CompanionHashState;
 import it.auties.whatsapp.model.companion.CompanionSyncKey;
 import it.auties.whatsapp.model.companion.CompanionSyncKeyBuilder;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentity;
-import it.auties.whatsapp.model.signal.auth.SignedDeviceIdentityHMAC;
-import it.auties.whatsapp.model.signal.keypair.SignalKeyPair;
-import it.auties.whatsapp.model.signal.keypair.SignalPreKeyPair;
-import it.auties.whatsapp.model.signal.keypair.SignalSignedKeyPair;
-import it.auties.whatsapp.model.signal.sender.SenderKeyName;
-import it.auties.whatsapp.model.signal.sender.SenderKeyRecord;
-import it.auties.whatsapp.model.signal.sender.SenderPreKeys;
-import it.auties.whatsapp.model.signal.session.Session;
-import it.auties.whatsapp.model.signal.session.SessionAddress;
+import it.auties.whatsapp.model.signal.SignalAddress;
+import it.auties.whatsapp.model.signal.group.SignalSenderKeyName;
+import it.auties.whatsapp.model.signal.group.state.SignalSenderKeyRecord;
+import it.auties.whatsapp.model.signal.key.*;
+import it.auties.whatsapp.model.signal.state.SignalSessionRecord;
 import it.auties.whatsapp.model.sync.AppStateSyncKey;
 import it.auties.whatsapp.model.sync.PatchType;
 import it.auties.whatsapp.util.Bytes;
@@ -29,8 +26,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * This controller holds the cryptographic-related data regarding a WhatsappWeb session
@@ -90,8 +85,8 @@ public final class Keys extends Controller {
     /**
      * Whether these keys have generated pre keys assigned to them
      */
-    @ProtobufProperty(index = 13, type = ProtobufType.MESSAGE)
-    final List<SignalPreKeyPair> preKeys;
+    @ProtobufProperty(index = 13, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
+    final LinkedHashMap<Integer, SignalPreKeyPair> preKeys;
 
     /**
      * The phone id for the mobile api
@@ -121,7 +116,7 @@ public final class Keys extends Controller {
     final byte[] backupToken;
 
     /**
-     * The bytes of the encoded {@link SignedDeviceIdentityHMAC} received during the auth process
+     * The bytes of the encodedPoint {@link SignedDeviceIdentityHMAC} received during the auth process
      */
     @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
     SignedDeviceIdentity companionIdentity;
@@ -130,7 +125,7 @@ public final class Keys extends Controller {
      * Sender keys for signal implementation
      */
     @ProtobufProperty(index = 18, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
-    final Map<SenderKeyName, SenderKeyRecord> senderKeys;
+    final Map<SignalSenderKeyName, SignalSenderKeyRecord> senderKeys;
 
     /**
      * App state keys
@@ -142,17 +137,13 @@ public final class Keys extends Controller {
      * Sessions map
      */
     @ProtobufProperty(index = 20, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
-    final ConcurrentMap<SessionAddress, Session> sessions;
+    final ConcurrentMap<SignalAddress, SignalSessionRecord> sessions;
 
     /**
      * Hash state
      */
     @ProtobufProperty(index = 21, type = ProtobufType.MESSAGE, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentMap<String, CompanionHashState> hashStates;
-
-
-    @ProtobufProperty(index = 22, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
-    final ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys;
 
     /**
      * Whether the client was registered
@@ -166,7 +157,7 @@ public final class Keys extends Controller {
     @ProtobufProperty(index = 24, type = ProtobufType.BOOL)
     boolean businessCertificate;
 
-    Keys(UUID uuid, PhoneNumber phoneNumber, WhatsappClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, List<SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SenderKeyName, SenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, ConcurrentMap<SessionAddress, Session> sessions, ConcurrentMap<String, CompanionHashState> hashStates, ConcurrentMap<Jid, SenderPreKeys> groupsPreKeys, boolean registered, boolean businessCertificate) {
+    Keys(UUID uuid, PhoneNumber phoneNumber, WhatsappClientType clientType, Collection<String> alias, Integer registrationId, SignalKeyPair noiseKeyPair, SignalKeyPair ephemeralKeyPair, SignalKeyPair identityKeyPair, SignalKeyPair companionKeyPair, SignalSignedKeyPair signedKeyPair, byte[] signedKeyIndex, Long signedKeyIndexTimestamp, LinkedHashMap<Integer, SignalPreKeyPair> preKeys, String fdid, byte[] deviceId, UUID advertisingId, byte[] identityId, byte[] backupToken, SignedDeviceIdentity companionIdentity, Map<SignalSenderKeyName, SignalSenderKeyRecord> senderKeys, List<CompanionSyncKey> appStateKeys, ConcurrentMap<SignalAddress, SignalSessionRecord> sessions, ConcurrentMap<String, CompanionHashState> hashStates, boolean registered, boolean businessCertificate) {
         super(uuid, phoneNumber, null, clientType, alias);
         this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> ThreadLocalRandom.current().nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNull(noiseKeyPair, "Missing noise keypair");
@@ -176,7 +167,7 @@ public final class Keys extends Controller {
         this.signedKeyPair = Objects.requireNonNullElseGet(signedKeyPair, () -> SignalSignedKeyPair.of(this.registrationId, identityKeyPair));
         this.signedKeyIndex = signedKeyIndex;
         this.signedKeyIndexTimestamp = signedKeyIndexTimestamp;
-        this.preKeys = Objects.requireNonNullElseGet(preKeys, ArrayList::new);
+        this.preKeys = Objects.requireNonNullElseGet(preKeys, LinkedHashMap::new);
         this.fdid = Objects.requireNonNullElseGet(fdid, UUID.randomUUID()::toString);
         this.deviceId = Objects.requireNonNullElseGet(deviceId, () -> HexFormat.of().parseHex(UUID.randomUUID().toString().replaceAll("-", "")));
         this.advertisingId = Objects.requireNonNullElseGet(advertisingId, UUID::randomUUID);
@@ -187,7 +178,6 @@ public final class Keys extends Controller {
         this.appStateKeys = Objects.requireNonNullElseGet(appStateKeys, ArrayList::new);
         this.sessions = Objects.requireNonNullElseGet(sessions, ConcurrentHashMap::new);
         this.hashStates = Objects.requireNonNullElseGet(hashStates, ConcurrentHashMap::new);
-        this.groupsPreKeys = Objects.requireNonNullElseGet(groupsPreKeys, ConcurrentHashMap::new);
         this.registered = registered;
         this.businessCertificate = businessCertificate;
     }
@@ -205,7 +195,7 @@ public final class Keys extends Controller {
     }
 
     /**
-     * Returns the encoded id
+     * Returns the encodedPoint id
      *
      * @return a non-null byte array
      */
@@ -223,26 +213,26 @@ public final class Keys extends Controller {
     }
 
     /**
-     * Queries the first {@link SenderKeyRecord} that matches {@code name}
+     * Queries the first {@link SignalSenderKeyRecord} that matches {@code name}
      *
      * @param name the non-null name to search
      * @return an optional
      */
-    public Optional<SenderKeyRecord> findSenderKeyByName(SenderKeyName name) {
+    public Optional<SignalSenderKeyRecord> findSenderKeyByName(SignalSenderKeyName name) {
         return Optional.ofNullable(senderKeys.get(name));
     }
 
-    public void addSenderKey(SenderKeyName name, SenderKeyRecord newRecord) {
+    public void addSenderKey(SignalSenderKeyName name, SignalSenderKeyRecord newRecord) {
         senderKeys.put(name, newRecord);
     }
 
     /**
-     * Queries the {@link Session} that matches {@code address}
+     * Queries the {@link SignalSessionRecord} that matches {@code address}
      *
      * @param address the non-null address to search
      * @return an optional
      */
-    public Optional<Session> findSessionByAddress(SessionAddress address) {
+    public Optional<SignalSessionRecord> findSessionByAddress(SignalAddress address) {
         return Optional.ofNullable(sessions.get(address));
     }
 
@@ -264,7 +254,7 @@ public final class Keys extends Controller {
      * @return a non-null pre key
      */
     public Optional<SignalPreKeyPair> findPreKeyById(Integer id) {
-        return id == null ? Optional.empty() : preKeys.stream().filter(preKey -> preKey.id() == id).findFirst();
+        return id == null ? Optional.empty() : Optional.ofNullable(preKeys.get(id));
     }
 
     /**
@@ -301,7 +291,7 @@ public final class Keys extends Controller {
      * @param identityKey the nullable identity key
      * @return true if any match is found
      */
-    public boolean hasTrust(SessionAddress address, byte[] identityKey) {
+    public boolean hasTrust(SignalAddress address, SignalPublicKey identityKey, SignalKeyDirection direction) {
         return true; // At least for now
     }
 
@@ -311,7 +301,7 @@ public final class Keys extends Controller {
      * @param address the address to check
      * @return true if a session for that address already exists
      */
-    public boolean hasSession(SessionAddress address) {
+    public boolean hasSession(SignalAddress address) {
         return sessions.containsKey(address);
     }
 
@@ -321,7 +311,7 @@ public final class Keys extends Controller {
      * @param address the non-null address
      * @param record  the non-null record
      */
-    public void addSession(SessionAddress address, Session record) {
+    public void addSession(SignalAddress address, SignalSessionRecord record) {
         sessions.put(address, record);
     }
 
@@ -382,16 +372,12 @@ public final class Keys extends Controller {
      * @param preKey the key to add
      */
     public void addPreKey(SignalPreKeyPair preKey) {
-        preKeys.add(preKey);
+        Objects.requireNonNull(preKey, "preKey cannot be null");
+        preKeys.put(preKey.id(), preKey);
     }
 
-    /**
-     * Returns the id of the last available pre key
-     *
-     * @return an integer
-     */
-    public int lastPreKeyId() {
-        return preKeys.isEmpty() ? 0 : preKeys.getLast().id();
+    public Optional<SignalPreKeyPair> removePreKey(int id) {
+        return Optional.ofNullable(preKeys.remove(id));
     }
 
     /**
@@ -409,37 +395,8 @@ public final class Keys extends Controller {
      *
      * @return a non-null collection
      */
-    public Collection<SignalPreKeyPair> preKeys() {
-        return Collections.unmodifiableList(preKeys);
-    }
-
-    public void addRecipientWithPreKeys(Jid group, Jid recipient) {
-        var preKeys = groupsPreKeys.get(group);
-        if (preKeys != null) {
-            preKeys.addPreKey(recipient);
-            return;
-        }
-
-        var newPreKeys = new SenderPreKeys();
-        newPreKeys.addPreKey(recipient);
-        groupsPreKeys.put(group, newPreKeys);
-    }
-
-    public void addRecipientsWithPreKeys(Jid group, Collection<Jid> recipients) {
-        var preKeys = groupsPreKeys.get(group);
-        if (preKeys != null) {
-            preKeys.addPreKeys(recipients);
-            return;
-        }
-
-        var newPreKeys = new SenderPreKeys();
-        newPreKeys.addPreKeys(recipients);
-        groupsPreKeys.put(group, newPreKeys);
-    }
-
-    public boolean hasGroupKeys(Jid group, Jid recipient) {
-        var preKeys = groupsPreKeys.get(group);
-        return preKeys != null && preKeys.contains(recipient);
+    public SequencedCollection<SignalPreKeyPair> preKeys() {
+        return preKeys.sequencedValues();
     }
 
     @Override
@@ -547,12 +504,17 @@ public final class Keys extends Controller {
      */
     @Override
     public String toString() {
-        var cryptographicKeys = Stream.of(noiseKeyPair.publicKey(), noiseKeyPair.privateKey(), identityKeyPair.publicKey(), identityKeyPair.privateKey(), identityId())
-                .map(Base64.getEncoder()::encodeToString)
-                .collect(Collectors.joining(","));
-        return phoneNumber()
-                .map(phoneNumber -> phoneNumber + ","  + cryptographicKeys)
-                .orElse(cryptographicKeys);
+        return phoneNumber +
+                "," +
+                Base64.getEncoder().encodeToString(noiseKeyPair.publicKey().encodedPoint()) +
+                "," +
+                Base64.getEncoder().encodeToString(noiseKeyPair.privateKey().encodedPoint()) +
+                "," +
+                Base64.getEncoder().encodeToString(identityKeyPair.publicKey().encodedPoint()) +
+                "," +
+                Base64.getEncoder().encodeToString(identityKeyPair.privateKey().encodedPoint()) +
+                "," +
+                Base64.getEncoder().encodeToString(identityId());
     }
 
     @Override
@@ -578,12 +540,11 @@ public final class Keys extends Controller {
                 Objects.equals(senderKeys, keys.senderKeys) &&
                 Objects.equals(appStateKeys, keys.appStateKeys) &&
                 Objects.equals(sessions, keys.sessions) &&
-                Objects.equals(hashStates, keys.hashStates) &&
-                Objects.equals(groupsPreKeys, keys.groupsPreKeys);
+                Objects.equals(hashStates, keys.hashStates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(registrationId, noiseKeyPair, ephemeralKeyPair, identityKeyPair, companionKeyPair, signedKeyPair, Arrays.hashCode(signedKeyIndex), signedKeyIndexTimestamp, preKeys, fdid, Arrays.hashCode(deviceId), advertisingId, Arrays.hashCode(identityId), Arrays.hashCode(backupToken), companionIdentity, senderKeys, appStateKeys, sessions, hashStates, groupsPreKeys, registered, businessCertificate);
+        return Objects.hash(registrationId, noiseKeyPair, ephemeralKeyPair, identityKeyPair, companionKeyPair, signedKeyPair, Arrays.hashCode(signedKeyIndex), signedKeyIndexTimestamp, preKeys, fdid, Arrays.hashCode(deviceId), advertisingId, Arrays.hashCode(identityId), Arrays.hashCode(backupToken), companionIdentity, senderKeys, appStateKeys, sessions, hashStates, registered, businessCertificate);
     }
 }
