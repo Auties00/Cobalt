@@ -1,6 +1,10 @@
 module it.auties.cobalt {
+    // Http client
+    requires java.net.http;
+
     // Cryptography
-    requires it.auties.curve;
+    requires com.github.auties00.libsignal;
+    requires com.github.auties00.curve25519;
 
     // QR related dependencies
     requires com.google.zxing;
@@ -21,11 +25,7 @@ module it.auties.cobalt {
     // Mobile api
     requires net.dongliu.apkparser;
     requires com.google.i18n.phonenumbers.libphonenumber;
-
-    // Web api
-    requires java.net.http;
-    requires java.logging;
-    requires jdk.httpserver;
+    requires it.auties.cobalt;
 
     exports it.auties.whatsapp.api;
     exports it.auties.whatsapp.controller;
@@ -41,23 +41,21 @@ module it.auties.cobalt {
     exports it.auties.whatsapp.model.message.standard;
     exports it.auties.whatsapp.model.product;
     exports it.auties.whatsapp.model.setting;
-    exports it.auties.whatsapp.model.response;
+    exports it.auties.whatsapp.io.json.response;
     exports it.auties.whatsapp.model.payment;
     exports it.auties.whatsapp.model.message.button;
     exports it.auties.whatsapp.model.privacy;
     exports it.auties.whatsapp.model.poll;
-    exports it.auties.whatsapp.model.mobile;
     exports it.auties.whatsapp.model.button.interactive;
     exports it.auties.whatsapp.model.button.base;
     exports it.auties.whatsapp.model.button.template.hydrated;
-    exports it.auties.whatsapp.model.companion;
     exports it.auties.whatsapp.model.auth;
     exports it.auties.whatsapp.model.sync;
-    exports it.auties.whatsapp.model.signal.key;
     exports it.auties.whatsapp.model.call;
-    exports it.auties.whatsapp.model.node;
     exports it.auties.whatsapp.model.button.template.highlyStructured;
     exports it.auties.whatsapp.model.jid;
     exports it.auties.whatsapp.model.newsletter;
     exports it.auties.whatsapp.exception;
+    exports it.auties.whatsapp.io.node;
+    exports it.auties.whatsapp.stream.webAppState2;
 }

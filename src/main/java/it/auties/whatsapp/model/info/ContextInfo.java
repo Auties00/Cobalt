@@ -20,13 +20,13 @@ import java.util.Optional;
 @ProtobufMessage(name = "ContextInfo")
 public final class ContextInfo implements Info { // TODO: Check me
     /**
-     * The jid of the message that this ContextualMessage quotes
+     * The value of the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final String quotedMessageId;
 
     /**
-     * The jid of the contact that sent the message that this ContextualMessage quotes
+     * The value of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 2, type = ProtobufType.STRING)
     final Jid quotedMessageSenderJid;
@@ -38,7 +38,7 @@ public final class ContextInfo implements Info { // TODO: Check me
     final MessageContainer quotedMessage;
 
     /**
-     * The jid of the contact that sent the message that this ContextualMessage quotes
+     * The value of the contact that sent the message that this ContextualMessage quotes
      */
     @ProtobufProperty(index = 4, type = ProtobufType.STRING)
     final Jid quotedMessageParentJid;
@@ -271,7 +271,7 @@ public final class ContextInfo implements Info { // TODO: Check me
     }
 
     /**
-     * Returns the chat jid of the quoted message
+     * Returns the chat value of the quoted message
      *
      * @return an optional
      */
@@ -281,7 +281,7 @@ public final class ContextInfo implements Info { // TODO: Check me
     }
 
     /**
-     * Returns the jid of the sender of the quoted message
+     * Returns the value of the sender of the quoted message
      *
      * @return an optional
      */

@@ -3,17 +3,26 @@ package it.auties.whatsapp.api;
 import it.auties.protobuf.annotation.ProtobufEnum;
 
 /**
- * The constants of this enumerated type describe the various types of Whatsapp client that can be initialized
+ * Represents the different types of WhatsApp clients that can be initialized in this API.
+ * <p>
+ * This enumeration defines the various platforms where a WhatsApp client can operate.
+ * Each client type might have specific capabilities, limitations, and connection protocols
+ * that affect how messages are sent, received, and processed within the system.
+ * <p>
  */
 @ProtobufEnum
 public enum WhatsappClientType {
     /**
-     * Standalone <a href="https://web.whatsapp.com">Whatsapp Web Client</a>
+     * Represents a web-based WhatsApp client that connects through <a href="https://web.whatsapp.com">web.whatsapp.com</a>.
+     * <p>
+     * This client type emulates the official WhatsApp Web application.
      */
     WEB,
 
     /**
-     * Standalone Mobile App Client
+     * Represents a mobile application client for WhatsApp.
+     * <p>
+     * This client type emulates the behavior of the official WhatsApp mobile application.
      */
     MOBILE
 }

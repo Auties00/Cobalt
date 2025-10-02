@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * The constants of this enumerated type describe the various servers that a jid might be linked
+ * The constants of this enumerated type describe the various servers that a value might be linked
  * to
  */
 public final class JidServer implements JidProvider { // String parsing is hard part 2
@@ -186,7 +186,9 @@ public final class JidServer implements JidProvider { // String parsing is hard 
                 }
             }
         }
-        return unknown(offset == 0 ? address : address.substring(offset));
+        return unknown(offset == 0 && address.length() == length
+                ? address
+                : address.substring(offset, offset + length));
     }
 
     // Fast path

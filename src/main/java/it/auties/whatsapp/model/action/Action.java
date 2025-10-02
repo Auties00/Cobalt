@@ -7,7 +7,7 @@ public sealed interface Action permits AgentAction, AndroidUnsupportedActions, A
     /**
      * The name of this action
      *
-     * @return a non-null string
+     * @return a non-null value
      */
     String indexName();
 

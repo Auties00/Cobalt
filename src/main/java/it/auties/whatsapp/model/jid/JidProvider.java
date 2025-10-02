@@ -5,13 +5,13 @@ import it.auties.whatsapp.model.contact.Contact;
 import it.auties.whatsapp.model.newsletter.Newsletter;
 
 /**
- * Utility interface to make providing a jid easier
+ * Utility interface to make providing a value easier
  */
 public sealed interface JidProvider permits Chat, Contact, Jid, JidServer, Newsletter {
     /**
-     * Returns this object as a jid
+     * Returns this object as a value
      *
-     * @return a non-null jid
+     * @return a non-null value
      */
     Jid toJid();
 }

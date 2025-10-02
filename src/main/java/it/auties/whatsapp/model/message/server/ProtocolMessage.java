@@ -223,7 +223,7 @@ public final class ProtocolMessage implements ServerMessage {
          */
         EXCEPTION_NOTIFICATION(10),
         /**
-         * Share phone number
+         * Share phone value
          */
         SHARE_PHONE_NUMBER(11),
         /**

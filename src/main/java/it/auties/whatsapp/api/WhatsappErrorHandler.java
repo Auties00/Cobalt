@@ -14,24 +14,42 @@ import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
 
 /**
- * This interface allows to handle a socket error and provides a default way to do so
+ * A handler interface for managing error scenarios that occur within the WhatsApp API.
+ * <p>
+ * This interface enables customizable error handling strategies for different types of failures
+ * that can occur during API operations, such as network issues, authentication errors,
+ * cryptographic failures, and stream processing problems.
+ * <p>
+ * The handler determines how the application should respond to these errors through the
+ * {@link Result} enum, which supports actions like discarding errors, disconnecting,
+ * reconnecting, or logging out completely.
+ * <p>
+ * Several predefined error handlers are provided through static factory methods that implement
+ * common error handling patterns, including logging to the terminal or saving to files.
  */
 @SuppressWarnings("unused")
 public interface WhatsappErrorHandler {
     /**
-     * Handles an error that occurred inside the api
+     * Processes an error that occurred within the WhatsApp API.
+     * <p>
+     * When an error occurs in any component of the API, this method is called with details
+     * about where the error happened and the associated exception. The implementation should
+     * evaluate the error context and determine the appropriate response action.
      *
-     * @param whatsapp  the caller api
-     * @param location  the location where the error occurred
-     * @param throwable a stacktrace of the error, if available
-     * @return a result determining what should be done
+     * @param whatsapp  the WhatsApp API instance where the error occurred
+     * @param location  the specific component or operation where the error was detected
+     * @param throwable the exception containing error details, if available
+     * @return a {@link Result} value indicating how the API should respond to the error
      */
     Result handleError(Whatsapp whatsapp, Location location, Throwable throwable);
 
     /**
-     * Default error handler. Prints the exception on the terminal.
+     * Creates an error handler that logs errors to the terminal's standard error.
+     * <p>
+     * This handler prints full stack traces to the console, making it suitable for
+     * debugging and development environments.
      *
-     * @return a non-null error handler
+     * @return a new error handler that prints exceptions to the terminal
      */
     @SuppressWarnings("CallToPrintStackTrace")
     static WhatsappErrorHandler toTerminal() {
@@ -39,32 +57,30 @@ public interface WhatsappErrorHandler {
     }
 
     /**
-     * Default error handler. Saves the exception locally.
-     * The file will be saved in $HOME/.cobalt/errors
+     * Creates an error handler that saves error information to files in the default location.
+     * <p>
+     * This handler saves detailed error information to files in the $HOME/.cobalt/errors directory,
+     * making it useful for production environments where logs need to be preserved.
      *
-     * @return a non-null error handler
+     * @return a new error handler that persists exceptions to files
      */
     static WhatsappErrorHandler toFile() {
         return defaultErrorHandler((api, error) -> Exceptions.save(error));
     }
 
     /**
-     * Default error handler. Saves the exception locally.
-     * The file will be saved in {@code directory}.
+     * Creates an error handler that saves error information to files in a specified directory.
+     * <p>
+     * This handler works like {@link #toFile()} but allows specifying a custom directory
+     * where error logs will be saved.
      *
-     * @param directory the directory where the error should be saved
-     * @return a non-null error handler
+     * @param directory the directory where error files should be saved
+     * @return a new error handler that persists exceptions to the specified directory
      */
     static WhatsappErrorHandler toFile(Path directory) {
         return defaultErrorHandler((api, error) -> Exceptions.save(directory, error));
     }
 
-    /**
-     * Default error handler
-     *
-     * @param printer a consumer that handles the printing of the throwable, can be null
-     * @return a non-null error handler
-     */
     private static WhatsappErrorHandler defaultErrorHandler(BiConsumer<Whatsapp, Throwable> printer) {
         return (whatsapp, location, throwable) -> {
             var logger = System.getLogger("ErrorHandler");
@@ -86,14 +102,6 @@ public interface WhatsappErrorHandler {
         };
     }
 
-    /**
-     * Default critical error detector
-     * If an error is critical, it means the session can't continue running
-     *
-     * @param location the location of the error
-     * @param throwable the error
-     * @return true if the error is critical; false otherwise
-     */
     private static boolean isCriticalError(Location location, Throwable throwable) {
         return location == LOGIN // Can't log in
                 || location == INITIAL_WEB_APP_STATE_SYNC // Web app state sync failed
@@ -102,75 +110,92 @@ public interface WhatsappErrorHandler {
     }
 
     /**
-     * The constants of this enumerated type describe the various locations where an error can occur
-     * in the socket
+     * Defines the possible locations within the WhatsApp API where errors can occur.
+     * <p>
+     * Each value represents a specific component or operation that may encounter errors,
+     * helping to categorize and handle errors appropriately based on their source.
      */
     enum Location {
         /**
-         * Unknown
+         * Indicates an error with an unspecified or unknown source
          */
         UNKNOWN,
+
         /**
-         * Called when an error is thrown while logging in
+         * Indicates an error that occurred during the authentication process
          */
         LOGIN,
+
         /**
-         * Cryptographic error
+         * Indicates an error in cryptographic operations, such as encryption or decryption
          */
         CRYPTOGRAPHY,
+
         /**
-         * Called when the media connection cannot be renewed
+         * Indicates an error that occurred while establishing or renewing media connections
          */
         MEDIA_CONNECTION,
+
         /**
-         * Called when an error arrives from the stream
+         * Indicates an error in the underlying communication stream
          */
         STREAM,
+
         /**
-         * Called when an error is thrown while pulling initial app data
+         * Indicates an error that occurred during initial synchronization of web app state
          */
         INITIAL_WEB_APP_STATE_SYNC,
+
         /**
-         * Called when an error is thrown while pulling app data
+         * Indicates an error that occurred while retrieving web app state data
          */
         PULL_WEB_APP_STATE,
+
         /**
-         * Called when an error is thrown while pushing app data
+         * Indicates an error that occurred while updating web app state data
          */
         PUSH_WEB_APP_STATE,
+
         /**
-         * Called when an error occurs when serializing or deserializing a Whatsapp message
+         * Indicates an error in message serialization or deserialization
          */
         MESSAGE,
+
         /**
-         * Called when syncing messages afte
+         * Indicates an error that occurred during message history synchronization
          */
         HISTORY_SYNC,
+
         /**
-         * Called when reconnection fails
+         * Indicates an error that occurred during connection re-establishment
          */
         RECONNECT
     }
 
     /**
-     * The constants of this enumerated type describe the various types of actions that can be
-     * performed by an error handler in response to a throwable
+     * Defines the possible response actions when handling errors.
+     * <p>
+     * These values determine how the API should proceed after encountering an error,
+     * ranging from ignoring the error to terminating the session completely.
      */
     enum Result {
         /**
-         * Ignores an error that was thrown by the socket
+         * Indicates that the error should be ignored, allowing the session to continue
          */
         DISCARD,
+
         /**
-         * Disconnects from the current session without deleting it
+         * Indicates that the current session should be disconnected but preserved for future use
          */
         DISCONNECT,
+
         /**
-         * Disconnects from the current session without deleting it and reconnects to it
+         * Indicates that the session should be disconnected and immediately reconnected
          */
         RECONNECT,
+
         /**
-         * Deletes the current session
+         * Indicates that the current session should be completely terminated and deleted
          */
         LOG_OUT
     }

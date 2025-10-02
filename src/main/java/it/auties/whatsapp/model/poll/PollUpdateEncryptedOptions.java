@@ -4,8 +4,10 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.SequencedCollection;
 
 /**
  * A model class that represents the cypher data to decode the votes of a user inside {@link it.auties.whatsapp.model.message.standard.PollUpdateMessage}
@@ -19,8 +21,8 @@ public final class PollUpdateEncryptedOptions {
         this.selectedOptions = Objects.requireNonNullElse(selectedOptions, List.of());
     }
 
-    public List<byte[]> selectedOptions() {
-        return selectedOptions;
+    public SequencedCollection<byte[]> selectedOptions() {
+        return Collections.unmodifiableSequencedCollection(selectedOptions);
     }
 
     @Override

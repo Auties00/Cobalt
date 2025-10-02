@@ -215,7 +215,7 @@ public final class ChatMessageInfo implements MessageInfo { // TODO: Check me
     }
 
     /**
-     * Returns the name of the chat where this message is or its pretty jid
+     * Returns the name of the chat where this message is or its pretty value
      *
      * @return a non-null String
      */
@@ -228,7 +228,7 @@ public final class ChatMessageInfo implements MessageInfo { // TODO: Check me
     }
 
     /**
-     * Returns the jid of the contact or group that sent the message.
+     * Returns the value of the contact or group that sent the message.
      *
      * @return a non-null ContactJid
      */
@@ -237,7 +237,7 @@ public final class ChatMessageInfo implements MessageInfo { // TODO: Check me
     }
 
     /**
-     * Returns the name of the person that sent this message or its pretty jid
+     * Returns the name of the person that sent this message or its pretty value
      *
      * @return a non-null String
      */
@@ -326,7 +326,7 @@ public final class ChatMessageInfo implements MessageInfo { // TODO: Check me
     }
 
     /**
-     * Returns the jid of the sender
+     * Returns the value of the sender
      *
      * @return a non-null ContactJid
      */

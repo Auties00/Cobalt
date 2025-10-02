@@ -128,9 +128,9 @@ public final class QuotedMessageInfo implements MessageInfo {
     }
 
     /**
-     * Returns the sender's jid
+     * Returns the sender's value
      *
-     * @return a jid
+     * @return a value
      */
     @Override
     public Jid senderJid() {
@@ -166,7 +166,7 @@ public final class QuotedMessageInfo implements MessageInfo {
     }
 
     @Override
-    public MessageContainer message() {
+    public MessageContainer messageContainer() {
         return message;
     }
 

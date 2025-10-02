@@ -20,7 +20,7 @@ import java.util.Optional;
 @ProtobufMessage
 public final class Contact implements JidProvider {
     /**
-     * The non-null unique jid used to identify this contact
+     * The non-null unique value used to identify this contact
      */
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
@@ -71,7 +71,7 @@ public final class Contact implements JidProvider {
     boolean blocked;
 
     Contact(Jid jid, String chosenName, String fullName, String shortName, ContactStatus lastKnownPresence, long lastSeenSeconds, boolean blocked) {
-        this.jid = Objects.requireNonNull(jid, "jid cannot be null");
+        this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.chosenName = chosenName;
         this.fullName = fullName;
         this.shortName = shortName;

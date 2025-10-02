@@ -10,7 +10,7 @@ public sealed interface HydratedButton permits HydratedCallButton, HydratedQuick
     /**
      * Returns the text of this button
      *
-     * @return a non-null string if the protobuf isn't corrupted
+     * @return a non-null value if the protobuf isn't corrupted
      */
     String text();
 

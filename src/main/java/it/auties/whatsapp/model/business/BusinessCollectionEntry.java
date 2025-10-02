@@ -3,7 +3,7 @@ package it.auties.whatsapp.model.business;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import it.auties.whatsapp.model.node.Node;
+import it.auties.whatsapp.io.node.Node;
 
 import java.util.List;
 import java.util.NoSuchElementException;

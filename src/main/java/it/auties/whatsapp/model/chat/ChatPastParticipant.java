@@ -27,7 +27,7 @@ public final class ChatPastParticipant {
     final long timestampSeconds;
 
     ChatPastParticipant(Jid jid, Reason reason, long timestampSeconds) {
-        this.jid = Objects.requireNonNull(jid, "jid cannot be null");
+        this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.reason = Objects.requireNonNull(reason, "reason cannot be null");
         this.timestampSeconds = timestampSeconds;
     }
@@ -69,7 +69,7 @@ public final class ChatPastParticipant {
     @Override
     public String toString() {
         return "ChatPastParticipant[" +
-                "jid=" + jid + ", " +
+                "value=" + jid + ", " +
                 "reason=" + reason + ", " +
                 "timestampSeconds=" + timestampSeconds + ']';
     }

@@ -451,7 +451,7 @@ public final class MessageContainer {
      */
     public static <T extends Message> MessageContainer ofViewOnce(T message) {
         var futureMessageContainer = new FutureMessageContainerBuilder()
-                .content(MessageContainer.of(message))
+                .value(MessageContainer.of(message))
                 .build();
         return new MessageContainerBuilder()
                 .viewOnceMessage(futureMessageContainer)
@@ -467,7 +467,7 @@ public final class MessageContainer {
      */
     public static <T extends Message> MessageContainer ofViewOnceV2(T message) {
         var futureMessageContainer = new FutureMessageContainerBuilder()
-                .content(MessageContainer.of(message))
+                .value(MessageContainer.of(message))
                 .build();
         return new MessageContainerBuilder()
                 .viewOnceV2Message(futureMessageContainer)
@@ -482,7 +482,7 @@ public final class MessageContainer {
      */
     public static <T extends Message> MessageContainer ofEphemeral(T message) {
         var futureMessageContainer = new FutureMessageContainerBuilder()
-                .content(MessageContainer.of(message))
+                .value(MessageContainer.of(message))
                 .build();
         return new MessageContainerBuilder()
                 .ephemeralMessage(futureMessageContainer)
@@ -497,7 +497,7 @@ public final class MessageContainer {
      */
     public static <T extends Message> MessageContainer ofEditedMessage(T message) {
         var futureMessageContainer = new FutureMessageContainerBuilder()
-                .content(MessageContainer.of(message))
+                .value(MessageContainer.of(message))
                 .build();
         return new MessageContainerBuilder()
                 .editedMessage(futureMessageContainer)
@@ -512,7 +512,7 @@ public final class MessageContainer {
      */
     public static <T extends Message> MessageContainer ofDocumentWithCaption(T message) {
         var futureMessageContainer = new FutureMessageContainerBuilder()
-                .content(MessageContainer.of(message))
+                .value(MessageContainer.of(message))
                 .build();
         return new MessageContainerBuilder()
                 .documentWithCaptionMessage(futureMessageContainer)
@@ -599,7 +599,7 @@ public final class MessageContainer {
             return listMessage;
         }
         if (this.viewOnceMessage != null) {
-            return viewOnceMessage.content().content();
+            return viewOnceMessage.value().content();
         }
         if (this.orderMessage != null) {
             return orderMessage;
@@ -608,7 +608,7 @@ public final class MessageContainer {
             return listResponseMessage;
         }
         if (this.ephemeralMessage != null) {
-            return ephemeralMessage.content().content();
+            return ephemeralMessage.value().content();
         }
         if (this.invoiceMessage != null) {
             return invoiceMessage;
@@ -644,22 +644,22 @@ public final class MessageContainer {
             return keepInChatMessage;
         }
         if (documentWithCaptionMessage != null) {
-            return documentWithCaptionMessage.content().content();
+            return documentWithCaptionMessage.value().content();
         }
         if (requestPhoneNumberMessage != null) {
             return requestPhoneNumberMessage;
         }
         if (viewOnceV2Message != null) {
-            return viewOnceV2Message.content.content();
+            return viewOnceV2Message.value.content();
         }
         if (encryptedReactionMessage != null) {
             return encryptedReactionMessage;
         }
         if (editedMessage != null) {
-            return editedMessage.content().content();
+            return editedMessage.value().content();
         }
         if (viewOnceV2ExtensionMessage != null) {
-            return viewOnceV2ExtensionMessage.content().content();
+            return viewOnceV2ExtensionMessage.value().content();
         }
         if (callMessage != null) {
             return callMessage;
@@ -759,7 +759,7 @@ public final class MessageContainer {
         }
 
         var futureMessageContainer = new FutureMessageContainerBuilder()
-                .content(MessageContainer.of(content()))
+                .value(MessageContainer.of(content()))
                 .build();
         return new MessageContainerBuilder()
                 .ephemeralMessage(futureMessageContainer)
@@ -778,7 +778,7 @@ public final class MessageContainer {
         }
 
         var futureMessageContainer = new FutureMessageContainerBuilder()
-                .content(MessageContainer.of(content()))
+                .value(MessageContainer.of(content()))
                 .build();
         return new MessageContainerBuilder()
                 .viewOnceMessage(futureMessageContainer)
@@ -798,27 +798,27 @@ public final class MessageContainer {
         }
 
         if (viewOnceMessage != null) {
-            return viewOnceMessage.content();
+            return viewOnceMessage.value();
         }
 
         if (ephemeralMessage != null) {
-            return ephemeralMessage.content();
+            return ephemeralMessage.value();
         }
 
         if (documentWithCaptionMessage != null) {
-            return documentWithCaptionMessage.content();
+            return documentWithCaptionMessage.value();
         }
 
         if (viewOnceV2Message != null) {
-            return viewOnceV2Message.content();
+            return viewOnceV2Message.value();
         }
 
         if (editedMessage != null) {
-            return editedMessage.content();
+            return editedMessage.value();
         }
 
         if (viewOnceV2ExtensionMessage != null) {
-            return viewOnceV2ExtensionMessage.content();
+            return viewOnceV2ExtensionMessage.value();
         }
 
         return this;

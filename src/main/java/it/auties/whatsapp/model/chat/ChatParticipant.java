@@ -51,7 +51,7 @@ public final class ChatParticipant {
     @Override
     public String toString() {
         return "ChatParticipant[" +
-                "jid=" + jid +
+                "value=" + jid +
                 ", role=" + role +
                 ']';
     }

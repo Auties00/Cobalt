@@ -2,7 +2,7 @@ package it.auties.whatsapp.model.info;
 
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.whatsapp.model.node.Node;
+import it.auties.whatsapp.io.node.Node;
 
 import java.util.*;
 

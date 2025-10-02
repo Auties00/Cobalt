@@ -10,7 +10,7 @@ import java.util.Objects;
 
 /**
  * A business hours representation that contains the business' time zone and a list of business hour
- * entries.
+ * patches.
  */
 @ProtobufMessage
 public final class BusinessHours {
@@ -49,6 +49,6 @@ public final class BusinessHours {
     public String toString() {
         return "BusinessHours[" +
                 "timeZone=" + timeZone + ", " +
-                "entries=" + entries + ']';
+                "patches=" + entries + ']';
     }
 }

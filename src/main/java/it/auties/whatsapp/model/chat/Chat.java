@@ -359,7 +359,7 @@ public final class Chat implements JidProvider, MessageInfoParent {
     /**
      * Returns the name of this chat
      *
-     * @return a non-null string
+     * @return a non-null value
      */
     public String name() {
         if (name != null) {
@@ -683,9 +683,9 @@ public final class Chat implements JidProvider, MessageInfoParent {
     }
 
     /**
-     * Returns this object as a jid
+     * Returns this object as a value
      *
-     * @return a non-null jid
+     * @return a non-null value
      */
     @Override
     public Jid toJid() {

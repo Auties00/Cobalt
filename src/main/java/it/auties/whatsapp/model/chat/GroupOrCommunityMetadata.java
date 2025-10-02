@@ -57,7 +57,7 @@ public final class GroupOrCommunityMetadata {
     final SequencedSet<CommunityLinkedGroup> communityGroups;
 
     GroupOrCommunityMetadata(Jid jid, String subject, Jid subjectAuthorJid, long subjectTimestampSeconds, long foundationTimestampSeconds, Jid founderJid, String description, String descriptionId, Map<Integer, ChatSettingPolicy> settings, SequencedSet<ChatParticipant> participants, long ephemeralExpirationSeconds, Jid parentCommunityJid, boolean isCommunity, SequencedSet<CommunityLinkedGroup> communityGroups) {
-        this.jid = Objects.requireNonNull(jid, "jid cannot be null");
+        this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.subject = Objects.requireNonNull(subject, "subject cannot be null");
         this.subjectAuthorJid = subjectAuthorJid;
         this.subjectTimestampSeconds = subjectTimestampSeconds;
@@ -194,7 +194,7 @@ public final class GroupOrCommunityMetadata {
     @Override
     public String toString() {
         return "ChatMetadata[" +
-                "jid=" + jid + ", " +
+                "value=" + jid + ", " +
                 "subject=" + subject + ", " +
                 "subjectAuthor=" + subjectAuthorJid + ", " +
                 "subjectTimestamp=" + subjectTimestampSeconds + ", " +

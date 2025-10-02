@@ -9,7 +9,7 @@ import it.auties.whatsapp.model.message.model.ContextualMessage;
 import java.util.Optional;
 
 /**
- * A model class that represents a message holding a request for a phone number inside
+ * A model class that represents a message holding a request for a phone value inside
  * Still needs to be implemented by Whatsapp
  */
 @ProtobufMessage(name = "Message.RequestPhoneNumberMessage")

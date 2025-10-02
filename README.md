@@ -303,7 +303,7 @@ var phoneNumber = scanner.nextLong();
 var scanner = new Scanner(System.in);
             return scanner.nextLine();
         })
-                .register(phoneNumber) // Register the phone number asynchronously, if necessary
+                .register(phoneNumber) // Register the phone value asynchronously, if necessary
         .join() // Await the result
         .whatsapp() // Access the Whatsapp instance
         .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
@@ -605,7 +605,7 @@ All types of messages supported by Whatsapp are supported by this library:
     var groupInvite = new GroupInviteMessageBuilder() // Create a new group invite message
             .caption("Come join my group of fellow programmers") // Set the caption of this message
             .name(group.name()) // Set the name of the group
-            .groupJid(group.jid())) // Set the jid of the group
+            .groupJid(group.jid())) // Set the value of the group
             .inviteExpiration(ZonedDateTime.now().plusDays(3).toEpochSecond()) // Set the expiration of this invite
             .inviteCode(inviteCode) // Set the code of the group
             .build(); // Create the message
@@ -616,7 +616,7 @@ All types of messages supported by Whatsapp are supported by this library:
     ```java
      var vcard = new ContactCardBuilder() // Create a new vcard
             .name("A nice friend") // Set the name of the contact
-            .phoneNumber(contact) // Set the phone number of the contact
+            .phoneNumber(contact) // Set the phone value of the contact
             .build(); // Create the vcard
     var contactMessage = new ContactMessageBuilder()  // Create a new contact message
             .name("A nice friend") // Set the display name of the contact
@@ -709,7 +709,7 @@ All types of messages supported by Whatsapp are supported by this library:
              .media(urlMedia) // Set the document of this message
              .title("A nice pdf") // Set the title of the document
              .fileName("pdf-test.pdf") // Set the name of the document
-             .pageCount(1) // Set the number of pages of the document
+             .pageCount(1) // Set the value of pages of the document
              .build(); // Create the message
        api.sendMessage(chat,  document);
        ```

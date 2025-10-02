@@ -1,13 +1,17 @@
 package it.auties.whatsapp.util;
 
-import it.auties.curve25519.Curve25519;
+import com.alibaba.fastjson2.JSON;
+import com.github.auties00.curve25519.Curve25519;
+import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
+import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import it.auties.whatsapp.api.WhatsappVerificationHandler;
 import it.auties.whatsapp.controller.Keys;
-import it.auties.whatsapp.controller.Store;
+import it.auties.whatsapp.controller.WhatsappStore;
 import it.auties.whatsapp.exception.MobileRegistrationException;
-import it.auties.whatsapp.model.response.RegistrationResponse;
-import it.auties.whatsapp.model.signal.key.SignalKeyPair;
-import it.auties.whatsapp.model.signal.key.SignalPublicKey;
+import it.auties.whatsapp.model.jid.Jid;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -21,17 +25,17 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.*;
 
-public final class MobileRegistration {
+public final class MobileRegistration implements AutoCloseable {
     public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
-    private static final String SIGNAL_PUBLIC_KEY_TYPE = Base64.getUrlEncoder().encodeToString(new byte[]{SignalPublicKey.type()});
+    private static final String SIGNAL_PUBLIC_KEY_TYPE = Base64.getUrlEncoder().encodeToString(new byte[]{SignalIdentityPublicKey.type()});
 
     private final HttpClient httpClient;
-    private final Store store;
+    private final WhatsappStore store;
     private final Keys keys;
     private final WhatsappVerificationHandler.Mobile verification;
 
-    public MobileRegistration(Store store, Keys keys, WhatsappVerificationHandler.Mobile verification) {
+    public MobileRegistration(WhatsappStore store, Keys keys, WhatsappVerificationHandler.Mobile verification) {
         this.store = store;
         this.keys = keys;
         this.verification = verification;
@@ -40,81 +44,101 @@ public final class MobileRegistration {
                 .build();
     }
 
-    public void registerPhoneNumber() {
+    public void register() {
         try {
-            requestVerificationCode(false);
+            assertRegistrationKeys();
+            requestVerificationCodeIfNecessary();
             sendVerificationCode();
         } catch (IOException | InterruptedException exception) {
-            throw new RuntimeException("Cannot register phone number", exception);
-        } finally {
-            dispose();
+            throw new MobileRegistrationException(exception);
         }
     }
 
-    public Optional<RegistrationResponse> requestVerificationCode() {
-        try {
-            return requestVerificationCode(true);
-        }catch (IOException | InterruptedException exception){
-            throw new RuntimeException("Cannot request verification code", exception);
-        }
-    }
-
-    private Optional<RegistrationResponse> requestVerificationCode(boolean closeResources) throws IOException, InterruptedException {
-        if (verification.requestMethod().isEmpty()) {
-            return Optional.empty();
-        }
-
-        try {
-            var response = exists(null);
-            var result = requestVerificationCode(response, null);
-            saveRegistrationStatus(store, keys, false);
-            return Optional.of(result);
-        } finally {
-            if (closeResources) {
-                dispose();
-            }
-        }
-    }
-
-    private RegistrationResponse exists(String lastError) throws IOException, InterruptedException {
+    // Pretty much this method checks if an account with the exact keys we provide already exists
+    // If the api answers "incorrect" it means that no account with those keys exists so we can register
+    private void assertRegistrationKeys() throws IOException, InterruptedException {
+        // Get request data
         var attrs = getRegistrationOptions(store, keys, false);
+
+        // First attempt
         var result = sendRequest("/exist", attrs);
-        var response = RegistrationResponse.ofJson(result)
-                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + new String(result)));
-
-        if (Objects.equals(response.errorReason(), "incorrect")) {
-            return response;
+        var response = JSON.parseObject(result);
+        if (Objects.equals(response.getString("reason"), "incorrect")) {
+            return;
         }
 
-        if (lastError == null) {
-            return exists(response.errorReason());
+        // Second attempt
+        result = sendRequest("/exist", attrs);
+        response = JSON.parseObject(result);
+        if (Objects.equals(response.getString("reason"), "incorrect")) {
+            return;
         }
 
-        throw new MobileRegistrationException(response, new String(result));
+        // Error
+        throw new MobileRegistrationException("Cannot get account data", new String(result));
     }
 
-    private RegistrationResponse requestVerificationCode(RegistrationResponse existsResponse, String lastError) throws IOException, InterruptedException {
-        var params = getRequestVerificationCodeParameters(existsResponse);
-        var attrs = getRegistrationOptions(
-                store,
-                keys,
-                true,
-                params
-        );
-        var result = sendRequest("/code", attrs);
-        return onCodeRequestSent(existsResponse, lastError, result);
+
+    private void requestVerificationCodeIfNecessary() throws IOException, InterruptedException {
+        var codeResult = verification.requestMethod();
+        if (codeResult.isEmpty()) {
+            return;
+        }
+
+        requestVerificationCode(codeResult.get());
+        saveRegistrationStatus(store, keys, false);
     }
 
-    private String[] getRequestVerificationCodeParameters(RegistrationResponse existsResponse) {
-        var method = verification.requestMethod()
-                .orElseThrow();
-        var countryCode = store.phoneNumber()
-                .orElseThrow()
-                .countryCode();
+    private void requestVerificationCode(String method) throws IOException, InterruptedException {
+        String lastError = null;
+        while (true) {
+            var params = getRequestVerificationCodeParameters(method);
+            var attrs = getRegistrationOptions(store, keys, true, params);
+            var result = sendRequest("/code", attrs);
+            var response = JSON.parseObject(result);
+            var status = response.getString("status");
+            if (isSuccessful(status)) {
+                return;
+            }
+
+            var reason = response.getString("reason");
+            if(isTooRecent(reason)) {
+                throw new MobileRegistrationException("Please wait before trying to register this phone value again. Don't spam!", new String(result));
+            }
+
+            if(isRegistrationBlocked(reason)) {
+                var resultJson = new String(result);
+                if(method.equals("wa_old")) {
+                    throw new MobileRegistrationException("The registration attempt was blocked by Whatsapp: you might want to change platform(iOS/Android) or try using a residential proxy (don't spam)", resultJson);
+                }else {
+                    throw new MobileRegistrationException("The registration attempt was blocked by Whatsapp: please try using a Whatsapp OTP as a verification method", resultJson);
+                }
+            }
+
+            if (Objects.equals(reason, lastError)) {
+                throw new MobileRegistrationException("An error occurred while registering: " + reason, new String(result));
+            }
+
+            lastError = reason;
+        }
+    }
+
+    private boolean isTooRecent(String reason) {
+        return reason.equalsIgnoreCase("too_recent")
+                || reason.equalsIgnoreCase("too_many")
+                || reason.equalsIgnoreCase("too_many_guesses")
+                || reason.equalsIgnoreCase("too_many_all_methods");
+    }
+
+    private boolean isRegistrationBlocked(String reason) {
+        return reason.equalsIgnoreCase("no_routes");
+    }
+
+    private String[] getRequestVerificationCodeParameters(String method) {
         return switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> new String[]{
                     "method", method,
-                    "sim_mcc", existsResponse.flashType() ? countryCode.mcc() : "000",
+                    "sim_mcc", "000",
                     "sim_mnc", "000",
                     "reason", "",
                     "cellular_strength", "1"
@@ -150,29 +174,7 @@ public final class MobileRegistration {
                     "backup_token", toUrlHex(keys.backupToken()),
                     "hasav", "2"
             };
-            default -> throw new IllegalStateException(store.device().platform() + " doesn't support registration");
-        };
-    }
-
-    private RegistrationResponse onCodeRequestSent(RegistrationResponse existsResponse, String lastError, byte[] result) throws IOException, InterruptedException {
-        var response = RegistrationResponse.ofJson(result)
-                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + new String(result)));
-        if (isSuccessful(response.status())) {
-            return response;
-        }
-
-        return switch (response.errorReason()) {
-            case "too_recent", "too_many", "too_many_guesses", "too_many_all_methods" ->
-                    throw new MobileRegistrationException(response, "Please wait before trying to register this phone number again");
-            case "no_routes" ->
-                    throw new MobileRegistrationException(response, "You can only register numbers that are already on Whatsapp");
-            default -> {
-                var newErrorReason = response.errorReason();
-                if (newErrorReason.equals(lastError)) {
-                    throw new MobileRegistrationException(response, new String(result));
-                }
-                yield requestVerificationCode(existsResponse, newErrorReason);
-            }
+            default -> throw new MobileRegistrationException(store.device().platform() + " doesn't support mobile registration");
         };
     }
 
@@ -180,18 +182,21 @@ public final class MobileRegistration {
         var code = verification.verificationCode();
         var attrs = getRegistrationOptions(store, keys, true, "code", normalizeCodeResult(code));
         var result = sendRequest("/register", attrs);
-        var response = RegistrationResponse.ofJson(result)
-                .orElseThrow(() -> new IllegalStateException("Cannot parse response: " + new String(result)));
-        if (!isSuccessful(response.status())) {
-            throw new MobileRegistrationException(response, new String(result));
+        var response = JSON.parseObject(result);
+        var status = response.getString("status");
+        if (isSuccessful(status)) {
+            saveRegistrationStatus(store, keys, true);
+            return;
         }
-        saveRegistrationStatus(store, keys, true);
+        throw new MobileRegistrationException("Cannot confirm registration", new String(result));
     }
 
-    private void saveRegistrationStatus(Store store, Keys keys, boolean registered) {
+    private void saveRegistrationStatus(WhatsappStore store, Keys keys, boolean registered) {
         keys.setRegistered(registered);
         if (registered) {
-            var jid = store.phoneNumber().orElseThrow().toJid();
+            var phoneNumber = store.phoneNumber()
+                    .orElseThrow(() -> new InternalError("Phone number wasn't set"));
+            var jid = Jid.of(phoneNumber);
             store.setJid(jid);
             store.addLinkedDevice(jid, 0);
         }
@@ -212,8 +217,8 @@ public final class MobileRegistration {
 
     private byte[] sendRequest(String path, String params) throws IOException, InterruptedException {
         try {
-            var keypair = SignalKeyPair.random();
-            var key = Curve25519.sharedKey(REGISTRATION_PUBLIC_KEY, keypair.privateKey().encodedPoint());
+            var keypair = SignalIdentityKeyPair.random();
+            var key = Curve25519.sharedKey(keypair.privateKey().toEncodedPoint(), REGISTRATION_PUBLIC_KEY);
             var cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(
                     Cipher.ENCRYPT_MODE,
@@ -221,7 +226,7 @@ public final class MobileRegistration {
                     new GCMParameterSpec(128, new byte[12])
             );
             var result = cipher.doFinal(params.getBytes(StandardCharsets.UTF_8));
-            var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey().encodedPoint(), result));
+            var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey().toEncodedPoint(), result));
             var userAgent = store.device()
                     .toUserAgent(store.version())
                     .orElseThrow(() -> new NoSuchElementException("Missing user agent for registration"));
@@ -245,10 +250,12 @@ public final class MobileRegistration {
         }
     }
 
-    private String getRegistrationOptions(Store store, Keys keys, boolean useToken, String... attributes) {
-        var phoneNumber = store.phoneNumber()
-                .orElseThrow(() -> new NoSuchElementException("Missing phone number"));
-        var token = useToken ? AppMetadata.getToken(phoneNumber.numberWithoutPrefix(), store.device().platform(), store.version()) : null;
+    private String getRegistrationOptions(WhatsappStore store, Keys keys, boolean useToken, String... attributes) {
+        var phoneNumber = getPhoneNumber(store);
+        var lc = PhoneNumberUtil.getInstance()
+                .getRegionCodeForNumber(phoneNumber)
+                .toUpperCase();
+        var token = useToken ? AppMetadata.getToken(phoneNumber.getNationalNumber(), store.device().platform(), store.version()) : null;
         var certificate = store.device().platform().isBusiness() ? AppMetadata.generateBusinessCertificate(keys) : null;
         var fdid = switch (store.device().platform()) {
             case IOS, IOS_BUSINESS -> keys.fdid().toUpperCase(Locale.ROOT);
@@ -256,18 +263,18 @@ public final class MobileRegistration {
             default -> null;
         };
         var registrationParams = toFormParams(
-                "cc", phoneNumber.countryCode().prefix(),
-                "in", String.valueOf(phoneNumber.numberWithoutPrefix()),
+                "cc", String.valueOf(phoneNumber.getCountryCode()),
+                "in", String.valueOf(phoneNumber.getNationalNumber()),
                 "rc", String.valueOf(store.releaseChannel().index()),
-                "lg", phoneNumber.countryCode().lg(),
-                "lc", phoneNumber.countryCode().lc(),
-                "authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey().encodedPoint()),
+                "lg", "en",
+                "lc", "US",
+                "authkey", Base64.getUrlEncoder().encodeToString(keys.noiseKeyPair().publicKey().toEncodedPoint()),
                 "vname", certificate,
                 "e_regid", Base64.getUrlEncoder().encodeToString(keys.encodedRegistrationId()),
                 "e_keytype", SIGNAL_PUBLIC_KEY_TYPE,
-                "e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey().encodedPoint()),
-                "e_skey_id", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().encodedId()),
-                "e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey().encodedPoint()),
+                "e_ident", Base64.getUrlEncoder().encodeToString(keys.identityKeyPair().publicKey().toEncodedPoint()),
+                "e_skey_id", Base64.getUrlEncoder().encodeToString(Scalar.intToBytes(keys.signedKeyPair().id(), 3)),
+                "e_skey_val", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().publicKey().toEncodedPoint()),
                 "e_skey_sig", Base64.getUrlEncoder().encodeToString(keys.signedKeyPair().signature()),
                 "fdid", fdid,
                 "expid", Base64.getUrlEncoder().encodeToString(keys.deviceId()),
@@ -284,9 +291,20 @@ public final class MobileRegistration {
         }
     }
 
+    private static PhoneNumber getPhoneNumber(WhatsappStore store) {
+        var phoneNumber = store.phoneNumber()
+                .orElseThrow(() -> new NoSuchElementException("Missing phone value"));
+        try {
+            return PhoneNumberUtil.getInstance()
+                    .parse("+" + phoneNumber, null);
+        }catch (NumberParseException exception) {
+            throw new MobileRegistrationException("Malformed phone number: " + phoneNumber);
+        }
+    }
+
     private String toUrlHex(byte[] buffer) {
         var id = new StringBuilder();
-        for (byte x : buffer) {
+        for (var x : buffer) {
             id.append(String.format("%%%02x", x));
         }
         return id.toString().toUpperCase(Locale.ROOT);
@@ -299,11 +317,11 @@ public final class MobileRegistration {
 
         var length = entries.length;
         if ((length & 1) != 0) {
-            throw new IllegalArgumentException("Odd form entries");
+            throw new IllegalArgumentException("Odd form patches");
         }
 
         var result = new StringJoiner("&");
-        for (int i = 0; i < length; i += 2) {
+        for (var i = 0; i < length; i += 2) {
             if (entries[i + 1] == null) {
                 continue;
             }
@@ -313,7 +331,8 @@ public final class MobileRegistration {
         return result.toString();
     }
 
-    private void dispose() {
+    @Override
+    public void close() {
         httpClient.close();
     }
 }

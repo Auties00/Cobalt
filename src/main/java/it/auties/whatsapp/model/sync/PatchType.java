@@ -3,9 +3,8 @@ package it.auties.whatsapp.model.sync;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.function.Function;
 
 @ProtobufEnum
 public enum PatchType {
@@ -14,6 +13,9 @@ public enum PatchType {
     REGULAR_HIGH(2),
     REGULAR_LOW(3),
     REGULAR(4);
+
+    private static final Map<String, PatchType> BY_NAME = Arrays.stream(values())
+            .collect(java.util.stream.Collectors.toMap(PatchType::toString, Function.identity()));
 
     final int index;
 
@@ -25,11 +27,8 @@ public enum PatchType {
         return index;
     }
 
-    public static PatchType of(String name) {
-        return Arrays.stream(values())
-                .filter(entry -> entry.toString().equals(name))
-                .findAny()
-                .orElseThrow(() -> new NoSuchElementException("No sync matches %s".formatted(name)));
+    public static Optional<PatchType> of(String name) {
+        return name == null ? Optional.empty() : Optional.ofNullable(BY_NAME.get(name));
     }
 
     @Override

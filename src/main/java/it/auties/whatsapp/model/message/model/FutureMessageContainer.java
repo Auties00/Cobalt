@@ -12,31 +12,31 @@ import java.util.Objects;
 @ProtobufMessage(name = "Message.FutureProofMessage")
 public final class FutureMessageContainer {
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
-    final MessageContainer content;
+    final MessageContainer value;
 
-    FutureMessageContainer(MessageContainer content) {
-        this.content = Objects.requireNonNull(content, "content cannot be null");
+    FutureMessageContainer(MessageContainer value) {
+        this.value = Objects.requireNonNull(value, "content cannot be null");
     }
 
-    public MessageContainer content() {
-        return this.content;
+    public MessageContainer value() {
+        return this.value;
     }
 
     @Override
     public boolean equals(Object other) {
         return other instanceof FutureMessageContainer that
-                && Objects.equals(content, that.content);
+                && Objects.equals(value, that.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(content);
+        return Objects.hash(value);
     }
 
     @Override
     public String toString() {
         return "FutureMessageContainer[" +
-                "content=" + content +
+                "content=" + value +
                 ']';
     }
 }

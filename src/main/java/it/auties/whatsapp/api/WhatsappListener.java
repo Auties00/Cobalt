@@ -11,9 +11,8 @@ import it.auties.whatsapp.model.info.MessageInfo;
 import it.auties.whatsapp.model.info.QuotedMessageInfo;
 import it.auties.whatsapp.model.jid.Jid;
 import it.auties.whatsapp.model.jid.JidProvider;
-import it.auties.whatsapp.model.mobile.CountryLocale;
 import it.auties.whatsapp.model.newsletter.Newsletter;
-import it.auties.whatsapp.model.node.Node;
+import it.auties.whatsapp.io.node.Node;
 import it.auties.whatsapp.model.privacy.PrivacySettingEntry;
 import it.auties.whatsapp.model.setting.Setting;
 
@@ -21,116 +20,133 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * This interface can be used to listen for events fired when new information is sent by
- * WhatsApp. A listener can be registered using {@link Whatsapp#addListener(WhatsappListener)}.
+ * An event listener interface for WhatsApp communication events.
+ * <p>
+ * This interface provides callback methods for various events that occur during
+ * a WhatsApp session, such as message reception, connection state changes, and data updates.
+ * Each method has two overloads: one that includes the {@link Whatsapp} instance that triggered
+ * the event, and one without it for simpler implementations.
+ * <p>
+ * Register a listener using {@link Whatsapp#addListener(WhatsappListener)} to receive these events.
+ * All methods have empty default implementations, allowing you to override only the ones you need.
+ *
+ * @see Whatsapp#addListener(WhatsappListener)
+ * @see Whatsapp#removeListener(WhatsappListener)
  */
 public interface WhatsappListener {
     /**
-     * Called when the socket sends a node to WhatsApp
+     * Called when a node is sent to the WhatsApp server.
      *
-     * @param whatsapp an instance to the calling api
-     * @param outgoing the non-null node that was just sent
+     * @param whatsapp an instance of the calling API
+     * @param outgoing the non-null node that was sent
      */
     default void onNodeSent(Whatsapp whatsapp, Node outgoing) {
     }
 
     /**
-     * Called when the socket sends a node to WhatsApp
+     * Called when a node is sent to the WhatsApp server.
      *
-     * @param outgoing the non-null node that was just sent
+     * @param outgoing the non-null node that was sent
      */
     default void onNodeSent(Node outgoing) {
     }
 
     /**
-     * Called when the socket receives a node from WhatsApp
+     * Called when a node is received from the WhatsApp server.
      *
-     * @param whatsapp an instance to the calling api
-     * @param incoming the non-null node that was just received
+     * @param whatsapp an instance of the calling API
+     * @param incoming the non-null node that was received
      */
     default void onNodeReceived(Whatsapp whatsapp, Node incoming) {
     }
 
     /**
-     * Called when the socket receives a node from WhatsApp
+     * Called when a node is received from the WhatsApp server.
      *
-     * @param incoming the non-null node that was just received
+     * @param incoming the non-null node that was received
      */
     default void onNodeReceived(Node incoming) {
     }
 
     /**
-     * Called when the socket successfully establishes a connection and logs in into an account. When
-     * this event is called, any data, including chats and contact, is not guaranteed to be already in
-     * memory. Prefer using the event that corresponds to that specific type of data: for example, for chats
-     * use {@link WhatsappListener#onChats(Whatsapp, Collection)}. 
+     * Called when a successful connection and login to a WhatsApp account is established.
+     * <p>
+     * Note: When this event is fired, data such as chats and contacts may not yet be loaded
+     * into memory. For specific data types, use the corresponding event handlers:
+     * {@link #onChats(Whatsapp, Collection)}, {@link #onContacts(Whatsapp, Collection)}, etc.
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp an instance of the calling API
      */
     default void onLoggedIn(Whatsapp whatsapp) {
     }
 
     /**
-     * Called when the socket successfully establishes a connection and logs in into an account. When
-     * this event is called, any data, including chats and contact, is not guaranteed to be already in
-     * memory. Prefer using the event that corresponds to that specific type of data: for example, for chats
-     * use {@link WhatsappListener#onChats(Whatsapp, Collection)}. 
+     * Called when a successful connection and login to a WhatsApp account is established.
+     * <p>
+     * Note: When this event is fired, data such as chats and contacts may not yet be loaded
+     * into memory. For specific data types, use the corresponding event handlers:
+     * {@link #onChats(Collection)}, {@link #onContacts(Collection)}, etc.
      */
     default void onLoggedIn() {
     }
 
     /**
-     * Called when the socket successfully disconnects from WhatsApp
+     * Called when the connection to WhatsApp is terminated.
      *
-     * @param whatsapp an instance to the calling api
-     * @param reason   the errorReason why the session was disconnected
+     * @param whatsapp an instance of the calling API
+     * @param reason   the reason for disconnection, indicating why the session was terminated
+     * @see WhatsappDisconnectReason
      */
     default void onDisconnected(Whatsapp whatsapp, WhatsappDisconnectReason reason) {
     }
 
-
     /**
-     * Called when the socket successfully disconnects from WhatsApp
+     * Called when the connection to WhatsApp is terminated.
      *
-     * @param reason the errorReason why the session was disconnected
+     * @param reason the reason for disconnection, indicating why the session was terminated
+     * @see WhatsappDisconnectReason
      */
     default void onDisconnected(WhatsappDisconnectReason reason) {
     }
 
     /**
-     * Called when the socket receives an action from WhatsAppWeb.
-     * This listener only works for web clients.
+     * Called when an action is received from WhatsApp Web.
+     * <p>
+     * This event is only triggered for web client connections.
      *
-     * @param whatsapp         an instance to the calling api
-     * @param action           the sync that was executed
-     * @param messageIndexInfo the data about this action
+     * @param whatsapp         an instance of the calling API
+     * @param action           the action that was executed
+     * @param messageIndexInfo the data associated with this action
      */
     default void onWebAppStateAction(Whatsapp whatsapp, Action action, MessageIndexInfo messageIndexInfo) {
     }
 
     /**
-     * Called when the socket receives an action from WhatsAppWeb.
-     * This listener only works for web clients.
+     * Called when an action is received from WhatsApp Web.
+     * <p>
+     * This event is only triggered for web client connections.
      *
-     * @param action           the sync that was executed
-     * @param messageIndexInfo the data about this action
+     * @param action           the action that was executed
+     * @param messageIndexInfo the data associated with this action
      */
     default void onWebAppStateAction(Action action, MessageIndexInfo messageIndexInfo) {
     }
 
     /**
-     * Called when the socket receives a setting from WhatsAppWeb.
-     * This listener only works for web clients.
+     * Called when a setting is received from WhatsApp Web.
+     * <p>
+     * This event is only triggered for web client connections.
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp an instance of the calling API
      * @param setting  the setting that was toggled
      */
     default void onWebAppStateSetting(Whatsapp whatsapp, Setting setting) {
     }
 
     /**
-     * Called when the socket receives a setting from WhatsAppWeb.
-     * This listener only works for web clients.
+     * Called when a setting is received from WhatsApp Web.
+     * <p>
+     * This event is only triggered for web client connections.
      *
      * @param setting the setting that was toggled
      */
@@ -138,250 +154,252 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when the socket receives primary features from WhatsAppWeb.
-     * This listener only works for web clients.
+     * Called when primary features are received from WhatsApp Web.
+     * <p>
+     * This event is only triggered for web client connections.
      *
-     * @param whatsapp an instance to the calling api
-     * @param features the non-null features that were sent
+     * @param whatsapp an instance of the calling API
+     * @param features the non-null collection of features that were sent
      */
     default void onWebAppPrimaryFeatures(Whatsapp whatsapp, List<String> features) {
     }
 
-
     /**
-     * Called when the socket receives primary features from WhatsAppWeb.
-     * This listener only works for web clients.
+     * Called when primary features are received from WhatsApp Web.
+     * <p>
+     * This event is only triggered for web client connections.
      *
-     * @param features the non-null features that were sent
+     * @param features the non-null collection of features that were sent
      */
     default void onWebAppPrimaryFeatures(Collection<String> features) {
     }
 
     /**
-     * Called when the socket receives all the contacts from Whatsapp.
+     * Called when all contacts are received from WhatsApp.
      *
-     * @param whatsapp an instance to the calling api
-     * @param contacts the contacts
+     * @param whatsapp an instance of the calling API
+     * @param contacts the collection of contacts
      */
     default void onContacts(Whatsapp whatsapp, Collection<Contact> contacts) {
     }
 
     /**
-     * Called when the socket receives all the contacts from Whatsapp.
+     * Called when all contacts are received from WhatsApp.
      *
-     * @param contacts the contacts
+     * @param contacts the collection of contacts
      */
     default void onContacts(Collection<Contact> contacts) {
     }
 
     /**
-     * Called when the socket receives an update regarding the presence of a contact
+     * Called when a contact's presence status is updated.
      *
-     * @param whatsapp an instance to the calling api
-     * @param chat     the chat that this update regards
-     * @param jid      the contact that this update regards
+     * @param whatsapp an instance of the calling API
+     * @param chat     the chat related to this presence update
+     * @param jid      the contact whose presence status changed
      */
     default void onContactPresence(Whatsapp whatsapp, Chat chat, JidProvider jid) {
     }
 
     /**
-     * Called when the socket receives an update regarding the presence of a contact
+     * Called when a contact's presence status is updated.
      *
-     * @param chat   the chat that this update regards
-     * @param jid    the contact that this update regards
+     * @param chat     the chat related to this presence update
+     * @param jid      the contact whose presence status changed
      */
     default void onContactPresence(Chat chat, JidProvider jid) {
     }
 
     /**
-     * Called when the socket receives all the chats from WhatsApp. When this event is
-     * fired, it is guaranteed that all metadata excluding messages will be present. If you also need
-     * the messages to be loaded, please refer to {@link WhatsappListener#onWebHistorySyncMessages(Chat, boolean)}.
-     * Particularly old chats may come later through
-     * {@link WhatsappListener#onWebHistorySyncMessages(Chat, boolean)}
+     * Called when all chats are received from WhatsApp.
+     * <p>
+     * When this event is fired, all chat metadata is available, excluding message content.
+     * For message content, refer to {@link #onWebHistorySyncMessages(Whatsapp, Chat, boolean)}.
+     * Note that particularly old chats may be loaded later through the history sync process.
      *
-     * @param whatsapp an instance to the calling api
-     * @param chats    the chats
+     * @param whatsapp an instance of the calling API
+     * @param chats    the collection of chats
      */
     default void onChats(Whatsapp whatsapp, Collection<Chat> chats) {
     }
 
     /**
-     * Called when the socket receives all the chats from WhatsApp.
-     * When this event is fired, it is guaranteed that all metadata excluding messages will be present. if you are using a web client
-     * If you also need the messages to be loaded, please refer to {@link WhatsappListener#onWebHistorySyncMessages(Chat, boolean)}.
-     * Particularly old chats may come later through {@link WhatsappListener#onWebHistorySyncMessages(Chat, boolean)}.
+     * Called when all chats are received from WhatsApp.
+     * <p>
+     * When this event is fired, all chat metadata is available, excluding message content.
+     * For message content, refer to {@link #onWebHistorySyncMessages(Chat, boolean)}.
+     * Note that particularly old chats may be loaded later through the history sync process.
      *
-     * @param chats the chats
+     * @param chats the collection of chats
      */
     default void onChats(Collection<Chat> chats) {
     }
 
-
     /**
-     * Called when the socket receives all the newsletters from WhatsApp
+     * Called when all newsletters are received from WhatsApp.
      *
-     * @param whatsapp    an instance to the calling api
-     * @param newsletters the newsletters
+     * @param whatsapp    an instance of the calling API
+     * @param newsletters the collection of newsletters
      */
     default void onNewsletters(Whatsapp whatsapp, Collection<Newsletter> newsletters) {
     }
 
     /**
-     * Called when the socket receives all the newsletters from WhatsApp
+     * Called when all newsletters are received from WhatsApp.
      *
-     * @param newsletters the newsletters
+     * @param newsletters the collection of newsletters
      */
     default void onNewsletters(Collection<Newsletter> newsletters) {
     }
 
     /**
-     * Called when the socket receives the messages for a chat. This method is only called when the QR
-     * is first scanned and history is being synced. From all subsequent runs, the messages will
-     * already in the chat on startup.
+     * Called when messages for a chat are received during history synchronization.
+     * <p>
+     * This event is only triggered during initial QR code scanning and history syncing.
+     * In subsequent connections, messages will already be loaded in the chats.
      *
-     * @param whatsapp an instance to the calling api
-     * @param chat     the chat
-     * @param last     whether the messages in this chat are complete or there are more coming
+     * @param whatsapp an instance of the calling API
+     * @param chat     the chat being synchronized
+     * @param last     true if these are the final messages for this chat, false if more are coming
      */
     default void onWebHistorySyncMessages(Whatsapp whatsapp, Chat chat, boolean last) {
     }
 
     /**
-     * Called when the socket receives the message for a chat This method is only called when the QR
-     * is first scanned and history is being synced. From all subsequent runs, the messages will
-     * already in the chat on startup.
+     * Called when messages for a chat are received during history synchronization.
+     * <p>
+     * This event is only triggered during initial QR code scanning and history syncing.
+     * In subsequent connections, messages will already be loaded in the chats.
      *
-     * @param chat the chat
-     * @param last whether the messages in this chat are complete or there are more coming
+     * @param chat the chat being synchronized
+     * @param last true if these are the final messages for this chat, false if more are coming
      */
     default void onWebHistorySyncMessages(Chat chat, boolean last) {
     }
 
     /**
-     * Called when past participants for a group are received during a web history sync
+     * Called when past participants for a group are received during history synchronization.
      *
-     * @param whatsapp an instance to the calling api
-     * @param chatJid the non-null chat jid
-     * @param chatPastParticipants the non-null past participants
+     * @param whatsapp             an instance of the calling API
+     * @param chatJid              the non-null group chat JID
+     * @param chatPastParticipants the non-null collection of past participants
      */
     default void onWebHistorySyncPastParticipants(Whatsapp whatsapp, Jid chatJid, Collection<ChatPastParticipant> chatPastParticipants) {
     }
 
     /**
-     * Called when past participants for a group are received during a web history sync
+     * Called when past participants for a group are received during history synchronization.
      *
-     * @param chatJid the non-null chat jid
-     * @param chatPastParticipants the non-null past participants
+     * @param chatJid              the non-null group chat JID
+     * @param chatPastParticipants the non-null collection of past participants
      */
     default void onWebHistorySyncPastParticipants(Jid chatJid, Collection<ChatPastParticipant> chatPastParticipants) {
     }
 
     /**
-     * Called when the socket receives the sync percentage for the full or recent chunk of messages.
-     * This method is only called when the QR is first scanned and history is being synced.
+     * Called with the progress of the history synchronization process.
+     * <p>
+     * This event is only triggered during initial QR code scanning and history syncing.
      *
-     * @param percentage the percentage synced up to now
-     * @param recent     whether the sync is about the recent messages or older messages
+     * @param percentage the percentage of synchronization completed
+     * @param recent     true if syncing recent messages, false if syncing older messages
      */
     default void onWebHistorySyncProgress(int percentage, boolean recent) {
     }
 
     /**
-     * Called when the socket receives the sync percentage for the full or recent chunk of messages.
-     * This method is only called when the QR is first scanned and history is being synced.
+     * Called with the progress of the history synchronization process.
+     * <p>
+     * This event is only triggered during initial QR code scanning and history syncing.
      *
-     * @param whatsapp   an instance to the calling api
-     * @param percentage the percentage synced up to now
-     * @param recent     whether the sync is about the recent messages or older messages
+     * @param whatsapp   an instance of the calling API
+     * @param percentage the percentage of synchronization completed
+     * @param recent     true if syncing recent messages, false if syncing older messages
      */
     default void onWebHistorySyncProgress(Whatsapp whatsapp, int percentage, boolean recent) {
     }
 
     /**
-     * Called when a new message is received in a chat
+     * Called when a new message is received.
      *
-     * @param whatsapp an instance to the calling api
-     * @param info     the message that was sent
+     * @param whatsapp an instance of the calling API
+     * @param info     the message that was received
      */
     default void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
     }
 
     /**
-     * Called when a new message is received in a chat
+     * Called when a new message is received.
      *
-     * @param info the message that was sent
+     * @param info the message that was received
      */
     default void onNewMessage(MessageInfo info) {
     }
 
     /**
-     * Called when a message is deleted
+     * Called when a message is deleted.
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp an instance of the calling API
      * @param info     the message that was deleted
-     * @param everyone whether this message was deleted by you only for yourself or whether the
-     *                 message was permanently removed
+     * @param everyone true if the message was deleted for everyone, false if deleted only for the user
      */
     default void onMessageDeleted(Whatsapp whatsapp, MessageInfo info, boolean everyone) {
     }
 
     /**
-     * Called when a message is deleted
+     * Called when a message is deleted.
      *
      * @param info     the message that was deleted
-     * @param everyone whether this message was deleted by you only for yourself or whether the
-     *                 message was permanently removed
+     * @param everyone true if the message was deleted for everyone, false if deleted only for the user
      */
     default void onMessageDeleted(MessageInfo info, boolean everyone) {
     }
 
     /**
-     * Called when the status of a message changes inside a chat
+     * Called when a message's status changes (e.g., sent, delivered, read).
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp an instance of the calling API
      * @param info     the message whose status changed
      */
     default void onMessageStatus(Whatsapp whatsapp, MessageInfo info) {
     }
 
     /**
-     * Called when the status of a message changes inside a chat
+     * Called when a message's status changes (e.g., sent, delivered, read).
      *
      * @param info the message whose status changed
      */
     default void onMessageStatus(MessageInfo info) {
     }
 
-
     /**
-     * Called when the socket receives all the status updated from WhatsApp.
+     * Called when all status updates are received from WhatsApp.
      *
-     * @param whatsapp an instance to the calling api
-     * @param status   the status
+     * @param whatsapp an instance of the calling API
+     * @param status   the collection of status updates
      */
     default void onStatus(Whatsapp whatsapp, Collection<ChatMessageInfo> status) {
     }
 
     /**
-     * Called when the socket receives all the status updated from WhatsApp.
+     * Called when all status updates are received from WhatsApp.
      *
-     * @param status the status
+     * @param status the collection of status updates
      */
     default void onStatus(Collection<ChatMessageInfo> status) {
     }
 
     /**
-     * Called when the socket receives a new status from WhatsApp
+     * Called when a new status update is received.
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp an instance of the calling API
      * @param status   the new status message
      */
     default void onNewStatus(Whatsapp whatsapp, ChatMessageInfo status) {
     }
 
     /**
-     * Called when the socket receives a new status from WhatsApp
+     * Called when a new status update is received.
      *
      * @param status the new status message
      */
@@ -389,127 +407,126 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when a message answers a previous message
+     * Called when a message is sent in reply to a previous message.
      *
-     * @param response the response
-     * @param quoted   the quoted message
+     * @param response the reply message
+     * @param quoted   the message being replied to
      */
     default void onMessageReply(MessageInfo response, QuotedMessageInfo quoted) {
     }
 
     /**
-     * Called when a message answers a previous message
+     * Called when a message is sent in reply to a previous message.
      *
-     * @param whatsapp an instance to the calling api
-     * @param response the response
-     * @param quoted   the quoted message
+     * @param whatsapp an instance of the calling API
+     * @param response the reply message
+     * @param quoted   the message being replied to
      */
     default void onMessageReply(Whatsapp whatsapp, MessageInfo response, QuotedMessageInfo quoted) {
     }
 
     /**
-     * Called when a contact's profile picture changes
+     * Called when a contact's profile picture changes.
      *
-     * @param jid the contact whose pic changed
+     * @param jid the contact whose profile picture changed
      */
     default void onProfilePictureChanged(JidProvider jid) {
     }
 
-
     /**
-     * Called when a contact's profile picture changes
+     * Called when a contact's profile picture changes.
      *
-     * @param whatsapp an instance to the calling api
-     * @param jid  the contact whose pic changed
+     * @param whatsapp an instance of the calling API
+     * @param jid      the contact whose profile picture changed
      */
     default void onProfilePictureChanged(Whatsapp whatsapp, JidProvider jid) {
     }
 
     /**
-     * Called when the companion's name changes
+     * Called when the user's display name changes.
      *
-     * @param oldName the non-null old name
+     * @param oldName the non-null previous name
      * @param newName the non-null new name
      */
     default void onNameChanged(String oldName, String newName) {
     }
 
     /**
-     * Called when the companion's name changes
+     * Called when the user's display name changes.
      *
-     * @param whatsapp an instance to the calling api
-     * @param oldName  the non-null old name
+     * @param whatsapp an instance of the calling API
+     * @param oldName  the non-null previous name
      * @param newName  the non-null new name
      */
     default void onNameChanged(Whatsapp whatsapp, String oldName, String newName) {
     }
 
     /**
-     * Called when the companion's about changes
+     * Called when the user's about/status text changes.
      *
-     * @param oldAbout the non-null old about
-     * @param newAbout the non-null new about
+     * @param oldAbout the non-null previous about text
+     * @param newAbout the non-null new about text
      */
     default void onAboutChanged(String oldAbout, String newAbout) {
     }
 
     /**
-     * Called when the companion's about changes
+     * Called when the user's about/status text changes.
      *
-     * @param whatsapp an instance to the calling api
-     * @param oldAbout the non-null old about
-     * @param newAbout the non-null new about
+     * @param whatsapp an instance of the calling API
+     * @param oldAbout the non-null previous about text
+     * @param newAbout the non-null new about text
      */
     default void onAboutChanged(Whatsapp whatsapp, String oldAbout, String newAbout) {
     }
 
     /**
-     * Called when the companion's locale changes
+     * Called when the user's locale settings change.
      *
-     * @param oldLocale the non-null old locale
-     * @param newLocale the non-null new picture
+     * @param oldLocale the non-null previous locale
+     * @param newLocale the non-null new locale
      */
-    default void onLocaleChanged(CountryLocale oldLocale, CountryLocale newLocale) {
+    default void onLocaleChanged(String oldLocale, String newLocale) {
     }
 
     /**
-     * Called when the companion's locale changes
+     * Called when the user's locale settings change.
      *
-     * @param whatsapp  an instance to the calling api
-     * @param oldLocale the non-null old locale
-     * @param newLocale the non-null new picture
+     * @param whatsapp  an instance of the calling API
+     * @param oldLocale the non-null previous locale
+     * @param newLocale the non-null new locale
      */
-    default void onLocaleChanged(Whatsapp whatsapp, CountryLocale oldLocale, CountryLocale newLocale) {
+    default void onLocaleChanged(Whatsapp whatsapp, String oldLocale, String newLocale) {
     }
 
     /**
-     * Called when a contact is blocked or unblocked
+     * Called when a contact is blocked or unblocked.
      *
-     * @param contact the non-null contact
+     * @param contact the non-null contact that was blocked or unblocked
      */
     default void onContactBlocked(Contact contact) {
     }
 
     /**
-     * Called when a contact is blocked or unblocked
+     * Called when a contact is blocked or unblocked.
      *
-     * @param whatsapp an instance to the calling api
-     * @param contact  the non-null contact
+     * @param whatsapp an instance of the calling API
+     * @param contact  the non-null contact that was blocked or unblocked
      */
     default void onContactBlocked(Whatsapp whatsapp, Contact contact) {
     }
 
     /**
-     * Called when the socket receives a new contact
+     * Called when a new contact is added to the contact list.
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp an instance of the calling API
      * @param contact  the new contact
      */
     default void onNewContact(Whatsapp whatsapp, Contact contact) {
     }
 
     /**
-     * Called when the socket receives a new contact
+     * Called when a new contact is added to the contact list.
      *
      * @param contact the new contact
      */
@@ -517,82 +534,76 @@ public interface WhatsappListener {
     }
 
     /**
-     * Called when a privacy setting is modified
+     * Called when a privacy setting is changed.
      *
-     * @param whatsapp        an instance to the calling api
-     * @param oldPrivacyEntry the old entry
-     * @param newPrivacyEntry the new entry
+     * @param whatsapp        an instance of the calling API
+     * @param oldPrivacyEntry the previous privacy setting
+     * @param newPrivacyEntry the new privacy setting
      */
     default void onPrivacySettingChanged(Whatsapp whatsapp, PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
-
     }
 
     /**
-     * Called when a privacy setting is modified
+     * Called when a privacy setting is changed.
      *
-     * @param oldPrivacyEntry the old entry
-     * @param newPrivacyEntry the new entry
+     * @param oldPrivacyEntry the previous privacy setting
+     * @param newPrivacyEntry the new privacy setting
      */
     default void onPrivacySettingChanged(PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
-
     }
 
     /**
-     * Called when the list of companion devices is updated
+     * Called when the list of linked devices is updated.
      *
-     * @param whatsapp an instance to the calling api
-     * @param devices  the non-null devices
+     * @param whatsapp an instance of the calling API
+     * @param devices  the non-null collection of linked device JIDs
      */
     default void onLinkedDevices(Whatsapp whatsapp, Collection<Jid> devices) {
-
     }
 
     /**
-     * Called when the list of companion devices is updated
+     * Called when the list of linked devices is updated.
      *
-     * @param devices the non-null devices
+     * @param devices the non-null collection of linked device JIDs
      */
     default void onLinkedDevices(Collection<Jid> devices) {
-
     }
 
     /**
-     * Called when an OTP is requested from a new device
-     * Only works on the mobile API
+     * Called when a registration code (OTP) is requested from a new device.
+     * <p>
+     * Note: This event is only triggered for the mobile API.
      *
      * @param code the registration code
      */
     default void onRegistrationCode(long code) {
-
     }
 
     /**
-     * Called when an OTP is requested from a new device
-     * Only works on the mobile API
+     * Called when a registration code (OTP) is requested from a new device.
+     * <p>
+     * Note: This event is only triggered for the mobile API.
      *
-     * @param whatsapp an instance to the calling api
+     * @param whatsapp an instance of the calling API
      * @param code     the registration code
      */
     default void onRegistrationCode(Whatsapp whatsapp, long code) {
-
     }
 
     /**
-     * Called when a phone call arrives
+     * Called when a phone call is received.
      *
-     * @param call the non-null phone call
+     * @param call the non-null phone call information
      */
     default void onCall(Call call) {
-
     }
 
     /**
-     * Called when a phone call arrives
+     * Called when a phone call is received.
      *
-     * @param whatsapp an instance to the calling api
-     * @param call     the non-null phone call
+     * @param whatsapp an instance of the calling API
+     * @param call     the non-null phone call information
      */
     default void onCall(Whatsapp whatsapp, Call call) {
-
     }
 }

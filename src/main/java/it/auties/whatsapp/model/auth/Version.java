@@ -33,7 +33,7 @@ public record Version(
     public static Version of(String version) {
         var tokens = version.split("\\.", 5);
         if (tokens.length > 5) {
-            throw new IllegalArgumentException("Invalid number of tokens for version %s: %s".formatted(version, tokens));
+            throw new IllegalArgumentException("Invalid value of tokens for version %s: %s".formatted(version, tokens));
         }
 
         var primary = tokens.length > 0 ? parseInt(tokens[0]) : null;

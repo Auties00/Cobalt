@@ -33,7 +33,7 @@ public final class Newsletter implements JidProvider, MessageInfoParent {
     final ConcurrentLinkedSet<NewsletterMessageInfo> messages;
 
     Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, ConcurrentLinkedSet<NewsletterMessageInfo> messages) {
-        this.jid = Objects.requireNonNull(jid, "jid cannot be null");
+        this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
@@ -144,7 +144,7 @@ public final class Newsletter implements JidProvider, MessageInfoParent {
     @Override
     public String toString() {
         return "Newsletter{" +
-                "jid=" + jid +
+                "value=" + jid +
                 ", state=" + state +
                 ", metadata=" + metadata +
                 ", viewerMetadata=" + viewerMetadata +

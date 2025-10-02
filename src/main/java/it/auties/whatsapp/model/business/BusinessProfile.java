@@ -4,7 +4,7 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 import it.auties.whatsapp.model.jid.Jid;
-import it.auties.whatsapp.model.node.Node;
+import it.auties.whatsapp.io.node.Node;
 
 import java.net.URI;
 import java.util.Collection;
@@ -42,7 +42,7 @@ public final class BusinessProfile {
     final List<BusinessCategory> categories;
 
     BusinessProfile(Jid jid, String description, String address, String email, BusinessHours hours, boolean cartEnabled, List<URI> websites, List<BusinessCategory> categories) {
-        this.jid = Objects.requireNonNull(jid, "jid cannot be null");
+        this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.description = description;
         this.address = address;
         this.email = email;
@@ -54,7 +54,7 @@ public final class BusinessProfile {
 
     public static BusinessProfile of(Node node) {
         var jid = node.attributes()
-                .getRequiredJid("jid");
+                .getRequiredJid("value");
         var address = node.findChild("address")
                 .flatMap(Node::contentAsString)
                 .orElse(null);
@@ -149,7 +149,7 @@ public final class BusinessProfile {
     @Override
     public String toString() {
         return "BusinessProfile[" +
-                "jid=" + jid + ", " +
+                "value=" + jid + ", " +
                 "description=" + description + ", " +
                 "address=" + address + ", " +
                 "email=" + email + ", " +

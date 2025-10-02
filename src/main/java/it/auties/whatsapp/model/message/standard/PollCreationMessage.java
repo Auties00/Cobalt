@@ -69,7 +69,7 @@ public final class PollCreationMessage implements ContextualMessage {
             throw new IllegalArgumentException("Title cannot be empty");
         }
         if (selectableOptions.size() <= 1) {
-            throw new IllegalArgumentException("Options must have at least two entries");
+            throw new IllegalArgumentException("Options must have at least two patches");
         }
         var result = new PollCreationMessageBuilder()
                 .encryptionKey(Bytes.random(32))

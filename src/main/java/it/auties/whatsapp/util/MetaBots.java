@@ -228,7 +228,7 @@ public final class MetaBots {
 
     public static Jid translate(Jid jid) {
         if(!jid.hasServer(JidServer.bot())) {
-            throw new IllegalArgumentException("Expected a bot jid");
+            throw new IllegalArgumentException("Expected a bot value");
         }
 
         var translated = botJIDMap.get(jid.user());

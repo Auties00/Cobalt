@@ -19,7 +19,7 @@ public final class SelectedPollOption {
     final String name;
 
     SelectedPollOption(Jid jid, String name) {
-        this.jid = Objects.requireNonNull(jid, "jid cannot be null");
+        this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.name = Objects.requireNonNull(name, "name cannot be null");
     }
 
@@ -46,7 +46,7 @@ public final class SelectedPollOption {
     @Override
     public String toString() {
         return "SelectedPollOption[" +
-                "jid=" + jid +
+                "value=" + jid +
                 ", name=" + name +
                 ']';
     }

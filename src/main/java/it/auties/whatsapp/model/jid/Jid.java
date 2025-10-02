@@ -1,10 +1,10 @@
 package it.auties.whatsapp.model.jid;
 
+import com.github.auties00.libsignal.SignalProtocolAddress;
 import it.auties.protobuf.annotation.ProtobufDeserializer;
 import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.protobuf.model.ProtobufString;
 import it.auties.whatsapp.exception.MalformedJidException;
-import it.auties.whatsapp.model.signal.SignalAddress;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * A model class that represents a jid.
+ * A model class that represents a value.
  * This class is only a model: this means that changing its values will have no real effect on WhatsappWeb's servers.
  */
 public final class Jid implements JidProvider {
@@ -106,14 +106,14 @@ public final class Jid implements JidProvider {
 
     /**
      * Creates a new instance of Jid based on the provided input parameters.
-     * If the user string starts with a '+' character, the character is removed before constructing the Jid.
-     * Otherwise, the user string is used as is.
+     * If the user value starts with a '+' character, the character is removed before constructing the Jid.
+     * Otherwise, the user value is used as is.
      *
      * @param user the user
      * @param server the non-null server
      * @param device the device
      * @param agent the agent
-     * @return a non-null contact jid
+     * @return a non-null contact value
      */
     public static Jid of(String user, JidServer server, int device, int agent) {
         Objects.requireNonNull(server, "Server cannot be null");
@@ -138,7 +138,7 @@ public final class Jid implements JidProvider {
      * Constructs a new ContactId that represents a server
      *
      * @param server the non-null custom server
-     * @return a non-null contact jid
+     * @return a non-null contact value
      */
     public static Jid of(JidServer server) {
         Objects.requireNonNull(server, "Server cannot be null");
@@ -156,23 +156,23 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Constructs a new ContactId for a user from a jid
+     * Constructs a new ContactId for a user from a value
      *
-     * @param jid the non-null jid of the user
-     * @return a non-null contact jid
+     * @param jid the non-null value of the user
+     * @return a non-null contact value
      */
     public static Jid of(long jid) {
         if(jid < 0) {
-            throw new MalformedJidException("jid cannot be negative");
+            throw new MalformedJidException("value cannot be negative");
         }
         return new Jid(String.valueOf(jid), JidServer.user(), 0, 0);
     }
 
     /**
-     * Constructs a new ContactId for a user from a jid and a custom server
+     * Constructs a new ContactId for a user from a value and a custom server
      *
-     * @param jid    the non-null jid
-     * @return a non-null contact jid
+     * @param jid    the non-null value
+     * @return a non-null contact value
      */
     public static Jid of(String jid) {
         if(jid == null) {
@@ -192,11 +192,11 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Constructs a new ContactId for a user from a jid and a custom server
+     * Constructs a new ContactId for a user from a value and a custom server
      *
      * @param user    the nullable user
      * @param server the non-null custom server
-     * @return a non-null contact jid
+     * @return a non-null contact value
      */
     public static Jid of(String user, JidServer server) {
         Objects.requireNonNull(server, "Server cannot be null");
@@ -211,7 +211,7 @@ public final class Jid implements JidProvider {
 
         var offset = jid.charAt(0) == PHONE_CHAR ? 1 : 0;
         if (offset >= length) {
-            throw new MalformedJidException("Malformed jid '" + jid + "'");
+            throw new MalformedJidException("Malformed value '" + jid + "'");
         }
 
         enum ParserState {
@@ -247,25 +247,25 @@ public final class Jid implements JidProvider {
                 case DEVICE -> {
                     if (token == AGENT_CHAR) {
                         if(agent != 0) {
-                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
+                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing value '" + jid + "'");
                         }
                         state = ParserState.AGENT;
                     } else if(Character.isDigit(token)) {
                         device = device * 10 + (token - '0');
                     }else {
-                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
+                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing value '" + jid + "'");
                     }
                 }
                 case AGENT -> {
                     if (token == DEVICE_CHAR) {
                         if(device != 0) {
-                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
+                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing value '" + jid + "'");
                         }
                         state = ParserState.DEVICE;
                     } else if(Character.isDigit(token)) {
                         agent = agent * 10 + (token - '0');
                     }else {
-                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
+                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing value '" + jid + "'");
                     }
                 }
             }
@@ -275,10 +275,10 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Constructs a new ContactId for a user from a jid
+     * Constructs a new ContactId for a user from a value
      *
-     * @param jid the non-null jid of the user
-     * @return a non-null contact jid
+     * @param jid the non-null value of the user
+     * @return a non-null contact value
      */
     @ProtobufDeserializer
     public static Jid of(ProtobufString jid) {
@@ -290,10 +290,10 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Constructs a new ContactId for a user from a jid
+     * Constructs a new ContactId for a user from a value
      *
-     * @param jid the non-null jid of the user
-     * @return a non-null contact jid
+     * @param jid the non-null value of the user
+     * @return a non-null contact value
      */
     public static Jid of(ProtobufString.Lazy jid) {
         if(jid == null) {
@@ -346,27 +346,27 @@ public final class Jid implements JidProvider {
                 case DEVICE -> {
                     if (token == AGENT_CHAR) {
                         if(agent != 0) {
-                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
+                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing value '" + jid + "'");
                         }
                         state = ParserState.AGENT;
                     } else if(Character.isDigit(token)) {
                         device = device * 10 + (token - '0');
                     }else {
                         var value = new String(source, offset, length, StandardCharsets.US_ASCII);
-                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + value + "'");
+                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing value '" + value + "'");
                     }
                 }
                 case AGENT -> {
                     if (token == DEVICE_CHAR) {
                         if(device != 0) {
-                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + jid + "'");
+                            throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing value '" + jid + "'");
                         }
                         state = ParserState.DEVICE;
                     } else if(Character.isDigit(token)) {
                         agent = agent * 10 + (token - '0');
                     }else {
                         var value = new String(source, offset, length, StandardCharsets.US_ASCII);
-                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing jid '" + value + "'");
+                        throw new MalformedJidException("Encountered unexpected token '" + token + "'" + " while parsing value '" + value + "'");
                     }
                 }
             }
@@ -376,7 +376,7 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Returns whether this jid ends with the provided server
+     * Returns whether this value ends with the provided server
      *
      * @param server the server to check against
      * @return a boolean
@@ -386,7 +386,7 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Returns whether this jid is a server jid
+     * Returns whether this value is a server value
      *
      * @param server the server to check against
      * @return a boolean
@@ -396,10 +396,10 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Returns a new jid using with a different server
+     * Returns a new value using with a different server
      *
      * @param server the new server
-     * @return a non-null jid
+     * @return a non-null value
      */
     public Jid withServer(JidServer server) {
         return Objects.equals(this.server, server)
@@ -408,10 +408,10 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Returns a new jid using with a different agent
+     * Returns a new value using with a different agent
      *
      * @param agent the new agent
-     * @return a non-null jid
+     * @return a non-null value
      */
     public Jid withAgent(int agent) {
         return this.agent == agent
@@ -419,10 +419,10 @@ public final class Jid implements JidProvider {
                 : new Jid(user, server, device, agent);
     }
     /**
-     * Returns a new jid using with a different device
+     * Returns a new value using with a different device
      *
      * @param device the new device
-     * @return a non-null jid
+     * @return a non-null value
      */
     public Jid withDevice(int device) {
         return this.device == device
@@ -431,9 +431,9 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Converts this jid to a user jid
+     * Converts this value to a user value
      *
-     * @return a non-null jid
+     * @return a non-null value
      */
     public Jid withoutData() {
         return !hasDevice() && !hasAgent()
@@ -442,7 +442,7 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Converts this jid to a non-formatted phone number
+     * Converts this value to a non-formatted phone value
      *
      * @return a non-null String
      */
@@ -456,7 +456,7 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Converts this jid to a String
+     * Converts this value to a String
      *
      * @return a non-null String
      */
@@ -477,18 +477,18 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Converts this jid to a signal address
+     * Converts this value to a signal address
      *
-     * @return a non-null {@link SignalAddress}
+     * @return a non-null {@link SignalProtocolAddress}
      */
-    public SignalAddress toSignalAddress() {
-        return new SignalAddress(user, device);
+    public SignalProtocolAddress toSignalAddress() {
+        return new SignalProtocolAddress(user, device);
     }
 
     /**
-     * Returns this object as a jid
+     * Returns this object as a value
      *
-     * @return a non-null jid
+     * @return a non-null value
      */
     @Override
     public Jid toJid() {
@@ -498,7 +498,7 @@ public final class Jid implements JidProvider {
     /**
      * Returns the user
      *
-     * @return a nullable string
+     * @return a nullable value
      */
     public String user() {
         return user;
@@ -532,7 +532,7 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Returns whether this jid specifies a user
+     * Returns whether this value specifies a user
      *
      * @return a boolean
      */
@@ -541,7 +541,7 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Returns whether this jid specifies a device
+     * Returns whether this value specifies a device
      *
      * @return a boolean
      */
@@ -550,7 +550,7 @@ public final class Jid implements JidProvider {
     }
 
     /**
-     * Returns whether this jid specifies an agent
+     * Returns whether this value specifies an agent
      *
      * @return a boolean
      */

@@ -1,16 +1,17 @@
 package it.auties.whatsapp.socket;
 
-import it.auties.curve25519.Curve25519;
+import com.github.auties00.curve25519.Curve25519;
+import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
+import com.sun.jdi.InternalException;
 import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
 import it.auties.whatsapp.api.WhatsappClientType;
+import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.controller.WhatsappStore;
+import it.auties.whatsapp.io.node.Node;
+import it.auties.whatsapp.io.node.NodeEncoder;
+import it.auties.whatsapp.io.node.NodeTokens;
 import it.auties.whatsapp.model.auth.*;
-import it.auties.whatsapp.model.signal.key.SignalPublicKey;
-import it.auties.whatsapp.socket.io.NodeEncoder;
-import it.auties.whatsapp.socket.io.NodeTokens;
-import it.auties.whatsapp.model.mobile.CountryLocale;
-import it.auties.whatsapp.model.mobile.PhoneNumber;
-import it.auties.whatsapp.model.node.Node;
 import it.auties.whatsapp.model.sync.HistorySyncConfigBuilder;
 import it.auties.whatsapp.util.Bytes;
 import it.auties.whatsapp.util.Scalar;
@@ -26,11 +27,11 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
-final class SocketEncryption {
+public final class SocketEncryption {
     private static final byte[] NOISE_PROTOCOL = "Noise_XX_25519_AESGCM_SHA256\0\0\0\0".getBytes(StandardCharsets.UTF_8);
     private static final byte[] WHATSAPP_VERSION_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
     private static final byte[] WEB_VERSION = new byte[]{6, NodeTokens.DICTIONARY_VERSION};
@@ -52,7 +53,9 @@ final class SocketEncryption {
         return new GCMParameterSpec(128, iv);
     }
 
-    private final SocketConnection socketConnection;
+    private final WhatsappStore store;
+    private final Keys keys;
+    private final Consumer<ByteBuffer> sendBinary;
     private final AtomicLong readCounter;
     private final AtomicLong writeCounter;
     private volatile SecretKeySpec readKey;
@@ -60,21 +63,23 @@ final class SocketEncryption {
     private final ReentrantLock readCipherLock;
     private final ReentrantLock writeCipherLock;
 
-    SocketEncryption(SocketConnection socketConnection) {
-        this.socketConnection = socketConnection;
+    public SocketEncryption(WhatsappStore store, Keys keys, Consumer<ByteBuffer> sendBinary) {
+        this.store = store;
+        this.keys = keys;
+        this.sendBinary = sendBinary;
         this.readCounter = new AtomicLong();
         this.writeCounter = new AtomicLong();
         this.readCipherLock = new ReentrantLock(true);
         this.writeCipherLock = new ReentrantLock(true);
     }
 
-    synchronized void startHandshake(SignalPublicKey publicKey) {
+    public synchronized void startHandshake(SignalIdentityPublicKey publicKey) {
         if(readKey != null || writeKey != null) {
             throw new IllegalStateException("Handshake has already been completed");
         }
         var prologue = getHandshakePrologue();
         var clientHello = new ClientHelloBuilder()
-                .ephemeral(publicKey.encodedPoint())
+                .ephemeral(publicKey.toEncodedPoint())
                 .build();
         var handshakeMessage = new HandshakeMessageBuilder()
                 .clientHello(clientHello)
@@ -84,26 +89,26 @@ final class SocketEncryption {
         System.arraycopy(prologue, 0, message, 0, prologue.length);
         var offset = writeRequestHeader(requestLength, message, prologue.length);
         HandshakeMessageSpec.encode(handshakeMessage, ProtobufOutputStream.toBytes(message, offset));
-        socketConnection.sendBinary(message);
+        sendBinary.accept(ByteBuffer.wrap(message));
     }
 
-    synchronized void finishHandshake(ByteBuffer serverHelloPayload) {
+    public synchronized void finishHandshake(ByteBuffer serverHelloPayload) {
         if(readKey != null || writeKey != null) {
             throw new IllegalStateException("Handshake has already been completed");
         }
         var serverHandshake = HandshakeMessageSpec.decode(ProtobufInputStream.fromBuffer(serverHelloPayload));
         var serverHello = serverHandshake.serverHello();
         try(var handshake = new Handshake(getHandshakePrologue())) {
-            handshake.updateHash(socketConnection.keys().ephemeralKeyPair().publicKey().encodedPoint());
+            handshake.updateHash(keys.ephemeralKeyPair().publicKey().toEncodedPoint());
             handshake.updateHash(serverHello.ephemeral());
-            var sharedEphemeral = Curve25519.sharedKey(serverHello.ephemeral(), socketConnection.keys().ephemeralKeyPair().privateKey().encodedPoint());
+            var sharedEphemeral = Curve25519.sharedKey(keys.ephemeralKeyPair().privateKey().toEncodedPoint(), serverHello.ephemeral());
             handshake.mixIntoKey(sharedEphemeral);
             var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
-            var sharedStatic = Curve25519.sharedKey(decodedStaticText, socketConnection.keys().ephemeralKeyPair().privateKey().encodedPoint());
+            var sharedStatic = Curve25519.sharedKey(keys.ephemeralKeyPair().privateKey().toEncodedPoint(), decodedStaticText);
             handshake.mixIntoKey(sharedStatic);
             handshake.cipher(serverHello.payload(), false);
-            var encodedKey = handshake.cipher(socketConnection.keys().noiseKeyPair().publicKey().encodedPoint(), true);
-            var sharedPrivate = Curve25519.sharedKey(serverHello.ephemeral(), socketConnection.keys().noiseKeyPair().privateKey().encodedPoint());
+            var encodedKey = handshake.cipher(keys.noiseKeyPair().publicKey().toEncodedPoint(), true);
+            var sharedPrivate = Curve25519.sharedKey(keys.noiseKeyPair().privateKey().toEncodedPoint(), serverHello.ephemeral());
             handshake.mixIntoKey(sharedPrivate);
             var payload = createUserClientPayload();
             var encodedPayload = handshake.cipher(ClientPayloadSpec.encode(payload), true);
@@ -115,7 +120,7 @@ final class SocketEncryption {
             var message = new byte[HEADER_LENGTH + requestLength];
             var offset = writeRequestHeader(requestLength, message, 0);
             HandshakeMessageSpec.encode(clientHandshake, ProtobufOutputStream.toBytes(message, offset));
-            socketConnection.sendBinary(message);
+            sendBinary.accept(ByteBuffer.wrap(message));
             var keys = handshake.finish();
             writeCounter.set(0);
             readCounter.set(0);
@@ -127,13 +132,13 @@ final class SocketEncryption {
     }
 
     private byte[] getHandshakePrologue() {
-        return switch (socketConnection.store().clientType()) {
+        return switch (store.clientType()) {
             case WEB -> WEB_PROLOGUE;
             case MOBILE -> MOBILE_PROLOGUE;
         };
     }
 
-    boolean sendCiphered(Node node) {
+    public boolean sendCiphered(Node node) {
         var writeKey = this.writeKey;
         if(writeKey == null) {
             return false;
@@ -157,7 +162,7 @@ final class SocketEncryption {
                 // Session changed
                 return false;
             }
-            socketConnection.sendBinary(ciphertext);
+            sendBinary.accept(ByteBuffer.wrap(ciphertext));
             return true;
         } catch (Throwable throwable) {
             throw new RuntimeException("Cannot encrypt data", throwable);
@@ -178,7 +183,7 @@ final class SocketEncryption {
         return offset;
     }
 
-    ByteBuffer receiveDeciphered(ByteBuffer message) {
+    public ByteBuffer receiveDeciphered(ByteBuffer message) {
         var readKey = this.readKey;
         if(readKey == null) {
             throw new IllegalStateException("Handshake has not been completed");
@@ -209,37 +214,36 @@ final class SocketEncryption {
     }
 
     private UserAgent createUserAgent() {
-        var mobile = socketConnection.store().clientType() == WhatsappClientType.MOBILE;
+        var mobile = store.clientType() == WhatsappClientType.MOBILE;
         return new UserAgentBuilder()
-                .platform(socketConnection.store().device().platform())
-                .appVersion(socketConnection.store().version())
+                .platform(store.device().platform())
+                .appVersion(store.version())
                 .mcc("000")
                 .mnc("000")
-                .osVersion(mobile ? socketConnection.store().device().osVersion().toString() : null)
-                .manufacturer(mobile ? socketConnection.store().device().manufacturer() : null)
-                .device(mobile ? socketConnection.store().device().model().replaceAll("_", " ") : null)
-                .osBuildNumber(mobile ? socketConnection.store().device().osBuildNumber() : null)
-                .phoneId(mobile ? socketConnection.keys().fdid().toUpperCase() : null)
-                .releaseChannel(socketConnection.store().releaseChannel())
-                .localeLanguageIso6391(socketConnection.store().locale().map(CountryLocale::languageValue).orElse("en"))
-                .localeCountryIso31661Alpha2(socketConnection.store().locale().map(CountryLocale::languageCode).orElse("US"))
+                .osVersion(mobile ? store.device().osVersion().toString() : null)
+                .manufacturer(mobile ? store.device().manufacturer() : null)
+                .device(mobile ? store.device().model().replaceAll("_", " ") : null)
+                .osBuildNumber(mobile ? store.device().osBuildNumber() : null)
+                .phoneId(mobile ? keys.fdid().toUpperCase() : null)
+                .releaseChannel(store.releaseChannel())
+                .localeLanguageIso6391("en")
+                .localeCountryIso31661Alpha2("US")
                 .deviceType(UserAgent.DeviceType.PHONE)
-                .deviceModelType(socketConnection.store().device().modelId())
+                .deviceModelType(store.device().modelId())
                 .build();
     }
 
     private ClientPayload createUserClientPayload() {
         var agent = createUserAgent();
-        return switch (socketConnection.store().clientType()) {
+        return switch (store.clientType()) {
             case MOBILE -> {
-                var phoneNumber = socketConnection.store()
+                var phoneNumber = store
                         .phoneNumber()
-                        .map(PhoneNumber::number)
-                        .orElseThrow(() -> new NoSuchElementException("Missing phone number for mobile registration"));
+                        .orElseThrow(() -> new InternalException("Phone number was not set"));
                 yield new ClientPayloadBuilder()
                         .username(phoneNumber)
                         .passive(false)
-                        .pushName(socketConnection.keys().registered() ? socketConnection.store().name() : null)
+                        .pushName(keys.registered() ? store.name() : null)
                         .userAgent(agent)
                         .shortConnect(true)
                         .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
@@ -250,7 +254,7 @@ final class SocketEncryption {
                         .build();
             }
             case WEB -> {
-                var jid = socketConnection.store().jid();
+                var jid = store.jid();
                 if (jid.isPresent()) {
                     yield new ClientPayloadBuilder()
                             .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
@@ -277,14 +281,14 @@ final class SocketEncryption {
 
     private CompanionRegistrationData createRegisterData() {
         var companion = new CompanionRegistrationDataBuilder()
-                .buildHash(socketConnection.store().version().toHash())
-                .eRegid(socketConnection.keys().encodedRegistrationId())
-                .eKeytype(Scalar.intToBytes(SignalPublicKey.type(), 1))
-                .eIdent(socketConnection.keys().identityKeyPair().publicKey().encodedPoint())
-                .eSkeyId(socketConnection.keys().signedKeyPair().encodedId())
-                .eSkeyVal(socketConnection.keys().signedKeyPair().publicKey().encodedPoint())
-                .eSkeySig(socketConnection.keys().signedKeyPair().signature());
-        if (socketConnection.store().clientType() == WhatsappClientType.WEB) {
+                .buildHash(store.version().toHash())
+                .eRegid(keys.encodedRegistrationId())
+                .eKeytype(Scalar.intToBytes(SignalIdentityPublicKey.type(), 1))
+                .eIdent(keys.identityKeyPair().publicKey().toEncodedPoint())
+                .eSkeyId(Scalar.intToBytes(keys.signedKeyPair().id(), 3))
+                .eSkeyVal(keys.signedKeyPair().publicKey().toEncodedPoint())
+                .eSkeySig(keys.signedKeyPair().signature());
+        if (store.clientType() == WhatsappClientType.WEB) {
             var props = createCompanionProps();
             var encodedProps = props == null ? null : CompanionPropertiesSpec.encode(props);
             companion.companionProps(encodedProps);
@@ -294,9 +298,9 @@ final class SocketEncryption {
     }
 
     private CompanionProperties createCompanionProps() {
-        return switch (socketConnection.store().clientType()) {
+        return switch (store.clientType()) {
             case WEB -> {
-                var historyLength = socketConnection.store().webHistorySetting();
+                var historyLength = store.webHistorySetting();
                 var config = new HistorySyncConfigBuilder()
                         .inlineInitialPayloadInE2EeMsg(true)
                         .supportBotUserAgentChatHistory(true)
@@ -304,14 +308,14 @@ final class SocketEncryption {
                         .storageQuotaMb(historyLength.size())
                         .fullSyncSizeMbLimit(historyLength.size())
                         .build();
-                var platformType = switch (socketConnection.store().device().platform()) {
+                var platformType = switch (store.device().platform()) {
                     case IOS, IOS_BUSINESS -> CompanionProperties.PlatformType.IOS_PHONE;
                     case ANDROID, ANDROID_BUSINESS -> CompanionProperties.PlatformType.ANDROID_PHONE;
                     case WINDOWS -> CompanionProperties.PlatformType.UWP;
                     case MACOS -> CompanionProperties.PlatformType.IOS_CATALYST;
                 };
                 yield new CompanionPropertiesBuilder()
-                        .os(socketConnection.store().name())
+                        .os(store.name())
                         .platformType(platformType)
                         .requireFullSync(historyLength.isExtended())
                         .historySyncConfig(config)
@@ -321,7 +325,7 @@ final class SocketEncryption {
         };
     }
 
-    synchronized void reset() {
+    public synchronized void reset() {
         this.readKey = null;
         this.writeKey = null;
     }
@@ -375,8 +379,7 @@ final class SocketEncryption {
                     .addSalt(salt)
                     .addIKM(new SecretKeySpec(key, "AES"))
                     .thenExpand(null, 64);
-            return hkdf.deriveKey("AES", params)
-                    .getEncoded();
+            return hkdf.deriveData(params);
         }
 
         private void mixIntoKey(byte[] bytes) throws GeneralSecurityException {
@@ -385,8 +388,7 @@ final class SocketEncryption {
                     .addSalt(salt)
                     .addIKM(new SecretKeySpec(bytes, "AES"))
                     .thenExpand(null, 64);
-            var expanded = hkdf.deriveKey("AES", params)
-                    .getEncoded();
+            var expanded = hkdf.deriveData(params);
             this.salt = Arrays.copyOfRange(expanded, 0, 32);
             this.cryptoKey = new SecretKeySpec(expanded, 32, 32, "AES");
             this.counter = 0;

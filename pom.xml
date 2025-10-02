@@ -170,7 +170,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>24</java.version>
+        <java.version>25</java.version>
         <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
         <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
@@ -181,7 +181,8 @@
         <json.version>2.0.57</json.version>
         <protoc.version>3.4.3</protoc.version>
         <junit.version>5.10.0-M1</junit.version>
-        <curve25519.version>2.0</curve25519.version>
+        <libsignal.version>1.0.0</libsignal.version>
+        <curve25519.version>3.0.1</curve25519.version>
         <lazysodium.version>5.1.4</lazysodium.version>
         <linkpreview.version>2.3</linkpreview.version>
         <vcard.version>0.12.1</vcard.version>
@@ -206,9 +207,6 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <release>${java.version}</release>
-                    <compilerArgs>
-                        <compilerArg>--enable-preview</compilerArg>
-                    </compilerArgs>
                     <annotationProcessorPaths>
                         <annotationProcessorPath>
                             <groupId>com.github.auties00</groupId>
@@ -249,6 +247,11 @@
         </dependency>
 
         <!-- Cryptography (used by Whatsapp) -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>libsignal</artifactId>
+            <version>${libsignal.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.github.auties00</groupId>
             <artifactId>curve25519</artifactId>

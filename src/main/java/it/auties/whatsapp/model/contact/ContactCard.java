@@ -53,7 +53,7 @@ public sealed interface ContactCard {
      * Creates a new vcard
      *
      * @param name        the nullable name of the contact
-     * @param phoneNumber the non-null phone number of the contact
+     * @param phoneNumber the non-null phone value of the contact
      * @return a vcard
      */
     static ContactCard of(String name, Jid phoneNumber) {
@@ -64,7 +64,7 @@ public sealed interface ContactCard {
      * Creates a new vcard
      *
      * @param name         the nullable name of the contact
-     * @param phoneNumber  the non-null phone number of the contact
+     * @param phoneNumber  the non-null phone value of the contact
      * @param businessName the nullable business name of the contact
      * @return a vcard
      */

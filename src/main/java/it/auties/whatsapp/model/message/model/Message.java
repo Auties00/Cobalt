@@ -186,7 +186,7 @@ public sealed interface Message permits ButtonMessage, ContextualMessage, Paymen
          */
         POLL_UPDATE,
         /**
-         * Request phone number
+         * Request phone value
          */
         REQUEST_PHONE_NUMBER,
         /**

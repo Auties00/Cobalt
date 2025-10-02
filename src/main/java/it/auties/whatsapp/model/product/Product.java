@@ -12,7 +12,6 @@ import java.util.Objects;
  */
 @ProtobufMessage(name = "Message.ListMessage.Product")
 public final class Product {
-
     @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
     ImageMessage image;
 
@@ -58,6 +57,50 @@ public final class Product {
         this.productImageCount = productImageCount;
         this.firstImageId = Objects.requireNonNull(firstImageId, "firstImageId cannot be null");
         this.salePriceAmount1000 = salePriceAmount1000;
+    }
+
+    public ImageMessage image() {
+        return image;
+    }
+
+    public String id() {
+        return id;
+    }
+
+    public String title() {
+        return title;
+    }
+
+    public String description() {
+        return description;
+    }
+
+    public String currencyCode() {
+        return currencyCode;
+    }
+
+    public long priceAmount1000() {
+        return priceAmount1000;
+    }
+
+    public String retailerId() {
+        return retailerId;
+    }
+
+    public String url() {
+        return url;
+    }
+
+    public int productImageCount() {
+        return productImageCount;
+    }
+
+    public String firstImageId() {
+        return firstImageId;
+    }
+
+    public long salePriceAmount1000() {
+        return salePriceAmount1000;
     }
 
     @Override

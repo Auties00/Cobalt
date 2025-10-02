@@ -1,14 +1,14 @@
 package it.auties.whatsapp.util;
 
 import com.alibaba.fastjson2.JSON;
-import it.auties.curve25519.Curve25519;
+import com.github.auties00.curve25519.Curve25519;
 import it.auties.whatsapp.controller.Keys;
+import it.auties.whatsapp.model.auth.UserAgent.PlatformType;
+import it.auties.whatsapp.model.auth.Version;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameCertificateSpec;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsBuilder;
 import it.auties.whatsapp.model.business.BusinessVerifiedNameDetailsSpec;
-import it.auties.whatsapp.model.auth.UserAgent.PlatformType;
-import it.auties.whatsapp.model.auth.Version;
 import net.dongliu.apk.parser.ByteArrayApkFile;
 import net.dongliu.apk.parser.bean.ApkSigner;
 import net.dongliu.apk.parser.bean.CertificateMeta;
@@ -87,7 +87,7 @@ public final class AppMetadata {
     }
 
     // Optimized for speed, it's pretty much looking for the "client_revision":(\\w+) regex
-    // But this doesn't need to parse the response as a string
+    // But this doesn't need to parse the response as a value
     private static Version queryWebVersion() {
         try {
             try(var httpClient = HttpClient.newBuilder()
@@ -375,7 +375,7 @@ public final class AppMetadata {
         var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
         var certificate = new BusinessVerifiedNameCertificateBuilder()
                 .encodedDetails(encodedDetails)
-                .signature(Curve25519.sign(keys.identityKeyPair().privateKey().encodedPoint(), encodedDetails))
+                .signature(Curve25519.sign(keys.identityKeyPair().privateKey().toEncodedPoint(), encodedDetails))
                 .build();
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }

@@ -1,8 +1,6 @@
 package it.auties.whatsapp.util;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 
 public final class Streams {

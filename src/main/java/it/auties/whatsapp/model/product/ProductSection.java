@@ -4,8 +4,10 @@ import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.SequencedCollection;
 
 /**
  * A model class that represents a section inside a list of products
@@ -27,8 +29,8 @@ public final class ProductSection {
         return title;
     }
 
-    public List<ProductSectionEntry> products() {
-        return products;
+    public SequencedCollection<ProductSectionEntry> products() {
+        return Collections.unmodifiableSequencedCollection(products);
     }
 
     @Override

@@ -148,7 +148,7 @@ public sealed abstract class MediaMessage implements ContextualMessage, MutableA
         /**
          * Returns the extension of this media
          *
-         * @return a string
+         * @return a value
          */
         public String extension() {
             return extension;
@@ -157,7 +157,7 @@ public sealed abstract class MediaMessage implements ContextualMessage, MutableA
         /**
          * Returns the mime type of this media
          *
-         * @return a string
+         * @return a value
          */
         public String mimeType() {
             return this.mimeType;

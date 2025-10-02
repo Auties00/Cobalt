@@ -13,11 +13,9 @@ import java.util.Base64;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-abstract sealed class SocketSession {
+public abstract sealed class SocketSession {
     private static final String HOST_NAME = "g.whatsapp.net";
     private static final int PORT = 443;
     private static final int MAX_MESSAGE_LENGTH = 1048576;
@@ -25,7 +23,7 @@ abstract sealed class SocketSession {
 
     SocketChannel channel;
 
-    static SocketSession of(URI proxy) {
+    public static SocketSession of(URI proxy) {
         if(proxy == null) {
             return new DirectSession();
         }
@@ -39,7 +37,7 @@ abstract sealed class SocketSession {
         };
     }
 
-    abstract void connect(Consumer<ByteBuffer> onMessage);
+    public abstract void connect(Consumer<ByteBuffer> onMessage);
 
     private void connect(InetSocketAddress endpoint, boolean ready, Consumer<ByteBuffer> onMessage) {
         try {
@@ -60,7 +58,7 @@ abstract sealed class SocketSession {
     }
 
 
-    void disconnect() {
+    public void disconnect() {
         if(!isConnected()) {
             return;
         }
@@ -76,11 +74,11 @@ abstract sealed class SocketSession {
         }
     }
 
-    boolean isConnected() {
+    public boolean isConnected() {
         return channel != null && channel.isConnected();
     }
 
-    void sendBinary(ByteBuffer buffer) {
+    public void sendBinary(ByteBuffer buffer) {
         if (!isConnected()) {
             throw new IllegalStateException("Socket is not connected");
         }
@@ -118,7 +116,7 @@ abstract sealed class SocketSession {
 
     private static final class DirectSession extends SocketSession {
         @Override
-        void connect(Consumer<ByteBuffer> onMessage) {
+        public void connect(Consumer<ByteBuffer> onMessage) {
             if (isConnected()) {
                 return;
             }
@@ -143,7 +141,7 @@ abstract sealed class SocketSession {
         }
 
         @Override
-        void connect(Consumer<ByteBuffer> onMessage) {
+        public void connect(Consumer<ByteBuffer> onMessage) {
             var host = proxy.getHost();
             var port = proxy.getPort();
             if(port == -1) {
@@ -326,7 +324,7 @@ abstract sealed class SocketSession {
         }
 
         @Override
-        void connect(Consumer<ByteBuffer> onMessage) {
+        public void connect(Consumer<ByteBuffer> onMessage) {
             var proxyHost = proxy.getHost();
             var proxyPort = proxy.getPort() == -1 ? 1080 : proxy.getPort();
             super.connect(new InetSocketAddress(proxyHost, proxyPort), false, onMessage);
@@ -480,10 +478,6 @@ abstract sealed class SocketSession {
         private void unregister(SocketChannel channel) {
             var key = channel.keyFor(selector);
             if(key != null) {
-                if(key.attachment() instanceof ConnectionContext ctx) {
-                    ctx.dispatcher.shutdownNow();
-                    ctx.dispatcher.close();
-                }
                 key.cancel();
                 selector.wakeup();
             }
@@ -648,7 +642,7 @@ abstract sealed class SocketSession {
                 ctx.messageBuffer.flip();
                 ctx.messageLengthBuffer.clear();
                 var buffer = ctx.messageBuffer;
-                ctx.dispatcher.execute(() -> ctx.onMessage.accept(buffer));
+                Thread.startVirtualThread(() -> ctx.onMessage.accept(buffer));
                 ctx.messageBuffer = null;
                 return true;
             }
@@ -657,7 +651,7 @@ abstract sealed class SocketSession {
         private boolean processWrite(SocketChannel channel, ConnectionContext ctx) throws IOException {
             var queue = ctx.pendingWrites;
             while (!queue.isEmpty()) {
-                ByteBuffer buf = queue.peek();
+                var buf = queue.peek();
                 channel.write(buf);
                 if (buf.hasRemaining()) {
                     break;
@@ -688,9 +682,7 @@ abstract sealed class SocketSession {
         // Callback for a WhatsApp message
         // ONly used whe ready = true
         private final Consumer<ByteBuffer> onMessage;
-        // The dispatcher used for onMessage
-        // Prevents the next message from being processed if the previous is not done processing
-        private final ExecutorService dispatcher;
+
         private ConnectionContext(Consumer<ByteBuffer> onMessage, boolean ready) {
             this.connectionLock = new Object();
             this.ready = ready;
@@ -698,7 +690,6 @@ abstract sealed class SocketSession {
             this.pendingReads = new ConcurrentLinkedQueue<>();
             this.pendingWrites = new ConcurrentLinkedQueue<>();
             this.messageLengthBuffer = ByteBuffer.allocate(3);
-            this.dispatcher = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
         }
     }
 

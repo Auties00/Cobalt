@@ -8,7 +8,7 @@ import java.util.*;
 
 /**
  * The constants of this enumerated type describe the various types of settings that a user can
- * toggle in his account's preferences
+ * toggle in this account's preferences
  */
 @ProtobufEnum
 public enum PrivacySettingType {
