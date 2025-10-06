@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.model.jid;
 
+import com.github.auties00.cobalt.exception.MalformedJidException;
 import com.github.auties00.libsignal.SignalProtocolAddress;
 import it.auties.protobuf.annotation.ProtobufDeserializer;
 import it.auties.protobuf.annotation.ProtobufSerializer;
 import it.auties.protobuf.model.ProtobufString;
-import com.github.auties00.cobalt.exception.MalformedJidException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;

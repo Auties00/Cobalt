@@ -3,6 +3,7 @@ package com.github.auties00.cobalt.api;
 import com.github.auties00.cobalt.model.business.BusinessCategory;
 import com.github.auties00.cobalt.model.jid.JidDevice;
 import com.github.auties00.cobalt.util.MobileRegistration;
+import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 
 import java.net.URI;
 import java.util.*;
@@ -138,6 +139,14 @@ public sealed class WhatsappBuilder {
          */
         public abstract Options newConnection(WhatsappSixPartsKeys sixParts);
 
+        private static WhatsappStore newStore(UUID id, Long phoneNumber, SignalIdentityKeyPair signalIdentityKeyPair, SignalIdentityKeyPair identityKeyPair, byte[] bytes, boolean b, WhatsappClientType clientType) {
+            return new WhatsappStoreBuilder()
+                    .uuid(id)
+                    .phoneNumber(phoneNumber)
+                    .clientType(clientType)
+                    .build();
+        }
+
         public static final class Web extends Client {
             private Web(WhatsappStoreSerializer serializer) {
                 super(serializer);
@@ -196,9 +205,9 @@ public sealed class WhatsappBuilder {
             @Override
             public Options.Web newConnection(UUID uuid) {
                 var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
-                var sessionStoreAndKeys = serializer.startDeserialize(WhatsappClientType.WEB, sessionUuid, null)
-                        .orElseGet(() -> serializer.newStoreKeysPair(sessionUuid, null, WhatsappClientType.WEB));
-                return createConnection(sessionStoreAndKeys);
+                var store = serializer.startDeserialize(WhatsappClientType.WEB, sessionUuid, null)
+                        .orElseGet(() -> newStore(sessionUuid, null, null, null, null, false, WhatsappClientType.WEB));
+                return new Options.Web(store);
             }
 
             /**
@@ -211,9 +220,9 @@ public sealed class WhatsappBuilder {
              */
             @Override
             public Options.Web newConnection(Long phoneNumber) {
-                var sessionStoreAndKeys = serializer.startDeserialize(WhatsappClientType.WEB, null, phoneNumber)
-                        .orElseGet(() -> serializer.newStoreKeysPair(UUID.randomUUID(), phoneNumber, WhatsappClientType.WEB));
-                return createConnection(sessionStoreAndKeys);
+                var store = serializer.startDeserialize(WhatsappClientType.WEB, null, phoneNumber)
+                        .orElseGet(() -> newStore(null, phoneNumber, null, null, null, false, WhatsappClientType.WEB));
+                return new Options.Web(store);
             }
 
             /**
@@ -229,29 +238,11 @@ public sealed class WhatsappBuilder {
 
                 var serialized = serializer.startDeserialize(WhatsappClientType.WEB, null, sixParts.phoneNumber());
                 if(serialized.isPresent()) {
-                    return createConnection(serialized.get());
+                    return new Options.Web(serialized.get());
                 }
 
-                var uuid = UUID.randomUUID();
-                var keys = new KeysBuilder()
-                        .uuid(uuid)
-                        .phoneNumber(sixParts.phoneNumber())
-                        .noiseKeyPair(sixParts.noiseKeyPair())
-                        .identityKeyPair(sixParts.identityKeyPair())
-                        .identityId(sixParts.identityId())
-                        .registered(true)
-                        .clientType(WhatsappClientType.WEB)
-                        .build();
-                keys.setSerializer(serializer);
-                var phoneNumber = keys.phoneNumber();
-                var store = WhatsappStore.of(uuid, phoneNumber.isEmpty() ? null : phoneNumber.getAsLong(), WhatsappClientType.WEB);
-                store.setSerializer(serializer);
-                return createConnection(new StoreKeysPair(store, keys));
-            }
-
-            private Options.Web createConnection(StoreKeysPair sessionStoreAndKeys) {
-                Objects.requireNonNull(sessionStoreAndKeys, "sessionStoreAndKeys must not be null");
-                return new Options.Web(sessionStoreAndKeys.store(), sessionStoreAndKeys.keys());
+                var store = newStore(null, sixParts.phoneNumber(), sixParts.noiseKeyPair(), sixParts.identityKeyPair(), sixParts.identityId(), true, WhatsappClientType.WEB);
+                return new Options.Web(store);
             }
         }
 
@@ -313,9 +304,9 @@ public sealed class WhatsappBuilder {
             @Override
             public Options.Mobile newConnection(UUID uuid) {
                 var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
-                var sessionStoreAndKeys = serializer.startDeserialize(WhatsappClientType.MOBILE, sessionUuid, null)
-                        .orElseGet(() -> serializer.newStoreKeysPair(sessionUuid, null, WhatsappClientType.MOBILE));
-                return createConnection(sessionStoreAndKeys);
+                var store = serializer.startDeserialize(WhatsappClientType.MOBILE, sessionUuid, null)
+                        .orElseGet(() -> newStore(sessionUuid, null, null, null, null, false, WhatsappClientType.MOBILE));
+                return new Options.Mobile(store);
             }
 
             /**
@@ -328,9 +319,9 @@ public sealed class WhatsappBuilder {
              */
             @Override
             public Options.Mobile newConnection(Long phoneNumber) {
-                var sessionStoreAndKeys = serializer.startDeserialize(WhatsappClientType.MOBILE, null, phoneNumber)
-                        .orElseGet(() -> serializer.newStoreKeysPair(UUID.randomUUID(), phoneNumber, WhatsappClientType.MOBILE));
-                return createConnection(sessionStoreAndKeys);
+                var store = serializer.startDeserialize(WhatsappClientType.MOBILE, null, phoneNumber)
+                        .orElseGet(() -> newStore(null, phoneNumber, null, null, null, false, WhatsappClientType.MOBILE));
+                return new Options.Mobile(store);
             }
 
             /**
@@ -346,42 +337,22 @@ public sealed class WhatsappBuilder {
 
                 var serialized = serializer.startDeserialize(WhatsappClientType.MOBILE, null, sixParts.phoneNumber());
                 if(serialized.isPresent()) {
-                    return createConnection(serialized.get());
+                    return new Options.Mobile(serialized.get());
                 }
 
-                var uuid = UUID.randomUUID();
-                var keys = new KeysBuilder()
-                        .uuid(uuid)
-                        .phoneNumber(sixParts.phoneNumber())
-                        .noiseKeyPair(sixParts.noiseKeyPair())
-                        .identityKeyPair(sixParts.identityKeyPair())
-                        .identityId(sixParts.identityId())
-                        .registered(true)
-                        .clientType(WhatsappClientType.MOBILE)
-                        .build();
-                keys.setSerializer(serializer);
-                var phoneNumber = keys.phoneNumber();
-                var store = WhatsappStore.of(uuid, phoneNumber.isEmpty() ? null : phoneNumber.getAsLong(), WhatsappClientType.MOBILE);
-                store.setSerializer(serializer);
-                return createConnection(new StoreKeysPair(store, keys));
-            }
-
-            private Options.Mobile createConnection(StoreKeysPair sessionStoreAndKeys) {
-                Objects.requireNonNull(sessionStoreAndKeys, "sessionStoreAndKeys must not be null");
-                return new Options.Mobile(sessionStoreAndKeys.store(), sessionStoreAndKeys.keys());
+                var store = newStore(null, sixParts.phoneNumber(), sixParts.noiseKeyPair(), sixParts.identityKeyPair(), sixParts.identityId(), true, WhatsappClientType.MOBILE);
+                return new Options.Mobile(store);
             }
         }
     }
 
     public static sealed class Options extends WhatsappBuilder {
         final WhatsappStore store;
-        final Keys keys;
         WhatsappMessagePreviewHandler messagePreviewHandler;
         WhatsappErrorHandler errorHandler;
 
-        private Options(WhatsappStore store, Keys keys) {
+        private Options(WhatsappStore store) {
             this.store = Objects.requireNonNull(store, "store must not be null");
-            this.keys = Objects.requireNonNull(keys, "keys must not be null");
         }
 
         /**
@@ -442,8 +413,8 @@ public sealed class WhatsappBuilder {
         }
 
         public static final class Web extends Options {
-            private Web(WhatsappStore store, Keys keys) {
-                super(store, keys);
+            private Web(WhatsappStore store) {
+                super(store);
             }
 
             /**
@@ -454,8 +425,7 @@ public sealed class WhatsappBuilder {
              */
             @Override
             public Web proxy(URI proxy) {
-                super.proxy(proxy);
-                return this;
+                return (Web) super.proxy(proxy);
             }
 
             /**
@@ -466,8 +436,7 @@ public sealed class WhatsappBuilder {
              */
             @Override
             public Web device(JidDevice device) {
-                super.device(device);
-                return this;
+                return (Web) super.device(device);
             }
 
             /**
@@ -478,8 +447,7 @@ public sealed class WhatsappBuilder {
              */
             @Override
             public Web messagePreviewHandler(WhatsappMessagePreviewHandler messagePreviewHandler) {
-                super.messagePreviewHandler(messagePreviewHandler);
-                return this;
+                return (Web) super.messagePreviewHandler(messagePreviewHandler);
             }
 
             /**
@@ -490,8 +458,7 @@ public sealed class WhatsappBuilder {
              */
             @Override
             public Web errorHandler(WhatsappErrorHandler errorHandler) {
-                super.errorHandler(errorHandler);
-                return this;
+                return (Web) super.errorHandler(errorHandler);
             }
 
             /**
@@ -504,8 +471,7 @@ public sealed class WhatsappBuilder {
              */
             @Override
             public Web automaticMessageReceipts(boolean automaticMessageReceipts) {
-                super.automaticMessageReceipts(automaticMessageReceipts);
-                return this;
+                return (Web) super.automaticMessageReceipts(automaticMessageReceipts);
             }
 
             /**
@@ -518,7 +484,7 @@ public sealed class WhatsappBuilder {
              */
             public Web historySetting(WhatsappWebHistoryPolicy historyLength) {
                 Objects.requireNonNull(historyLength, "historyLength must not be null");
-                store.setWebHistorySetting(historyLength);
+                store.setHistoryLength(historyLength);
                 return this;
             }
 
@@ -531,7 +497,7 @@ public sealed class WhatsappBuilder {
              */
             public Whatsapp unregistered(WhatsappVerificationHandler.Web.QrCode qrHandler) {
                 Objects.requireNonNull(qrHandler, "qrHandler must not be null");
-                return new Whatsapp(store, keys, qrHandler, messagePreviewHandler, errorHandler);
+                return new Whatsapp(store, qrHandler, messagePreviewHandler, errorHandler);
             }
 
             /**
@@ -545,7 +511,7 @@ public sealed class WhatsappBuilder {
             public Whatsapp unregistered(long phoneNumber, WhatsappVerificationHandler.Web.PairingCode pairingCodeHandler) {
                 Objects.requireNonNull(pairingCodeHandler, "pairingCodeHandler must not be null");
                 store.setPhoneNumber(phoneNumber);
-                return new Whatsapp(store, keys, pairingCodeHandler, messagePreviewHandler, errorHandler);
+                return new Whatsapp(store, pairingCodeHandler, messagePreviewHandler, errorHandler);
             }
 
             /**
@@ -556,18 +522,18 @@ public sealed class WhatsappBuilder {
              * @return an optional containing the WhatsApp instance if registered, empty otherwise
              */
             public Optional<Whatsapp> registered() {
-                if (!keys.registered()) {
+                if (!store.registered()) {
                     return Optional.empty();
                 }
 
-                var result = new Whatsapp(store, keys, null, messagePreviewHandler, errorHandler);
+                var result = new Whatsapp(store, null, messagePreviewHandler, errorHandler);
                 return Optional.of(result);
             }
         }
 
         public static final class Mobile extends Options {
-            private Mobile(WhatsappStore store, Keys keys) {
-                super(store, keys);
+            private Mobile(WhatsappStore store) {
+                super(store);
             }
 
             /**
@@ -726,11 +692,11 @@ public sealed class WhatsappBuilder {
              * @return an optional containing the WhatsApp instance if registered, empty otherwise
              */
             public Optional<Whatsapp> registered() {
-                if (!keys.registered()) {
+                if (!store.registered()) {
                     return Optional.empty();
                 }
 
-                var result = new Whatsapp(store, keys, null, messagePreviewHandler, errorHandler);
+                var result = new Whatsapp(store, null, messagePreviewHandler, errorHandler);
                 return Optional.of(result);
             }
 
@@ -746,22 +712,20 @@ public sealed class WhatsappBuilder {
             public Whatsapp register(long phoneNumber, WhatsappVerificationHandler.Mobile verification) {
                 Objects.requireNonNull(verification, "verification must not be null");
 
-                if (!keys.registered()) {
-                    keys.setPhoneNumber(phoneNumber);
+                if (!store.registered()) {
                     store.setPhoneNumber(phoneNumber);
-                    try(var registration = new MobileRegistration(store, keys, verification)) {
+                    try(var registration = new MobileRegistration(store, verification)) {
                         registration.register();
                     }
                 }
 
-                return new Whatsapp(store, keys, null, messagePreviewHandler, errorHandler);
+                return new Whatsapp(store, null, messagePreviewHandler, errorHandler);
             }
         }
     }
 
     public static final class Custom extends WhatsappBuilder {
         private WhatsappStore store;
-        private Keys keys;
         private WhatsappMessagePreviewHandler messagePreviewHandler;
         private WhatsappErrorHandler errorHandler;
         private WhatsappVerificationHandler.Web webVerificationHandler;
@@ -778,17 +742,6 @@ public sealed class WhatsappBuilder {
          */
         public Custom store(WhatsappStore store) {
             this.store = store;
-            return this;
-        }
-
-        /**
-         * Sets the keys for the connection
-         *
-         * @param keys the keys to use, can be null
-         * @return the same instance for chaining
-         */
-        public Custom keys(Keys keys) {
-            this.keys = keys;
             return this;
         }
 
@@ -834,24 +787,15 @@ public sealed class WhatsappBuilder {
          */
         public Whatsapp build() {
             Objects.requireNonNull(store, "Expected a valid store");
-            Objects.requireNonNull(keys, "Expected a valid keys");
-            if (!Objects.equals(store.uuid(), keys.uuid())) {
-                throw new IllegalArgumentException("UUID mismatch: %s != %s".formatted(store.uuid(), keys.uuid()));
-            }
             return new Whatsapp(
                     store,
-                    keys,
-                    getWebVerificationMethod(store, webVerificationHandler),
+                    switch (store.clientType()) {
+                        case WEB -> Objects.requireNonNullElse(webVerificationHandler, WhatsappVerificationHandler.Web.QrCode.toTerminal());
+                        case MOBILE -> null;
+                    },
                     messagePreviewHandler,
                     Objects.requireNonNullElse(errorHandler, WhatsappErrorHandler.toTerminal()));
         }
 
-        private static WhatsappVerificationHandler.Web getWebVerificationMethod(WhatsappStore store, WhatsappVerificationHandler.Web webVerificationHandler) {
-            Objects.requireNonNull(store, "store must not be null");
-            return switch (store.clientType()) {
-                case WEB -> Objects.requireNonNullElse(webVerificationHandler, WhatsappVerificationHandler.Web.QrCode.toTerminal());
-                case MOBILE -> null;
-            };
-        }
     }
 }

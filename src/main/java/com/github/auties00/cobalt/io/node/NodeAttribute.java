@@ -2,9 +2,10 @@ package com.github.auties00.cobalt.io.node;
 
 import com.github.auties00.cobalt.exception.MalformedJidException;
 import com.github.auties00.cobalt.model.jid.Jid;
-import it.auties.protobuf.model.ProtobufString;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 /**
  * A sealed interface representing attribute values within WhatsApp protocol nodes.
@@ -47,7 +48,7 @@ public sealed interface NodeAttribute {
      *
      * @return a non-null byte array representing this attribute value
      */
-    byte[] toBytes();
+    ByteBuffer toBuffer();
 
     /**
      * A record representing a text-based attribute value.
@@ -60,14 +61,18 @@ public sealed interface NodeAttribute {
      * @param value the text value of this attribute, must not be null
      */
     record TextAttribute(String value) implements NodeAttribute {
+        public TextAttribute {
+            Objects.requireNonNull(value, "value cannot be null");
+        }
+
         /**
          * Converts the text value to its UTF-8 byte representation.
          *
          * @return a non-null byte array containing the UTF-8 encoded text
          */
         @Override
-        public byte[] toBytes() {
-            return value.getBytes(StandardCharsets.UTF_8);
+        public ByteBuffer toBuffer() {
+            return StandardCharsets.UTF_8.encode(value);
         }
 
         /**
@@ -93,6 +98,10 @@ public sealed interface NodeAttribute {
      * @see Jid
      */
     record JidAttribute(Jid value) implements NodeAttribute {
+        public JidAttribute {
+            Objects.requireNonNull(value, "value cannot be null");
+        }
+
         /**
          * Converts the Jid to its string representation.
          *
@@ -122,9 +131,8 @@ public sealed interface NodeAttribute {
          * @return a non-null byte array containing the UTF-8 encoded Jid string
          */
         @Override
-        public byte[] toBytes() {
-            return value.toString()
-                    .getBytes(StandardCharsets.UTF_8);
+        public ByteBuffer toBuffer() {
+            return StandardCharsets.UTF_8.encode(value.toString());
         }
     }
 
@@ -140,7 +148,19 @@ public sealed interface NodeAttribute {
      *
      * @param value the binary value of this attribute, must not be null
      */
-    record BytesAttribute(byte[] value) implements NodeAttribute {
+    record BytesAttribute(ByteBuffer value) implements NodeAttribute {
+        public BytesAttribute(byte[] value) {
+            this(ByteBuffer.wrap(value));
+        }
+
+        public BytesAttribute(byte[] value, int offset, int length) {
+            this(ByteBuffer.wrap(value, offset, length));
+        }
+
+        public BytesAttribute {
+            Objects.requireNonNull(value, "value cannot be null");
+        }
+
         /**
          * Converts the binary data to a string representation.
          *
@@ -148,7 +168,7 @@ public sealed interface NodeAttribute {
          */
         @Override
         public String toString() {
-            return new String(value);
+            return StandardCharsets.UTF_8.decode(value).toString();
         }
 
         /**
@@ -158,7 +178,8 @@ public sealed interface NodeAttribute {
          */
         @Override
         public Jid toJid() {
-            return Jid.of(ProtobufString.lazy(value));
+            var decoded = StandardCharsets.UTF_8.decode(value).toString();
+            return Jid.of(decoded);
         }
 
         /**
@@ -169,8 +190,8 @@ public sealed interface NodeAttribute {
          * @return the original non-null byte array
          */
         @Override
-        public byte[] toBytes() {
-            return value;
+        public ByteBuffer toBuffer() {
+            return value.asReadOnlyBuffer();
         }
     }
 }

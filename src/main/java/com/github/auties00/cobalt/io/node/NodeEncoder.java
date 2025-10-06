@@ -202,7 +202,7 @@ public final class NodeEncoder {
      */
     private static int attributeLength(NodeAttribute attribute){
         return switch (attribute) {
-            case NodeAttribute.BytesAttribute(var buffer) -> calculateLength(buffer.length);
+            case NodeAttribute.BytesAttribute(var buffer) -> calculateLength(buffer.remaining());
             case NodeAttribute.TextAttribute(var literal) -> stringLength(literal);
             case NodeAttribute.JidAttribute(var jid) -> jidLength(jid);
         };
@@ -231,7 +231,7 @@ public final class NodeEncoder {
     private static int contentLength(Node node){
         return switch (node) {
             case Node.BufferNode(var _, var _, var buffer) -> bytesLength(buffer);
-            case Node.ContainerNode(var _, var _, var children) -> childrenLength(children.sequencedValues());
+            case Node.ContainerNode(var _, var _, var children) -> childrenLength(children);
             case Node.EmptyNode _ -> 0;
             case Node.JidNode(var _, var _, var jid) -> jidLength(jid);
             case Node.StreamNode(var _, var _, var _, var streamLength) -> calculateLength(streamLength);
@@ -573,7 +573,7 @@ public final class NodeEncoder {
     private static int writeContent(Node content, byte[] output, int offset) {
         return switch (content) {
             case Node.BufferNode(var _, var _, var buffer) -> writeBytes(buffer, output, offset);
-            case Node.ContainerNode(var _, var _, var children) -> writeChildren(children.sequencedValues(), output, offset);
+            case Node.ContainerNode(var _, var _, var children) -> writeChildren(children, output, offset);
             case Node.EmptyNode _ -> writeNull(output, offset);
             case Node.JidNode(var _, var _, var jid) -> writeJid(jid, output, offset);
             case Node.StreamNode(var _, var _, var inputStream, var inputStreamLength) -> writeStream(output, offset, inputStream, inputStreamLength);

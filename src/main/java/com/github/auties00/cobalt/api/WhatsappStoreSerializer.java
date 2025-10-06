@@ -2,10 +2,12 @@
 package com.github.auties00.cobalt.api;
 
 import com.github.auties00.cobalt.model.chat.Chat;
+import com.github.auties00.cobalt.model.chat.ChatSpec;
 import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.message.model.ContextualMessage;
 import com.github.auties00.cobalt.model.newsletter.Newsletter;
+import com.github.auties00.cobalt.model.newsletter.NewsletterSpec;
 import com.github.auties00.cobalt.model.sync.HistorySyncMessage;
 import com.github.auties00.cobalt.util.ImmutableLinkedList;
 import it.auties.protobuf.stream.ProtobufInputStream;
@@ -367,8 +369,8 @@ public abstract class WhatsappStoreSerializer {
                     store.newsletters()
                             .forEach(newsletter -> executor.submit(() -> serializeNewsletter(store, newsletter)));
                     var phoneNumber = store.phoneNumber();
-                    if(phoneNumber != null) {
-                        executor.submit(() -> linkPhoneNumber(store.clientType(), store.uuid(), phoneNumber));
+                    if(phoneNumber.isPresent()) {
+                        executor.submit(() -> linkPhoneNumber(store.clientType(), store.uuid(), phoneNumber.getAsLong()));
                     }
                 }
             } finally {
@@ -380,7 +382,7 @@ public abstract class WhatsappStoreSerializer {
             try {
                 var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
                 try(var stream = Files.newOutputStream(tempFile)) {
-                    StoreSpec.encode(store, ProtobufOutputStream.toStream(stream));
+                    WhatsappStoreSpec.encode(store, ProtobufOutputStream.toStream(stream));
                 }
                 Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING);
             }catch (IOException exception) {
@@ -478,7 +480,7 @@ public abstract class WhatsappStoreSerializer {
             }
 
             try(var stream = Files.newInputStream(path)) {
-                var store = StoreSpec.decode(ProtobufInputStream.fromStream(stream));
+                var store = WhatsappStoreSpec.decode(ProtobufInputStream.fromStream(stream));
                 startAttribute(store);
                 storesHashCodes.put(store.uuid(), store.hashCode());
                 return Optional.of(store);
@@ -540,7 +542,7 @@ public abstract class WhatsappStoreSerializer {
         }
 
         private void deserializeNewsletter(WhatsappStore store, Path newsletterFile) {
-            try(var stream = Files.newInputStream(newsletter)) {
+            try(var stream = Files.newInputStream(newsletterFile)) {
                 var newsletter = NewsletterSpec.decode(ProtobufInputStream.fromStream(stream));
                 var storeJidPair = new StoreJidPair(store.uuid(), newsletter.jid());
                 jidsHashCodes.put(storeJidPair, newsletter.hashCode());

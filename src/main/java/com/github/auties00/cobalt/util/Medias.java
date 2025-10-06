@@ -41,7 +41,7 @@ import java.util.function.Function;
 import java.util.zip.Deflater;
 
 public final class Medias {
-    private static final String WEB_ORIGIN = "https://web.whatsapp.com";
+    private static final String WEB_ORIGIN_VALUE = "https://web.whatsapp.com";
     private static final int WAVEFORM_SAMPLES = 64;
     private static final int PROFILE_PIC_SIZE = 640;
     private static final String DEFAULT_HOST = "mmg.whatsapp.net";
@@ -90,7 +90,7 @@ public final class Medias {
         }
         var request = requestBuilder.header("Content-Type", "application/octet-stream")
                 .header("Accept", "application/json")
-                .headers("Origin", WEB_ORIGIN)
+                .headers("Origin", WEB_ORIGIN_VALUE)
                 .build();
         try {
             try (var client = HttpClient.newBuilder()
@@ -131,7 +131,7 @@ public final class Medias {
                 var length = deflater.deflate(buffer);
                 result.write(buffer, 0, length);
             }
-            deflater.end();
+            deflater.close();
             return result.toByteArray();
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);

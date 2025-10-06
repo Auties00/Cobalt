@@ -8,8 +8,10 @@ import com.github.auties00.cobalt.model.auth.Version;
 import com.github.auties00.cobalt.model.business.BusinessCategory;
 import com.github.auties00.cobalt.model.call.Call;
 import com.github.auties00.cobalt.model.chat.Chat;
+import com.github.auties00.cobalt.model.chat.ChatBuilder;
 import com.github.auties00.cobalt.model.chat.ChatEphemeralTimer;
 import com.github.auties00.cobalt.model.contact.Contact;
+import com.github.auties00.cobalt.model.contact.ContactBuilder;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
@@ -19,6 +21,7 @@ import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.media.MediaConnection;
 import com.github.auties00.cobalt.model.newsletter.Newsletter;
+import com.github.auties00.cobalt.model.newsletter.NewsletterBuilder;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
@@ -1229,6 +1232,22 @@ public final class WhatsappStore implements SignalProtocolStore {
     }
 
     /**
+     * Adds a chat in memory
+     *
+     * @param chatJid the chat to add
+     * @return the input chat
+     * @throws NullPointerException if chatJid is null
+     */
+    public Chat addNewChat(Jid chatJid) {
+        Objects.requireNonNull(chatJid, "chatJid cannot be null");
+        var chat = new ChatBuilder()
+                .jid(chatJid)
+                .build();
+        addChat(chat);
+        return chat;
+    }
+
+    /**
      * Removes a chat from the store.
      *
      * @param chatJid the JID of the chat to remove, may be null
@@ -1305,6 +1324,22 @@ public final class WhatsappStore implements SignalProtocolStore {
      */
     public Newsletter addNewsletter(Newsletter newsletter) {
         newsletters.put(newsletter.jid(), newsletter);
+        return newsletter;
+    }
+
+    /**
+     * Adds a newsletter in memory
+     *
+     * @param newsletterJid the newsletter to add
+     * @return the input newsletter
+     * @throws NullPointerException if newsletterJid is null
+     */
+    public Newsletter addNewNewsletter(Jid newsletterJid) {
+        Objects.requireNonNull(newsletterJid, "newsletterJid cannot be null");
+        var newsletter = new NewsletterBuilder()
+                .jid(newsletterJid)
+                .build();
+        addNewsletter(newsletter);
         return newsletter;
     }
 

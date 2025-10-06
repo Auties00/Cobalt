@@ -177,7 +177,7 @@ public final class NodeBuilder {
      * @param value the binary attribute value, or null to skip adding this attribute
      * @return this builder for method chaining
      */
-    public NodeBuilder attribute(String key, byte[] value) {
+    public NodeBuilder attribute(String key, ByteBuffer value) {
         if(value != null) {
             this.attributes.put(key, new NodeAttribute.BytesAttribute(value));
         }
@@ -192,7 +192,7 @@ public final class NodeBuilder {
      * @param condition the condition that must be true to add the attribute
      * @return this builder for method chaining
      */
-    public NodeBuilder attribute(String key, byte[] value, boolean condition) {
+    public NodeBuilder attribute(String key, ByteBuffer value, boolean condition) {
         if(value != null && condition) {
             this.attributes.put(key, new NodeAttribute.BytesAttribute(value));
         }

@@ -1,12 +1,8 @@
 package com.github.auties00.cobalt.socket;
 
-import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
-import com.github.auties00.curve25519.Curve25519;
-import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
-import it.auties.protobuf.stream.ProtobufInputStream;
-import it.auties.protobuf.stream.ProtobufOutputStream;
 import com.github.auties00.cobalt.api.WhatsappClientType;
 import com.github.auties00.cobalt.api.WhatsappStore;
+import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
 import com.github.auties00.cobalt.io.node.Node;
 import com.github.auties00.cobalt.io.node.NodeEncoder;
 import com.github.auties00.cobalt.io.node.NodeTokens;
@@ -14,6 +10,10 @@ import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.sync.HistorySyncConfigBuilder;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Scalar;
+import com.github.auties00.curve25519.Curve25519;
+import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
+import it.auties.protobuf.stream.ProtobufInputStream;
+import it.auties.protobuf.stream.ProtobufOutputStream;
 
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
@@ -23,7 +23,6 @@ import javax.security.auth.DestroyFailedException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -35,7 +34,8 @@ public final class SocketEncryption {
     private static final byte[] WEB_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);
     private static final byte[] MOBILE_VERSION = new byte[]{5, NodeTokens.DICTIONARY_VERSION};
     private static final byte[] MOBILE_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
-    public static final int HEADER_LENGTH = Integer.BYTES + Short.BYTES;
+    private static final int HEADER_LENGTH = Integer.BYTES + Short.BYTES;
+    private static final String DEFAULT_NAME = "User";
 
     private static GCMParameterSpec createGcmIv(long counter) {
         var iv = new byte[12];
@@ -238,7 +238,7 @@ public final class SocketEncryption {
                 yield new ClientPayloadBuilder()
                         .username(phoneNumber)
                         .passive(false)
-                        .pushName(store.registered() ? store.name() : null)
+                        .pushName(store.registered() ? store.name().orElse(DEFAULT_NAME) : null)
                         .userAgent(agent)
                         .shortConnect(true)
                         .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
@@ -311,7 +311,7 @@ public final class SocketEncryption {
                     case MACOS -> CompanionProperties.PlatformType.IOS_CATALYST;
                 };
                 yield new CompanionPropertiesBuilder()
-                        .os(store.name())
+                        .os(store.name().orElse(DEFAULT_NAME))
                         .platformType(platformType)
                         .requireFullSync(historyLength.isExtended())
                         .historySyncConfig(config)

@@ -317,10 +317,10 @@ public final class NodeDecoder {
      * Reads a sequence of nodes with an 8-bit length prefix (up to 255 nodes).
      *
      * @param inputStream the input stream to read from
-     * @return a map of decoded {@link Node} objects
+     * @return a sequence of decoded {@link Node} objects
      * @throws IOException if an I/O error occurs
      */
-    private static SequencedMap<String, Node> readList8(InputStream inputStream) throws IOException {
+    private static SequencedCollection<Node> readList8(InputStream inputStream) throws IOException {
         var length = inputStream.read() & 0xFF;
         return readList(inputStream, length);
     }
@@ -331,30 +331,30 @@ public final class NodeDecoder {
      * Length is encoded in big-endian format across 2 bytes.
      *
      * @param inputStream the input stream to read from
-     * @return a map of decoded {@link Node} objects
+     * @return a sequence of decoded {@link Node} objects
      * @throws IOException if an I/O error occurs
      */
-    private static SequencedMap<String, Node> readList16(InputStream inputStream) throws IOException {
+    private static SequencedCollection<Node> readList16(InputStream inputStream) throws IOException {
         var length = (inputStream.read() << 8)
                 | inputStream.read();
         return readList(inputStream, length);
     }
 
     /**
-     * Reads a sequence  of nodes with the specified size.
+     * Reads a sequence of nodes with the specified size.
      * <p>
      * Each node in the list is decoded sequentially.
      *
      * @param inputStream the input stream to read from
      * @param size the number of nodes to read
-     * @return a map of decoded {@link Node} objects
+     * @return a sequence of decoded {@link Node} objects
      * @throws IOException if an I/O error occurs during reading or decoding
      */
-    private static SequencedMap<String, Node> readList(InputStream inputStream, int size) throws IOException {
-        var results = new LinkedHashMap<String, Node>(size);
+    private static SequencedCollection<Node> readList(InputStream inputStream, int size) throws IOException {
+        var results = new ArrayList<Node>(size);
         for (int index = 0; index < size; index++) {
             var node = readNode(inputStream);
-            results.put(node.description(), node);
+            results.add(node);
         }
         return results;
     }

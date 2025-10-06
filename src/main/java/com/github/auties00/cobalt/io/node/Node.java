@@ -1,10 +1,14 @@
 package com.github.auties00.cobalt.io.node;
 
+import com.github.auties00.cobalt.exception.MalformedJidException;
 import com.github.auties00.cobalt.exception.MissingRequiredNodeAttributeException;
 import com.github.auties00.cobalt.model.jid.Jid;
+import it.auties.protobuf.model.ProtobufString;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -121,11 +125,11 @@ public sealed interface Node {
     }
 
     /**
-     * Converts the content of this node to an array of bytes, if possible.
+     * Converts the content of this node to a buffer, if possible.
      *
-     * @return an {@code Optional} containing the content as an array of bytes if possible, otherwise an empty {@code Optional}
+     * @return an {@code Optional} containing the content a a buffer if possible, otherwise an empty {@code Optional}
      */
-    Optional<byte[]> toContentBytes();
+    Optional<ByteBuffer> toContentBytes();
 
     /**
      * Converts the content of this node to a string, if possible.
@@ -133,6 +137,13 @@ public sealed interface Node {
      * @return an {@code Optional} containing the content as a string if possible, otherwise an empty {@code Optional}
      */
     Optional<String> toContentString();
+
+    /**
+     * Converts the content of this node to a jid, if possible.
+     *
+     * @return an {@code Optional} containing the content as a jid if possible, otherwise an empty {@code Optional}
+     */
+    Optional<Jid> toContentJid();
 
     /**
      * Retrieves the first child Node in this container, if present.
@@ -229,6 +240,21 @@ public sealed interface Node {
         }
 
         @Override
+        public Optional<String> toContentString() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Jid> toContentJid() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<ByteBuffer> toContentBytes() {
+            return Optional.empty();
+        }
+
+        @Override
         public Optional<Node> firstChild() {
             return Optional.empty();
         }
@@ -290,6 +316,26 @@ public sealed interface Node {
         }
 
         @Override
+        public Optional<ByteBuffer> toContentBytes() {
+            return Optional.of(StandardCharsets.UTF_8.encode(content));
+        }
+
+        @Override
+        public Optional<Jid> toContentJid() {
+            try {
+                var result = Jid.of(content);
+                return Optional.of(result);
+            }catch (MalformedJidException exception) {
+                return Optional.empty();
+            }
+        }
+
+        @Override
+        public Optional<String> toContentString() {
+            return Optional.of(content);
+        }
+
+        @Override
         public Optional<Node> firstChild() {
             return Optional.empty();
         }
@@ -343,6 +389,21 @@ public sealed interface Node {
         @Override
         public SequencedMap<String, NodeAttribute> attributes() {
             return Collections.unmodifiableSequencedMap(attributes);
+        }
+
+        @Override
+        public Optional<String> toContentString() {
+            return Optional.of(content.toString());
+        }
+
+        @Override
+        public Optional<Jid> toContentJid() {
+            return Optional.of(content);
+        }
+
+        @Override
+        public Optional<ByteBuffer> toContentBytes() {
+            return Optional.of(StandardCharsets.UTF_8.encode(content.toString()));
         }
 
         @Override
@@ -431,6 +492,28 @@ public sealed interface Node {
             return Collections.unmodifiableSequencedMap(attributes);
         }
 
+        @Override
+        public Optional<ByteBuffer> toContentBytes() {
+            return Optional.of(content.asReadOnlyBuffer());
+        }
+
+        @Override
+        public Optional<Jid> toContentJid() {
+            try {
+                var decoded = StandardCharsets.UTF_8.decode(content).toString();
+                var result = Jid.of(decoded);
+                return Optional.of(result);
+            } catch (MalformedJidException exception) {
+                return Optional.empty();
+            }
+        }
+
+        @Override
+        public Optional<String> toContentString() {
+            var decoded = StandardCharsets.UTF_8.decode(content).toString();
+            return Optional.of(decoded);
+        }
+
         /**
          * Returns a read-only view of the children buffer.
          * This prevents external modification of the node's children.
@@ -500,6 +583,39 @@ public sealed interface Node {
             Objects.requireNonNull(content, "children cannot be null");
             if(contentLength < 0) {
                 throw new IllegalArgumentException("contentLength cannot be negative");
+            }
+        }
+
+        @Override
+        public Optional<Jid> toContentJid() {
+            try {
+                var result = content.readNBytes(contentLength);
+                var converted = Jid.of(ProtobufString.lazy(result));
+                return Optional.of(converted);
+            }catch (IOException | MalformedJidException exception) {
+                return Optional.empty();
+            }
+        }
+
+        @Override
+        public Optional<ByteBuffer> toContentBytes() {
+            try {
+                var result = content.readNBytes(contentLength);
+                var converted = ByteBuffer.wrap(result);
+                return Optional.of(converted);
+            }catch (IOException exception) {
+                return Optional.empty();
+            }
+        }
+
+        @Override
+        public Optional<String> toContentString() {
+            try {
+                var result = content.readNBytes(contentLength);
+                var converted = new String(result);
+                return Optional.of(converted);
+            }catch (IOException exception) {
+                return Optional.empty();
             }
         }
 
@@ -696,6 +812,21 @@ public sealed interface Node {
         @Override
         public boolean hasContent() {
             return true;
+        }
+
+        @Override
+        public Optional<ByteBuffer> toContentBytes() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> toContentString() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Jid> toContentJid() {
+            return Optional.empty();
         }
     }
 }
