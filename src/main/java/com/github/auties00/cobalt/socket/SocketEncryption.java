@@ -11,6 +11,7 @@ import com.github.auties00.cobalt.model.sync.HistorySyncConfigBuilder;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Scalar;
 import com.github.auties00.curve25519.Curve25519;
+import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
 import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
@@ -58,6 +59,7 @@ public final class SocketEncryption {
     private volatile SecretKeySpec writeKey;
     private final ReentrantLock readCipherLock;
     private final ReentrantLock writeCipherLock;
+    private SignalIdentityKeyPair ephemeralKeyPair;
 
     public SocketEncryption(WhatsappStore store, Consumer<ByteBuffer> sendBinary) {
         this.store = store;
@@ -68,13 +70,20 @@ public final class SocketEncryption {
         this.writeCipherLock = new ReentrantLock(true);
     }
 
-    public synchronized void startHandshake(SignalIdentityPublicKey publicKey) {
+    public synchronized void startHandshake() {
+        if(ephemeralKeyPair != null) {
+            throw new IllegalStateException("Handshake has already started");
+        }
+
         if(readKey != null || writeKey != null) {
             throw new IllegalStateException("Handshake has already been completed");
         }
+
+        this.ephemeralKeyPair = SignalIdentityKeyPair.random();
+
         var prologue = getHandshakePrologue();
         var clientHello = new ClientHelloBuilder()
-                .ephemeral(publicKey.toEncodedPoint())
+                .ephemeral(ephemeralKeyPair.publicKey().toEncodedPoint())
                 .build();
         var handshakeMessage = new HandshakeMessageBuilder()
                 .clientHello(clientHello)
@@ -94,12 +103,12 @@ public final class SocketEncryption {
         var serverHandshake = HandshakeMessageSpec.decode(ProtobufInputStream.fromBuffer(serverHelloPayload));
         var serverHello = serverHandshake.serverHello();
         try(var handshake = new Handshake(getHandshakePrologue())) {
-            handshake.updateHash(store.ephemeralKeyPair().publicKey().toEncodedPoint());
+            handshake.updateHash(ephemeralKeyPair.publicKey().toEncodedPoint());
             handshake.updateHash(serverHello.ephemeral());
-            var sharedEphemeral = Curve25519.sharedKey(store.ephemeralKeyPair().privateKey().toEncodedPoint(), serverHello.ephemeral());
+            var sharedEphemeral = Curve25519.sharedKey(ephemeralKeyPair.privateKey().toEncodedPoint(), serverHello.ephemeral());
             handshake.mixIntoKey(sharedEphemeral);
             var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
-            var sharedStatic = Curve25519.sharedKey(store.ephemeralKeyPair().privateKey().toEncodedPoint(), decodedStaticText);
+            var sharedStatic = Curve25519.sharedKey(ephemeralKeyPair.privateKey().toEncodedPoint(), decodedStaticText);
             handshake.mixIntoKey(sharedStatic);
             handshake.cipher(serverHello.payload(), false);
             var encodedKey = handshake.cipher(store.noiseKeyPair().publicKey().toEncodedPoint(), true);
@@ -121,6 +130,7 @@ public final class SocketEncryption {
             readCounter.set(0);
             writeKey = new SecretKeySpec(keys, 0, 32, "AES");
             readKey = new SecretKeySpec(keys, 32, 32, "AES");
+            ephemeralKeyPair = null;
         }catch (GeneralSecurityException exception) {
             throw new RuntimeException("Cannot finish handshake", exception);
         }

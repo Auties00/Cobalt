@@ -6,7 +6,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-// TODO: Can this be optimized?
+// TODO: Maybe a ConcurrentLinkedHashMap would work better, not sure if there are implementations for that
 public final class ConcurrentLinkedSet<E> extends AbstractCollection<E> implements Set<E>, Deque<E> {
     private Node<E> head;
     private Node<E> tail;

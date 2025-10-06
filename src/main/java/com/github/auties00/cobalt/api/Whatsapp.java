@@ -1,6 +1,7 @@
 package com.github.auties00.cobalt.api;
 
 import com.alibaba.fastjson2.JSON;
+import com.github.auties00.cobalt.socket.*;
 import com.github.auties00.cobalt.socket.appState.WebAppStatePushRequest;
 import com.github.auties00.cobalt.io.json.response.*;
 import com.github.auties00.cobalt.model.action.*;
@@ -35,10 +36,6 @@ import com.github.auties00.cobalt.model.setting.Setting;
 import com.github.auties00.cobalt.model.sync.*;
 import com.github.auties00.cobalt.socket.appState.WebAppStatePatch;
 import com.github.auties00.cobalt.model.sync.RecordSync.Operation;
-import com.github.auties00.cobalt.socket.SocketEncryption;
-import com.github.auties00.cobalt.socket.SocketRequest;
-import com.github.auties00.cobalt.socket.SocketSession;
-import com.github.auties00.cobalt.socket.SocketState;
 import com.github.auties00.cobalt.io.node.NodeDecoder;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Clock;
@@ -79,21 +76,21 @@ public final class Whatsapp {
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^(.+)@(\\S+)$");
 
     private final WhatsappStore store;
-    private final WhatsappVerificationHandler.Web webVerificationHandler;
     private final WhatsappErrorHandler errorHandler;
 
     private SocketSession socketSession;
     private final SocketEncryption socketEncryption;
+    private final SocketStream socketStream;
     private final ConcurrentMap<String, SocketRequest> pendingSocketRequests;
     private final AtomicReference<SocketState> socketState;
     private Thread shutdownHook;
 
     Whatsapp(WhatsappStore store, WhatsappVerificationHandler.Web webVerificationHandler, WhatsappMessagePreviewHandler messagePreviewHandler, WhatsappErrorHandler errorHandler) {
         this.store = store;
-        this.webVerificationHandler = webVerificationHandler;
         this.errorHandler = errorHandler;
         this.pendingSocketRequests = new ConcurrentHashMap<>();
         this.socketEncryption = new SocketEncryption(store, this::sendBinary);
+        this.socketStream = new SocketStream(this, webVerificationHandler);
         this.socketState = new AtomicReference<>(SocketState.DISCONNECTED);
     }
 
@@ -151,7 +148,7 @@ public final class Whatsapp {
             Runtime.getRuntime().addShutdownHook(shutdownHook);
         }
 
-        socketEncryption.startHandshake(keys.ephemeralKeyPair().publicKey());
+        socketEncryption.startHandshake();
     }
 
     public void disconnect(WhatsappDisconnectReason reason)  {
@@ -168,7 +165,6 @@ public final class Whatsapp {
         pendingSocketRequests.clear();
         if (reason == WhatsappDisconnectReason.LOGGED_OUT || reason == WhatsappDisconnectReason.BANNED) {
             store.setSerializable(false);
-            keys.setSerializable(false);
             var serializer = store.serializer();
             serializer.deleteSession(store.clientType(), store.uuid());
         }
@@ -177,7 +173,7 @@ public final class Whatsapp {
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
                 shutdownHook = null;
             }
-            close();
+            onShutdown();
         }
         for (var listener : store.listeners()) {
             listener.onDisconnected(reason);
@@ -188,9 +184,7 @@ public final class Whatsapp {
         }
     }
 
-    @Override
-    public void close() {
-        keys.dispose();
+    private void onShutdown() {
         store.dispose();
     }
 
@@ -231,9 +225,12 @@ public final class Whatsapp {
         try (var stream = Streams.newInputStream(message)) {
             while (stream.available() > 0) {
                 var node = NodeDecoder.decode(stream);
-                onNodeReceived(node);
+                for (var listener : store.listeners()) {
+                    Thread.startVirtualThread(() -> listener.onNodeReceived(node));
+                    Thread.startVirtualThread(() -> listener.onNodeReceived(this, node));
+                }
                 resolvePendingRequest(node);
-                streamComponent.digest(node);
+                socketStream.digest(node);
             }
         }catch (Throwable throwable) {
             handleFailure(STREAM, throwable);
@@ -2922,7 +2919,7 @@ public final class Whatsapp {
      * @return the same instance
      */
     public Whatsapp addListener(WhatsappListener listener) {
-        store().addListener(listener);
+        store.addListener(listener);
         return this;
     }
 
@@ -2933,7 +2930,7 @@ public final class Whatsapp {
      * @return the same instance
      */
     public Whatsapp removeListener(WhatsappListener listener) {
-        store().removeListener(listener);
+        store.removeListener(listener);
         return this;
     }
 
@@ -3136,22 +3133,22 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addContactPresenceListener(WhatsappFunctionalListener.Ternary<Whatsapp, Chat, JidProvider> consumer) {
+    public Whatsapp addContactPresenceListener(WhatsappFunctionalListener.Ternary<Whatsapp, JidProvider, JidProvider> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
-            public void onContactPresence(Whatsapp arg0, Chat arg1, JidProvider arg2) {
+            public void onContactPresence(Whatsapp arg0, JidProvider arg1, JidProvider arg2) {
                 consumer.accept(arg0, arg1, arg2);
             }
         });
         return this;
     }
 
-    public Whatsapp addContactPresenceListener(WhatsappFunctionalListener.Binary<Chat, JidProvider> consumer) {
+    public Whatsapp addContactPresenceListener(WhatsappFunctionalListener.Binary<JidProvider, JidProvider> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
-            public void onContactPresence(Chat arg0, JidProvider arg1) {
+            public void onContactPresence(JidProvider arg0, JidProvider arg1) {
                 consumer.accept(arg0, arg1);
             }
         });

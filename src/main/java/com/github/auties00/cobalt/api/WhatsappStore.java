@@ -584,16 +584,6 @@ public final class WhatsappStore implements SignalProtocolStore {
     final SignalIdentityKeyPair noiseKeyPair;
 
     /**
-     * Ephemeral key pair used during authentication handshake.
-     * <p>
-     * Temporary key pair used only during connection establishment phase. Provides
-     * additional security ensuring that even if long-term keys are compromised,
-     * individual sessions remain secure. Regenerated for each new session.
-     */
-    @ProtobufProperty(index = 43, type = ProtobufType.MESSAGE)
-    final SignalIdentityKeyPair ephemeralKeyPair;
-
-    /**
      * Signal protocol identity key pair for end-to-end encryption.
      * <p>
      * Primary key pair used for Signal protocol implementation providing end-to-end
@@ -793,7 +783,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @see WhatsappStoreSerializer
      * @see #serialize()
      */
-    WhatsappStoreSerializer serializer;
+    private WhatsappStoreSerializer serializer;
 
     /**
      * Controls whether this store is persisted to storage.
@@ -815,7 +805,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @see WhatsappListener
      */
-    final KeySetView<WhatsappListener, Boolean> listeners;
+    private final KeySetView<WhatsappListener, Boolean> listeners;
 
     /**
      * Active media connection for uploading/downloading media files.
@@ -827,7 +817,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @see MediaConnection
      */
-    MediaConnection mediaConnection;
+    private MediaConnection mediaConnection;
 
 
     // =====================================================
@@ -882,7 +872,6 @@ public final class WhatsappStore implements SignalProtocolStore {
             boolean syncedBusinessCertificate,
             Integer registrationId,
             SignalIdentityKeyPair noiseKeyPair,
-            SignalIdentityKeyPair ephemeralKeyPair,
             SignalIdentityKeyPair identityKeyPair,
             SignalIdentityKeyPair companionKeyPair,
             SignedDeviceIdentity companionIdentity,
@@ -945,7 +934,6 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.listeners = ConcurrentHashMap.newKeySet();
         this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> RANDOM.nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNullElseGet(noiseKeyPair, SignalIdentityKeyPair::random);
-        this.ephemeralKeyPair = Objects.requireNonNullElseGet(ephemeralKeyPair, SignalIdentityKeyPair::random);
         this.identityKeyPair = Objects.requireNonNullElseGet(identityKeyPair, SignalIdentityKeyPair::random);
         this.companionKeyPair = companionKeyPair;
         this.signedKeyPair = Objects.requireNonNullElseGet(signedKeyPair, () -> SignalSignedKeyPair.of(registrationId, identityKeyPair));
@@ -2090,6 +2078,15 @@ public final class WhatsappStore implements SignalProtocolStore {
         return this;
     }
 
+    public WhatsappListener addListener(WhatsappListener listener) {
+        listeners.add(listener);
+        return listener;
+    }
+
+    public boolean removeListener(WhatsappListener listener) {
+        return listeners.remove(listener);
+    }
+
     /**
      * Returns the event listeners.
      *
@@ -2209,15 +2206,6 @@ public final class WhatsappStore implements SignalProtocolStore {
      */
     public SignalIdentityKeyPair noiseKeyPair() {
         return this.noiseKeyPair;
-    }
-
-    /**
-     * Returns the ephemeral key pair.
-     *
-     * @return the non-null ephemeral key pair used during handshake
-     */
-    public SignalIdentityKeyPair ephemeralKeyPair() {
-        return this.ephemeralKeyPair;
     }
 
     /**
@@ -2554,7 +2542,6 @@ public final class WhatsappStore implements SignalProtocolStore {
                && Objects.equals(historyLength, that.historyLength)
                && Objects.equals(registrationId, that.registrationId)
                && Objects.equals(noiseKeyPair, that.noiseKeyPair)
-               && Objects.equals(ephemeralKeyPair, that.ephemeralKeyPair)
                && Objects.equals(identityKeyPair, that.identityKeyPair)
                && Objects.equals(companionKeyPair, that.companionKeyPair)
                && Objects.equals(companionIdentity, that.companionIdentity)
@@ -2584,7 +2571,7 @@ public final class WhatsappStore implements SignalProtocolStore {
                 unarchiveChats, twentyFourHourFormat, newChatsEphemeralTimer, historyLength,
                 automaticPresenceUpdates, automaticMessageReceipts, checkPatchMacs, syncedChats, 
                 syncedContacts, syncedNewsletters, syncedStatus, syncedWebAppState, syncedBusinessCertificate,
-                registrationId, noiseKeyPair, ephemeralKeyPair, identityKeyPair, companionKeyPair, companionIdentity,
+                registrationId, noiseKeyPair, identityKeyPair, companionKeyPair, companionIdentity,
                 signedKeyPair, preKeys, fdid, Arrays.hashCode(deviceId), advertisingId, Arrays.hashCode(identityId), 
                 Arrays.hashCode(backupToken), senderKeys, appStateKeys, sessions, hashStates, registered, listeners, mediaConnection);
     }

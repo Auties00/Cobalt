@@ -4,12 +4,13 @@ import com.github.auties00.cobalt.util.Bytes;
 
 import javax.crypto.KDF;
 import javax.crypto.spec.HKDFParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
-public record MediaKeys(byte[] mediaKey, byte[] iv, byte[] cipherKey, byte[] macKey, byte[] ref) {
+public record MediaKeys(byte[] mediaKey, IvParameterSpec iv, SecretKeySpec cipherKey, SecretKeySpec macKey, byte[] ref) {
     private static final int EXPANDED_SIZE = 112;
     private static final int KEY_LENGTH = 32;
     private static final int IV_LENGTH = 16;
@@ -26,9 +27,9 @@ public record MediaKeys(byte[] mediaKey, byte[] iv, byte[] cipherKey, byte[] mac
                     .addIKM(new SecretKeySpec(key, "AES"))
                     .thenExpand(keyName, EXPANDED_SIZE);
             var expanded = hkdf.deriveData(params);
-            var iv = Arrays.copyOfRange(expanded, 0, IV_LENGTH);
-            var cipherKey = Arrays.copyOfRange(expanded, IV_LENGTH, IV_LENGTH + KEY_LENGTH);
-            var macKey = Arrays.copyOfRange(expanded, IV_LENGTH + KEY_LENGTH, IV_LENGTH + KEY_LENGTH + KEY_LENGTH);
+            var iv = new IvParameterSpec(expanded, 0, IV_LENGTH);
+            var cipherKey = new SecretKeySpec(expanded, IV_LENGTH,  KEY_LENGTH, "AES");
+            var macKey = new SecretKeySpec(expanded, IV_LENGTH + KEY_LENGTH, KEY_LENGTH, "HmacSHA256");
             var ref = Arrays.copyOfRange(expanded, IV_LENGTH + KEY_LENGTH + KEY_LENGTH + KEY_LENGTH, expanded.length);
             return new MediaKeys(key, iv, cipherKey, macKey, ref);
         }catch (GeneralSecurityException exception) {
