@@ -219,7 +219,7 @@ public final class SocketEncryption {
                 .manufacturer(mobile ? store.device().manufacturer() : null)
                 .device(mobile ? store.device().model().replaceAll("_", " ") : null)
                 .osBuildNumber(mobile ? store.device().osBuildNumber() : null)
-                .phoneId(mobile ? store.fdid().toUpperCase() : null)
+                .phoneId(mobile ? store.fdid().toString().toUpperCase() : null)
                 .releaseChannel(store.releaseChannel())
                 .localeLanguageIso6391("en")
                 .localeCountryIso31661Alpha2("US")

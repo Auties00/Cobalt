@@ -2,7 +2,6 @@
 package com.github.auties00.cobalt.api;
 
 import com.github.auties00.cobalt.model.auth.SignedDeviceIdentity;
-import com.github.auties00.cobalt.model.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.auth.UserAgent.ReleaseChannel;
 import com.github.auties00.cobalt.model.auth.Version;
 import com.github.auties00.cobalt.model.business.BusinessCategory;
@@ -30,6 +29,7 @@ import com.github.auties00.cobalt.model.sync.AppStateSyncKey;
 import com.github.auties00.cobalt.model.sync.HistorySyncMessage;
 import com.github.auties00.cobalt.model.sync.PatchType;
 import com.github.auties00.cobalt.util.AppMetadata;
+import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.libsignal.SignalProtocolAddress;
 import com.github.auties00.libsignal.SignalProtocolStore;
@@ -42,6 +42,8 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.net.URI;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
@@ -81,7 +83,16 @@ import java.util.concurrent.ConcurrentMap;
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 @ProtobufMessage
 public final class WhatsappStore implements SignalProtocolStore {
+    private static final SecureRandom RANDOM;
     private static final WhatsappStoreSerializer DEFAULT_DESERIALIZER = WhatsappStoreSerializer.discarding();
+
+    static {
+        try {
+            RANDOM = SecureRandom.getInstanceStrong();
+        } catch (NoSuchAlgorithmException e) {
+            throw new InternalError(e);
+        }
+    }
 
     // =====================================================
     // SECTION: Core Identity & Configuration
@@ -121,26 +132,6 @@ public final class WhatsappStore implements SignalProtocolStore {
     final WhatsappClientType clientType;
 
     /**
-     * Serializer responsible for persisting this store to storage.
-     * <p>
-     * Determines how and where session data is saved. Can be changed at runtime via
-     * {@link #setSerializer(WhatsappStoreSerializer)} to migrate between storage backends.
-     *
-     * @see WhatsappStoreSerializer
-     * @see #serialize()
-     */
-    WhatsappStoreSerializer serializer;
-
-    /**
-     * Controls whether this store is persisted to storage.
-     * <p>
-     * When false, {@link #serialize()} performs no operations. Useful for temporary
-     * sessions or testing scenarios where persistence is not desired.
-     * Default: true
-     */
-    private boolean serializable;
-
-    /**
      * Unix timestamp (seconds) when this store instance was created.
      * <p>
      * Used for session age tracking and time-sensitive operations. Automatically
@@ -164,16 +155,6 @@ public final class WhatsappStore implements SignalProtocolStore {
     URI proxy;
 
     /**
-     * WhatsApp protocol version used by this session.
-     * <p>
-     * Automatically determined based on {@link #device} platform. Used during protocol
-     * negotiation with WhatsApp servers and affects available features and message formats.
-     * Updated from {@link com.github.auties00.cobalt.util.AppMetadata#getVersion(PlatformType)}.
-     */
-    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
-    Version version;
-
-    /**
      * Device information identifying this client to WhatsApp servers.
      * <p>
      * Contains:
@@ -185,7 +166,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * </ul>
      * Different device types have varying capabilities and protocol requirements.
      */
-    @ProtobufProperty(index = 7, type = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 6, type = ProtobufType.MESSAGE)
     JidDevice device;
 
     /**
@@ -198,7 +179,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * </ul>
      * Beta channels may provide newer functionality but with reduced stability.
      */
-    @ProtobufProperty(index = 8, type = ProtobufType.ENUM)
+    @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
     ReleaseChannel releaseChannel;
 
     /**
@@ -208,7 +189,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * multi-device architecture to identify and validate specific device pairings.
      * Null for primary devices or before pairing completes.
      */
-    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 8, type = ProtobufType.STRING)
     String deviceHash;
 
     // =====================================================
@@ -221,7 +202,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Controls visibility of online status and "last seen" indicator according to
      * privacy settings. When true, presence updates are sent to WhatsApp servers.
      */
-    @ProtobufProperty(index = 10, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 9, type = ProtobufType.BOOL)
     boolean online;
 
     /**
@@ -230,7 +211,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Format: ISO 639-1 language + ISO 3166-1 alpha-2 country (e.g., "en_US", "pt_BR").
      * Determines language for system messages and localized children.
      */
-    @ProtobufProperty(index = 11, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 10, type = ProtobufType.STRING)
     String locale;
 
     /**
@@ -239,7 +220,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Null until successful login. For unregistered accounts, defaults to device
      * platform name. Updated via {@link Whatsapp#changeName(String)}.
      */
-    @ProtobufProperty(index = 12, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 11, type = ProtobufType.STRING)
     String name;
 
     /**
@@ -248,7 +229,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Only populated for business accounts that completed WhatsApp's verification process.
      * Displays prominently in business profiles. Null for regular accounts.
      */
-    @ProtobufProperty(index = 13, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 12, type = ProtobufType.STRING)
     String verifiedName;
 
     /**
@@ -257,7 +238,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Points to WhatsApp-hosted image resource. Null when no profile picture is set
      * or before initial login. Updated via {@link Whatsapp#changeProfilePicture(java.io.InputStream)}.
      */
-    @ProtobufProperty(index = 14, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 13, type = ProtobufType.STRING)
     URI profilePicture;
 
     /**
@@ -266,7 +247,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Examples: "Hey there! I am using WhatsApp", custom status messages.
      * Null before login. Updated via {@link Whatsapp#changeAbout(String)}.
      */
-    @ProtobufProperty(index = 15, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 14, type = ProtobufType.STRING)
     String about;
 
     /**
@@ -276,13 +257,13 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Null until authentication completes. Used as primary identifier in all
      * WhatsApp protocol operations.
      */
-    @ProtobufProperty(index = 16, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 15, type = ProtobufType.STRING)
     Jid jid;
 
     /**
      * LID used when real phone number is not advertised.
      */
-    @ProtobufProperty(index = 17, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 16, type = ProtobufType.STRING)
     Jid lid;
 
     // =====================================================
@@ -295,7 +276,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Full street address where business is located. Displayed in business profile
      * and used for location-based discovery. Null for non-business accounts.
      */
-    @ProtobufProperty(index = 18, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 17, type = ProtobufType.STRING)
     String businessAddress;
 
     /**
@@ -304,7 +285,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Range: -180.0 to +180.0 degrees. Used with {@link #businessLatitude} for
      * precise location mapping and discovery. Null for non-business accounts.
      */
-    @ProtobufProperty(index = 19, type = ProtobufType.DOUBLE)
+    @ProtobufProperty(index = 18, type = ProtobufType.DOUBLE)
     Double businessLongitude;
 
     /**
@@ -313,7 +294,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Range: -90.0 to +90.0 degrees. Used with {@link #businessLongitude} for
      * precise location mapping and discovery. Null for non-business accounts.
      */
-    @ProtobufProperty(index = 20, type = ProtobufType.DOUBLE)
+    @ProtobufProperty(index = 19, type = ProtobufType.DOUBLE)
     Double businessLatitude;
 
     /**
@@ -322,7 +303,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Free-form text displayed in business profile. Helps customers understand
      * the nature and scope of business services. Null for non-business accounts.
      */
-    @ProtobufProperty(index = 21, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 20, type = ProtobufType.STRING)
     String businessDescription;
 
     /**
@@ -331,7 +312,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Valid HTTP/HTTPS URL linking to business's online presence. Displayed in
      * business profile for customer reference. Null for non-business accounts.
      */
-    @ProtobufProperty(index = 22, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 21, type = ProtobufType.STRING)
     String businessWebsite;
 
     /**
@@ -340,7 +321,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Used for customer communication outside WhatsApp. Displayed in business
      * profile. Null for non-business accounts.
      */
-    @ProtobufProperty(index = 23, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 22, type = ProtobufType.STRING)
     String businessEmail;
 
     /**
@@ -350,7 +331,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * business discovery, filtering, and categorization in WhatsApp Business
      * features. Null for non-business accounts.
      */
-    @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 23, type = ProtobufType.MESSAGE)
     BusinessCategory businessCategory;
 
     // =====================================================
@@ -392,7 +373,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @see Contact
      * @see #findContactByJid(JidProvider)
      */
-    @ProtobufProperty(index = 25, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 24, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentHashMap<Jid, Contact> contacts;
 
     /**
@@ -403,7 +384,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @see Call
      */
-    @ProtobufProperty(index = 26, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 25, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentHashMap<String, Call> calls;
 
     // =====================================================
@@ -421,7 +402,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @see PrivacySettingType
      * @see PrivacySettingValue
      */
-    @ProtobufProperty(index = 27, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 26, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentHashMap<String, PrivacySettingEntry> privacySettings;
 
     // =====================================================
@@ -435,7 +416,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * and behavioral configurations. Updated by WhatsApp servers and may change
      * between sessions. Affects available features and protocol behavior.
      */
-    @ProtobufProperty(index = 28, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.STRING)
+    @ProtobufProperty(index = 27, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.STRING)
     final ConcurrentHashMap<String, String> properties;
 
     /**
@@ -445,7 +426,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * When false: archived chats remain archived regardless of new activity.
      * Default: true
      */
-    @ProtobufProperty(index = 29, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 28, type = ProtobufType.BOOL)
     boolean unarchiveChats;
 
     /**
@@ -455,7 +436,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * When false: times displayed as 1:00 PM, 11:45 PM, etc.
      * Default: false
      */
-    @ProtobufProperty(index = 30, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 29, type = ProtobufType.BOOL)
     boolean twentyFourHourFormat;
 
     /**
@@ -467,7 +448,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @see ChatEphemeralTimer
      */
-    @ProtobufProperty(index = 31, type = ProtobufType.ENUM)
+    @ProtobufProperty(index = 30, type = ProtobufType.ENUM)
     ChatEphemeralTimer newChatsEphemeralTimer;
 
     /**
@@ -479,7 +460,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @see WhatsappWebHistoryPolicy
      */
-    @ProtobufProperty(index = 32, type = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 31, type = ProtobufType.MESSAGE)
     WhatsappWebHistoryPolicy historyLength;
 
     /**
@@ -490,7 +471,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * "last seen" timestamp updates.
      * Default: true
      */
-    @ProtobufProperty(index = 33, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 32, type = ProtobufType.BOOL)
     boolean automaticPresenceUpdates;
 
     /**
@@ -501,7 +482,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Typically true for Mobile clients, configurable for Web clients.
      * Default: true
      */
-    @ProtobufProperty(index = 34, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 33, type = ProtobufType.BOOL)
     boolean automaticMessageReceipts;
 
     /**
@@ -512,7 +493,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * When false: skips MAC verification for faster synchronization.
      * Default: true
      */
-    @ProtobufProperty(index = 35, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 34, type = ProtobufType.BOOL)
     boolean checkPatchMacs;
 
     // =====================================================
@@ -526,7 +507,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Mobile clients: true after initial bootstrap.
      * Used to prevent duplicate synchronization and track initialization progress.
      */
-    @ProtobufProperty(index = 36, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 35, type = ProtobufType.BOOL)
     boolean syncedChats;
 
     /**
@@ -536,7 +517,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Mobile clients: true after initial bootstrap.
      * Used to prevent duplicate synchronization and track initialization progress.
      */
-    @ProtobufProperty(index = 37, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 36, type = ProtobufType.BOOL)
     boolean syncedContacts;
 
     /**
@@ -545,7 +526,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Both platforms: uses w:mex query to fetch newsletter information.
      * True after initial newsletter sync completes. Prevents redundant queries.
      */
-    @ProtobufProperty(index = 38, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 37, type = ProtobufType.BOOL)
     boolean syncedNewsletters;
 
     /**
@@ -555,7 +536,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Mobile clients: true after initial bootstrap.
      * Used to prevent duplicate synchronization and track initialization progress.
      */
-    @ProtobufProperty(index = 39, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 38, type = ProtobufType.BOOL)
     boolean syncedStatus;
 
     /**
@@ -564,7 +545,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Web app state includes settings, starred messages, and other non-message data.
      * True after initial app state sync completes. Prevents redundant synchronization.
      */
-    @ProtobufProperty(index = 40, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 39, type = ProtobufType.BOOL)
     boolean syncedWebAppState;
 
     /**
@@ -574,7 +555,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * initial registration process. This flag tracks whether that certificate has
      * already been transmitted to avoid duplicate submissions.
      */
-    @ProtobufProperty(index = 41, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 40, type = ProtobufType.BOOL)
     boolean syncedBusinessCertificate;
 
     // =====================================================
@@ -588,7 +569,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * and pre-key exchange. Generated once during initial setup if not provided.
      * Remains constant for lifetime of the installation.
      */
-    @ProtobufProperty(index = 42, type = ProtobufType.INT32)
+    @ProtobufProperty(index = 41, type = ProtobufType.INT32)
     final Integer registrationId;
 
     /**
@@ -599,7 +580,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * remains constant for account lifetime. Provides forward secrecy and ensures
      * initial connection security before sensitive data exchange.
      */
-    @ProtobufProperty(index = 43, type = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 42, type = ProtobufType.MESSAGE)
     final SignalIdentityKeyPair noiseKeyPair;
 
     /**
@@ -609,7 +590,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * additional security ensuring that even if long-term keys are compromised,
      * individual sessions remain secure. Regenerated for each new session.
      */
-    @ProtobufProperty(index = 44, type = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 43, type = ProtobufType.MESSAGE)
     final SignalIdentityKeyPair ephemeralKeyPair;
 
     /**
@@ -619,7 +600,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * encryption for all messages. Generated once during account creation and remains
      * constant. Used in X3DH key agreement and message encryption/decryption.
      */
-    @ProtobufProperty(index = 45, type = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 44, type = ProtobufType.MESSAGE)
     final SignalIdentityKeyPair identityKeyPair;
 
     /**
@@ -629,7 +610,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * mobile device. Exchanged during QR code/pairing code pairing process. Null for
      * Mobile clients or before pairing completes.
      */
-    @ProtobufProperty(index = 46, type = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 45, type = ProtobufType.MESSAGE)
     SignalIdentityKeyPair companionKeyPair;
 
     /**
@@ -639,7 +620,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Null until QR code/pairing code pairing completes and identity information
      * is synchronized from mobile device. Used to verify device authenticity.
      */
-    @ProtobufProperty(index = 47, type = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 46, type = ProtobufType.MESSAGE)
     SignedDeviceIdentity companionIdentity;
 
     // =====================================================
@@ -653,7 +634,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Generated during initialization and rotated according to WhatsApp's security
      * policies. Provides forward secrecy and deniability properties.
      */
-    @ProtobufProperty(index = 48, type = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 47, type = ProtobufType.MESSAGE)
     final SignalSignedKeyPair signedKeyPair;
 
     /**
@@ -667,7 +648,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @see SignalPreKeyPair
      */
-    @ProtobufProperty(index = 49, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 48, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
     final LinkedHashMap<Integer, SignalPreKeyPair> preKeys;
 
     // =====================================================
@@ -675,13 +656,13 @@ public final class WhatsappStore implements SignalProtocolStore {
     // =====================================================
 
     /**
-     * FDID (Firebase Device Identifier) used during mobile registration.
+     * FDID used during mobile registration.
      * <p>
      * Unique identifier for WhatsApp's mobile clients during registration process.
      * Generated for Web clients but may not be actively used. Format: UUID string.
      */
-    @ProtobufProperty(index = 50, type = ProtobufType.STRING)
-    final String fdid;
+    @ProtobufProperty(index = 49, type = ProtobufType.STRING)
+    final UUID fdid;
 
     /**
      * Unique device identifier for mobile clients.
@@ -690,7 +671,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Generated as UUID without hyphens, then hex-decoded to bytes. Remains constant
      * for lifetime of the installation.
      */
-    @ProtobufProperty(index = 51, type = ProtobufType.BYTES)
+    @ProtobufProperty(index = 50, type = ProtobufType.BYTES)
     final byte[] deviceId;
 
     /**
@@ -699,7 +680,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * UUID used for analytics and advertising purposes on mobile platforms. May be
      * reset by user through device settings. Null for Web clients.
      */
-    @ProtobufProperty(index = 52, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 51, type = ProtobufType.STRING)
     final UUID advertisingId;
 
     /**
@@ -710,7 +691,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * of identity verification. Generated once during account creation and remains constant.
      * Used in various cryptographic protocols and authentication flows.
      */
-    @ProtobufProperty(index = 53, type = ProtobufType.BYTES)
+    @ProtobufProperty(index = 52, type = ProtobufType.BYTES)
     final byte[] identityId;
 
     /**
@@ -720,7 +701,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * to recover chat history when reinstalling app or switching devices. Cryptographically
      * tied to account - encrypted backups cannot be accessed without it. Must be kept secure.
      */
-    @ProtobufProperty(index = 54, type = ProtobufType.BYTES)
+    @ProtobufProperty(index = 53, type = ProtobufType.BYTES)
     final byte[] backupToken;
 
     // =====================================================
@@ -737,7 +718,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @see SignalSenderKeyRecord
      * @see SignalSenderKeyName
      */
-    @ProtobufProperty(index = 55, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 54, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentMap<SignalSenderKeyName, SignalSenderKeyRecord> senderKeys;
 
     /**
@@ -749,7 +730,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @see AppStateSyncKey
      */
-    @ProtobufProperty(index = 56, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 55, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
     final LinkedHashMap<Integer, AppStateSyncKey> appStateKeys;
 
     /**
@@ -762,7 +743,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @see SignalSessionRecord
      * @see SignalProtocolAddress
      */
-    @ProtobufProperty(index = 57, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 56, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentMap<SignalProtocolAddress, SignalSessionRecord> sessions;
 
     /**
@@ -780,7 +761,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @see PatchType
      * @see AppStateSyncHash
      */
-    @ProtobufProperty(index = 58, type = ProtobufType.MESSAGE, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
+    @ProtobufProperty(index = 57, type = ProtobufType.MESSAGE, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
     final ConcurrentMap<PatchType, AppStateSyncHash> hashStates;
 
     // =====================================================
@@ -796,12 +777,32 @@ public final class WhatsappStore implements SignalProtocolStore {
      * This flag affects which API calls are available and how the client behaves during
      * connection establishment.
      */
-    @ProtobufProperty(index = 59, type = ProtobufType.BOOL)
+    @ProtobufProperty(index = 58, type = ProtobufType.BOOL)
     boolean registered;
 
     // =====================================================
     // SECTION: Runtime State (Non-Serialized)
     // =====================================================
+
+    /**
+     * Serializer responsible for persisting this store to storage.
+     * <p>
+     * Determines how and where session data is saved. Can be changed at runtime via
+     * {@link #setSerializer(WhatsappStoreSerializer)} to migrate between storage backends.
+     *
+     * @see WhatsappStoreSerializer
+     * @see #serialize()
+     */
+    WhatsappStoreSerializer serializer;
+
+    /**
+     * Controls whether this store is persisted to storage.
+     * <p>
+     * When false, {@link #serialize()} performs no operations. Useful for temporary
+     * sessions or testing scenarios where persistence is not desired.
+     * Default: true
+     */
+    private boolean serializable;
 
 
     /**
@@ -887,7 +888,7 @@ public final class WhatsappStore implements SignalProtocolStore {
             SignedDeviceIdentity companionIdentity,
             SignalSignedKeyPair signedKeyPair,
             LinkedHashMap<Integer, SignalPreKeyPair> preKeys,
-            String fdid,
+            UUID fdid,
             byte[] deviceId,
             UUID advertisingId,
             byte[] identityId,
@@ -924,13 +925,12 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.calls = Objects.requireNonNull(calls, "calls cannot be null");
         this.unarchiveChats = unarchiveChats;
         this.twentyFourHourFormat = twentyFourHourFormat;
-        this.initializationTimeStamp = Objects.requireNonNull(initializationTimeStamp, "initializationTimeStamp cannot be null");
-        this.newChatsEphemeralTimer = Objects.requireNonNull(newChatsEphemeralTimer, "newChatsEphemeralTimer cannot be null");
+        this.initializationTimeStamp = initializationTimeStamp;
+        this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
         this.historyLength = historyLength;
         this.automaticPresenceUpdates = automaticPresenceUpdates;
         this.automaticMessageReceipts = automaticMessageReceipts;
-        this.releaseChannel = Objects.requireNonNull(releaseChannel, "releaseChannel cannot be null");
-        this.version = Objects.requireNonNull(version, "version cannot be null");
+        this.releaseChannel = Objects.requireNonNullElse(releaseChannel, ReleaseChannel.RELEASE);
         this.device = Objects.requireNonNull(device, "device cannot be null");
         this.checkPatchMacs = checkPatchMacs;
         this.syncedChats = syncedChats;
@@ -943,18 +943,18 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.newsletters = new ConcurrentHashMap<>();
         this.status = new ConcurrentHashMap<>();
         this.listeners = ConcurrentHashMap.newKeySet();
-        this.registrationId = Objects.requireNonNull(registrationId, "registrationId cannot be null");
-        this.noiseKeyPair = Objects.requireNonNull(noiseKeyPair, "noiseKeyPair cannot be null");
-        this.ephemeralKeyPair = Objects.requireNonNull(ephemeralKeyPair, "ephemeralKeyPair cannot be null");
-        this.identityKeyPair = Objects.requireNonNull(identityKeyPair, "identityKeyPair cannot be null");
+        this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> RANDOM.nextInt(16380) + 1);
+        this.noiseKeyPair = Objects.requireNonNullElseGet(noiseKeyPair, SignalIdentityKeyPair::random);
+        this.ephemeralKeyPair = Objects.requireNonNullElseGet(ephemeralKeyPair, SignalIdentityKeyPair::random);
+        this.identityKeyPair = Objects.requireNonNullElseGet(identityKeyPair, SignalIdentityKeyPair::random);
         this.companionKeyPair = companionKeyPair;
-        this.signedKeyPair = Objects.requireNonNull(signedKeyPair, "signedKeyPair cannot be null");
+        this.signedKeyPair = Objects.requireNonNullElseGet(signedKeyPair, () -> SignalSignedKeyPair.of(registrationId, identityKeyPair));
         this.preKeys = Objects.requireNonNull(preKeys, "preKeys cannot be null");
-        this.fdid = Objects.requireNonNull(fdid, "fdid cannot be null");
-        this.deviceId = Objects.requireNonNull(deviceId, "deviceId cannot be null");
-        this.advertisingId = Objects.requireNonNull(advertisingId, "advertisingId cannot be null");
-        this.identityId = Objects.requireNonNull(identityId, "identityId cannot be null");
-        this.backupToken = Objects.requireNonNull(backupToken, "backupToken cannot be null");
+        this.fdid = Objects.requireNonNullElseGet(fdid, UUID::randomUUID);
+        this.deviceId = Objects.requireNonNullElseGet(deviceId, () -> HexFormat.of().parseHex(UUID.randomUUID().toString().replace("-", "")));
+        this.advertisingId = Objects.requireNonNullElseGet(advertisingId, UUID::randomUUID);
+        this.identityId = Objects.requireNonNullElseGet(identityId, () -> Bytes.random(16));
+        this.backupToken = Objects.requireNonNullElseGet(backupToken, () -> Bytes.random(20));
         this.companionIdentity = companionIdentity;
         this.senderKeys = Objects.requireNonNull(senderKeys, "senderKeys cannot be null");
         this.appStateKeys = Objects.requireNonNull(appStateKeys, "appStateKeys cannot be null");
@@ -1422,19 +1422,8 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @return the version, cannot be null
      */
-    public Version version() {
-        return version;
-    }
-
-    /**
-     * Sets the WhatsApp protocol version.
-     *
-     * @param version the version, cannot be null
-     * @return this store instance for method chaining
-     */
-    public WhatsappStore setVersion(Version version) {
-        this.version = Objects.requireNonNull(version, "version cannot be null");
-        return this;
+    public synchronized Version version() {
+        return AppMetadata.getVersion(device.platform());
     }
 
     /**
@@ -1454,7 +1443,6 @@ public final class WhatsappStore implements SignalProtocolStore {
      */
     public WhatsappStore setDevice(JidDevice device) {
         this.device = Objects.requireNonNull(device, "device cannot be null");
-        this.version = AppMetadata.getVersion(device.platform());
         return this;
     }
 
@@ -2165,7 +2153,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @return the FDID, never null
      */
-    public String fdid() {
+    public UUID fdid() {
         return fdid;
     }
 
@@ -2538,7 +2526,6 @@ public final class WhatsappStore implements SignalProtocolStore {
                && Objects.equals(serializer, that.serializer)
                && Objects.equals(initializationTimeStamp, that.initializationTimeStamp)
                && Objects.equals(proxy, that.proxy)
-               && Objects.equals(version, that.version)
                && Objects.equals(device, that.device)
                && releaseChannel == that.releaseChannel
                && Objects.equals(deviceHash, that.deviceHash)
@@ -2589,7 +2576,7 @@ public final class WhatsappStore implements SignalProtocolStore {
     @Override
     public int hashCode() {
         return Objects.hash(uuid, phoneNumber, clientType, serializer, serializable,
-                initializationTimeStamp, proxy, version, device, releaseChannel, 
+                initializationTimeStamp, proxy, device, releaseChannel,
                 deviceHash, online, locale, name, verifiedName, profilePicture,
                 about, jid, lid, businessAddress, businessLongitude, businessLatitude,
                 businessDescription, businessWebsite, businessEmail, businessCategory,

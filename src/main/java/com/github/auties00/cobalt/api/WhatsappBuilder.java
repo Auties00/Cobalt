@@ -6,7 +6,9 @@ import com.github.auties00.cobalt.util.MobileRegistration;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 
 import java.net.URI;
-import java.util.*;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * A builder for WhatsApp API client instances with support for both web-based and mobile-based connections.
@@ -139,11 +141,20 @@ public sealed class WhatsappBuilder {
          */
         public abstract Options newConnection(WhatsappSixPartsKeys sixParts);
 
-        private static WhatsappStore newStore(UUID id, Long phoneNumber, SignalIdentityKeyPair signalIdentityKeyPair, SignalIdentityKeyPair identityKeyPair, byte[] bytes, boolean b, WhatsappClientType clientType) {
+        private static WhatsappStore newStore(UUID id, Long phoneNumber, WhatsappClientType clientType, SignalIdentityKeyPair identityKeyPair, SignalIdentityKeyPair noiseKeyPair, boolean registered, byte[] identityId) {
+            var device = switch (clientType) {
+                case WEB -> JidDevice.web();
+                case MOBILE -> JidDevice.ios(false);
+            };
             return new WhatsappStoreBuilder()
-                    .uuid(id)
+                    .uuid(Objects.requireNonNullElseGet(id, UUID::randomUUID))
                     .phoneNumber(phoneNumber)
-                    .clientType(clientType)
+                    .clientType(Objects.requireNonNull(clientType, "clientType must not be null"))
+                    .device(device)
+                    .identityId(identityId)
+                    .identityKeyPair(identityKeyPair)
+                    .noiseKeyPair(noiseKeyPair)
+                    .registered(registered)
                     .build();
         }
 
@@ -206,7 +217,7 @@ public sealed class WhatsappBuilder {
             public Options.Web newConnection(UUID uuid) {
                 var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
                 var store = serializer.startDeserialize(WhatsappClientType.WEB, sessionUuid, null)
-                        .orElseGet(() -> newStore(sessionUuid, null, null, null, null, false, WhatsappClientType.WEB));
+                        .orElseGet(() -> newStore(sessionUuid, null, WhatsappClientType.WEB, null, null, false, null));
                 return new Options.Web(store);
             }
 
@@ -221,7 +232,7 @@ public sealed class WhatsappBuilder {
             @Override
             public Options.Web newConnection(Long phoneNumber) {
                 var store = serializer.startDeserialize(WhatsappClientType.WEB, null, phoneNumber)
-                        .orElseGet(() -> newStore(null, phoneNumber, null, null, null, false, WhatsappClientType.WEB));
+                        .orElseGet(() -> newStore(null, phoneNumber, WhatsappClientType.WEB, null, null, false, null));
                 return new Options.Web(store);
             }
 
@@ -241,7 +252,7 @@ public sealed class WhatsappBuilder {
                     return new Options.Web(serialized.get());
                 }
 
-                var store = newStore(null, sixParts.phoneNumber(), sixParts.noiseKeyPair(), sixParts.identityKeyPair(), sixParts.identityId(), true, WhatsappClientType.WEB);
+                var store = newStore(null, sixParts.phoneNumber(), WhatsappClientType.WEB, sixParts.identityKeyPair(), sixParts.noiseKeyPair(), true, sixParts.identityId());
                 return new Options.Web(store);
             }
         }
@@ -305,7 +316,7 @@ public sealed class WhatsappBuilder {
             public Options.Mobile newConnection(UUID uuid) {
                 var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
                 var store = serializer.startDeserialize(WhatsappClientType.MOBILE, sessionUuid, null)
-                        .orElseGet(() -> newStore(sessionUuid, null, null, null, null, false, WhatsappClientType.MOBILE));
+                        .orElseGet(() -> newStore(sessionUuid, null, WhatsappClientType.MOBILE, null, null, false, null));
                 return new Options.Mobile(store);
             }
 
@@ -320,7 +331,7 @@ public sealed class WhatsappBuilder {
             @Override
             public Options.Mobile newConnection(Long phoneNumber) {
                 var store = serializer.startDeserialize(WhatsappClientType.MOBILE, null, phoneNumber)
-                        .orElseGet(() -> newStore(null, phoneNumber, null, null, null, false, WhatsappClientType.MOBILE));
+                        .orElseGet(() -> newStore(null, phoneNumber, WhatsappClientType.MOBILE, null, null, false, null));
                 return new Options.Mobile(store);
             }
 
@@ -340,7 +351,7 @@ public sealed class WhatsappBuilder {
                     return new Options.Mobile(serialized.get());
                 }
 
-                var store = newStore(null, sixParts.phoneNumber(), sixParts.noiseKeyPair(), sixParts.identityKeyPair(), sixParts.identityId(), true, WhatsappClientType.MOBILE);
+                var store = newStore(null, sixParts.phoneNumber(), WhatsappClientType.MOBILE, sixParts.identityKeyPair(), sixParts.noiseKeyPair(), true, sixParts.identityId());
                 return new Options.Mobile(store);
             }
         }

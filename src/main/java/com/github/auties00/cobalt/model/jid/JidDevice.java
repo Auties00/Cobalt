@@ -20,7 +20,6 @@ public final class JidDevice {
                     "iPhone 7",
                     "Apple",
                     null,
-                    null,
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone9,3",
@@ -29,7 +28,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone 7",
                     "Apple",
-                    null,
                     null,
                     Version.of("15.8.2"),
                     "19H384",
@@ -42,7 +40,6 @@ public final class JidDevice {
                     "iPhone 7 Plus",
                     "Apple",
                     null,
-                    null,
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone9,4",
@@ -51,7 +48,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone 7 Plus",
                     "Apple",
-                    null,
                     null,
                     Version.of("15.8.2"),
                     "19H384",
@@ -64,7 +60,6 @@ public final class JidDevice {
                     "iPhone 8",
                     "Apple",
                     null,
-                    null,
                     Version.of("13.7"),
                     "17H35",
                     "iPhone10,4",
@@ -73,7 +68,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone 8",
                     "Apple",
-                    null,
                     null,
                     Version.of("14.8.1"),
                     "18H107",
@@ -84,7 +78,6 @@ public final class JidDevice {
                     "iPhone 8",
                     "Apple",
                     null,
-                    null,
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone10,4",
@@ -93,7 +86,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone 8",
                     "Apple",
-                    null,
                     null,
                     Version.of("16.7.7"),
                     "20H330",
@@ -106,7 +98,6 @@ public final class JidDevice {
                     "iPhone 8 Plus",
                     "Apple",
                     null,
-                    null,
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone10,5",
@@ -116,7 +107,6 @@ public final class JidDevice {
                     "iPhone 8 Plus",
                     "Apple",
                     null,
-                    null,
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone10,5",
@@ -125,7 +115,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone 8 Plus",
                     "Apple",
-                    null,
                     null,
                     Version.of("16.7.7"),
                     "20H330",
@@ -138,7 +127,6 @@ public final class JidDevice {
                     "iPhone X",
                     "Apple",
                     null,
-                    null,
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone10,6",
@@ -148,7 +136,6 @@ public final class JidDevice {
                     "iPhone X",
                     "Apple",
                     null,
-                    null,
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone10,6",
@@ -157,7 +144,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone X",
                     "Apple",
-                    null,
                     null,
                     Version.of("16.7.7"),
                     "20H330",
@@ -170,7 +156,6 @@ public final class JidDevice {
                     "iPhone XR",
                     "Apple",
                     null,
-                    null,
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone11,8",
@@ -179,7 +164,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone XR",
                     "Apple",
-                    null,
                     null,
                     Version.of("15.8.2"),
                     "19H384",
@@ -190,7 +174,6 @@ public final class JidDevice {
                     "iPhone XR",
                     "Apple",
                     null,
-                    null,
                     Version.of("16.7.7"),
                     "20H330",
                     "iPhone11,8",
@@ -199,7 +182,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone XR",
                     "Apple",
-                    null,
                     null,
                     Version.of("17.4.1"),
                     "21E236",
@@ -212,7 +194,6 @@ public final class JidDevice {
                     "iPhone XS",
                     "Apple",
                     null,
-                    null,
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone11,2",
@@ -221,7 +202,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone XS",
                     "Apple",
-                    null,
                     null,
                     Version.of("15.8.2"),
                     "19H384",
@@ -232,7 +212,6 @@ public final class JidDevice {
                     "iPhone XS",
                     "Apple",
                     null,
-                    null,
                     Version.of("16.7.7"),
                     "20H330",
                     "iPhone11,2",
@@ -241,7 +220,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone XS",
                     "Apple",
-                    null,
                     null,
                     Version.of("17.4.1"),
                     "21E236",
@@ -254,7 +232,6 @@ public final class JidDevice {
                     "iPhone XS Max",
                     "Apple",
                     null,
-                    null,
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone11,6",
@@ -263,7 +240,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone XS Max",
                     "Apple",
-                    null,
                     null,
                     Version.of("15.8.2"),
                     "19H384",
@@ -274,7 +250,6 @@ public final class JidDevice {
                     "iPhone XS Max",
                     "Apple",
                     null,
-                    null,
                     Version.of("16.7.7"),
                     "20H330",
                     "iPhone11,6",
@@ -283,7 +258,6 @@ public final class JidDevice {
             new JidDevice(
                     "iPhone XS Max",
                     "Apple",
-                    null,
                     null,
                     Version.of("17.4.1"),
                     "21E236",
@@ -302,25 +276,21 @@ public final class JidDevice {
     final PlatformType platform;
 
     @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
-    final Version appVersion;
-
-    @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
     final Version osVersion;
 
-    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
     final String osBuildNumber;
 
-    @ProtobufProperty(index = 8, type = ProtobufType.STRING)
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
     final String modelId;
 
-    @ProtobufProperty(index = 9, type = ProtobufType.ENUM)
+    @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
     final WhatsappClientType clientType;
 
     JidDevice(
             String model,
             String manufacturer,
             PlatformType platform,
-            Version appVersion,
             Version osVersion,
             String osBuildNumber,
             String modelId,
@@ -330,22 +300,16 @@ public final class JidDevice {
         this.modelId = modelId;
         this.manufacturer = manufacturer;
         this.platform = platform;
-        this.appVersion = appVersion;
         this.osVersion = osVersion;
         this.osBuildNumber = osBuildNumber;
         this.clientType = clientType;
     }
 
     public static JidDevice web() {
-        return web(null);
-    }
-
-    public static JidDevice web(Version appVersion) {
         return new JidDevice(
                 "Surface Pro 4",
                 "Microsoft",
                 PlatformType.MACOS,
-                appVersion,
                 Version.of("10.0"),
                 null,
                 null,
@@ -354,16 +318,11 @@ public final class JidDevice {
     }
 
     public static JidDevice ios(boolean business) {
-        return ios(null, business);
-    }
-
-    public static JidDevice ios(Version appVersion, boolean business) {
         var device = IOS_DEVICES.get(ThreadLocalRandom.current().nextInt(IOS_DEVICES.size()));
         return new JidDevice(
                 device.model,
                 device.manufacturer,
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
-                appVersion,
                 device.osVersion,
                 device.osBuildNumber,
                 device.modelId,
@@ -372,16 +331,11 @@ public final class JidDevice {
     }
 
     public static JidDevice android(boolean business) {
-        return android(null, business);
-    }
-
-    public static JidDevice android(Version appVersion, boolean business) {
         var model = "Pixel_" + ThreadLocalRandom.current().nextInt(2, 9);
         return new JidDevice(
                 model,
                 "Google",
                 business ? PlatformType.ANDROID_BUSINESS : PlatformType.ANDROID,
-                appVersion,
                 Version.of(String.valueOf(ThreadLocalRandom.current().nextInt(11, 16))),
                 null,
                 model,
@@ -444,7 +398,6 @@ public final class JidDevice {
                 model,
                 manufacturer,
                 Objects.requireNonNullElse(platform, this.platform),
-                appVersion,
                 osVersion,
                 osBuildNumber,
                 modelId,
@@ -468,10 +421,6 @@ public final class JidDevice {
         return platform;
     }
 
-    public Optional<Version> appVersion() {
-        return Optional.ofNullable(appVersion);
-    }
-
     public Version osVersion() {
         return osVersion;
     }
@@ -486,7 +435,6 @@ public final class JidDevice {
                 && Objects.equals(model, that.model)
                 && Objects.equals(manufacturer, that.manufacturer)
                 && platform == that.platform
-                && Objects.equals(appVersion, that.appVersion)
                 && Objects.equals(osVersion, that.osVersion)
                 && Objects.equals(osBuildNumber, that.osBuildNumber)
                 && Objects.equals(modelId, that.modelId)
@@ -495,7 +443,7 @@ public final class JidDevice {
 
     @Override
     public int hashCode() {
-        return Objects.hash(model, manufacturer, platform, appVersion, osVersion, osBuildNumber, modelId, clientType);
+        return Objects.hash(model, manufacturer, platform, osVersion, osBuildNumber, modelId, clientType);
     }
 
     @Override
@@ -504,7 +452,6 @@ public final class JidDevice {
                 "model='" + model + '\'' +
                 ", manufacturer='" + manufacturer + '\'' +
                 ", platform=" + platform +
-                ", appVersion=" + appVersion +
                 ", osVersion=" + osVersion +
                 ", osBuildNumber='" + osBuildNumber + '\'' +
                 ", modelId='" + modelId + '\'' +

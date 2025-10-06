@@ -285,9 +285,10 @@ public final class MobileRegistration implements AutoCloseable {
     }
 
     private String generateFdid() {
+        var fdid = store.fdid().toString();
         return switch (store.device().platform()) {
-            case IOS, IOS_BUSINESS -> store.fdid().toUpperCase(Locale.ROOT);
-            case ANDROID, ANDROID_BUSINESS -> store.fdid().toLowerCase(Locale.ROOT);
+            case IOS, IOS_BUSINESS -> fdid.toUpperCase(Locale.ROOT);
+            case ANDROID, ANDROID_BUSINESS -> fdid.toLowerCase(Locale.ROOT);
             default -> null;
         };
     }
