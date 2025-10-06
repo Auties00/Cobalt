@@ -88,20 +88,20 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             return;
         }
 
-        var liveUpdates = node.findChild("live_updates")
+        var liveUpdates = node.firstChildByDescription("live_updates")
                 .orElse(null);
         if (liveUpdates == null) {
             return;
         }
 
 
-        var messages = liveUpdates.findChild("messages")
+        var messages = liveUpdates.firstChildByDescription("messages")
                 .orElse(null);
         if (messages == null) {
             return;
         }
 
-        messages.findChildren("message").forEachOrdered(messageNode -> {
+        messages.streamChildrenByDescription("message").forEachOrdered(messageNode -> {
             var messageId = messageNode.getRequiredAttribute("server_id")
                     .toString();
             var newsletterMessage = whatsapp.store()
@@ -111,9 +111,9 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 return;
             }
 
-            messageNode.findChild("reactions")
+            messageNode.firstChildByDescription("reactions")
                     .stream()
-                    .flatMap(reactions -> reactions.findChildren("reaction"))
+                    .flatMap(reactions -> reactions.streamChildrenByDescription("reaction"))
                     .forEachOrdered(reaction -> onNewsletterReaction(reaction, newsletterMessage));
         });
     }
@@ -130,7 +130,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleMexNamespace(Node node) {
-        var update = node.findChild("update")
+        var update = node.firstChildByDescription("update")
                 .orElse(null);
         if (update == null) {
             return;
@@ -309,7 +309,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleRegistrationNotification(Node node) {
-        var child = node.findChild("wa_old_registration");
+        var child = node.firstChildByDescription("wa_old_registration");
         if (child.isEmpty()) {
             return;
         }
@@ -364,7 +364,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 .getOptionalJid("participant")
                 .orElse(null);
         var notificationType = node.description();
-        var child = node.findChild();
+        var child = node.firstChildByDescription();
         var bodyType = child.map(Node::description)
                 .orElse(null);
         var stubType = ChatMessageStubType.getStubType(notificationType, bodyType);
@@ -399,7 +399,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         if (!chat.isServerJid(JidServer.user())) {
             return;
         }
-        var keysSize = node.findChild("count")
+        var keysSize = node.firstChildByDescription("count")
                 .orElseThrow(() -> new NoSuchElementException("Missing count in notification"))
                 .attributes()
                 .getInt("value");
@@ -431,7 +431,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleAccountSyncNotification(Node node) {
-        var child = node.findChild();
+        var child = node.firstChildByDescription();
         if (child.isEmpty()) {
             return;
         }
@@ -514,7 +514,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             Thread.startVirtualThread(() -> listener.onLinkedDevices(devices.keySet()));
             Thread.startVirtualThread(() -> listener.onLinkedDevices(whatsapp, devices.keySet()));
         }
-        var keyIndexListNode = child.findChild("key-index-list")
+        var keyIndexListNode = child.firstChildByDescription("key-index-list")
                 .orElseThrow(() -> new NoSuchElementException("Missing index key node from device sync"));
         var signedKeyIndexBytes = keyIndexListNode.toContentBytes()
                 .orElseThrow(() -> new NoSuchElementException("Missing index key from device sync"));
@@ -613,15 +613,15 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                     .phoneNumber()
                     .map(PhoneNumber::toJid)
                     .orElseThrow(() -> new IllegalArgumentException("Missing phone value"));
-            var linkCodeCompanionReg = node.findChild("link_code_companion_reg")
+            var linkCodeCompanionReg = node.firstChildByDescription("link_code_companion_reg")
                     .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
-            var ref = linkCodeCompanionReg.findChild("link_code_pairing_ref")
+            var ref = linkCodeCompanionReg.firstChildByDescription("link_code_pairing_ref")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_ref: " + node));
-            var primaryIdentityPublicKey = linkCodeCompanionReg.findChild("primary_identity_pub")
+            var primaryIdentityPublicKey = linkCodeCompanionReg.firstChildByDescription("primary_identity_pub")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new IllegalArgumentException("Missing primary_identity_pub: " + node));
-            var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findChild("link_code_pairing_wrapped_primary_ephemeral_pub")
+            var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.firstChildByDescription("link_code_pairing_wrapped_primary_ephemeral_pub")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
             var codePairingPublicKey = pairingCode.decrypt(primaryEphemeralPublicKeyWrapped);

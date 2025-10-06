@@ -2,9 +2,8 @@ package com.github.auties00.cobalt.io.node;
 
 import com.github.auties00.cobalt.exception.MalformedJidException;
 import com.github.auties00.cobalt.model.jid.Jid;
+import it.auties.protobuf.model.ProtobufString;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -48,7 +47,7 @@ public sealed interface NodeAttribute {
      *
      * @return a non-null byte array representing this attribute value
      */
-    ByteBuffer toBuffer();
+    byte[] toBytes();
 
     /**
      * A record representing a text-based attribute value.
@@ -71,8 +70,8 @@ public sealed interface NodeAttribute {
          * @return a non-null byte array containing the UTF-8 encoded text
          */
         @Override
-        public ByteBuffer toBuffer() {
-            return StandardCharsets.UTF_8.encode(value);
+        public byte[] toBytes() {
+            return value.getBytes();
         }
 
         /**
@@ -131,8 +130,8 @@ public sealed interface NodeAttribute {
          * @return a non-null byte array containing the UTF-8 encoded Jid string
          */
         @Override
-        public ByteBuffer toBuffer() {
-            return StandardCharsets.UTF_8.encode(value.toString());
+        public byte[] toBytes() {
+            return value.toString().getBytes();
         }
     }
 
@@ -148,15 +147,7 @@ public sealed interface NodeAttribute {
      *
      * @param value the binary value of this attribute, must not be null
      */
-    record BytesAttribute(ByteBuffer value) implements NodeAttribute {
-        public BytesAttribute(byte[] value) {
-            this(ByteBuffer.wrap(value));
-        }
-
-        public BytesAttribute(byte[] value, int offset, int length) {
-            this(ByteBuffer.wrap(value, offset, length));
-        }
-
+    record BytesAttribute(byte[] value) implements NodeAttribute {
         public BytesAttribute {
             Objects.requireNonNull(value, "value cannot be null");
         }
@@ -168,7 +159,7 @@ public sealed interface NodeAttribute {
          */
         @Override
         public String toString() {
-            return StandardCharsets.UTF_8.decode(value).toString();
+            return new String(value);
         }
 
         /**
@@ -178,8 +169,7 @@ public sealed interface NodeAttribute {
          */
         @Override
         public Jid toJid() {
-            var decoded = StandardCharsets.UTF_8.decode(value).toString();
-            return Jid.of(decoded);
+            return Jid.of(ProtobufString.lazy(value));
         }
 
         /**
@@ -190,8 +180,8 @@ public sealed interface NodeAttribute {
          * @return the original non-null byte array
          */
         @Override
-        public ByteBuffer toBuffer() {
-            return value.asReadOnlyBuffer();
+        public byte[] toBytes() {
+            return value;
         }
     }
 }

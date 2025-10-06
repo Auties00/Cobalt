@@ -39,7 +39,7 @@ public final class CalStreamNodeHandler extends SocketStream.Handler {
                 .orElseGet(Clock::nowSeconds);
         var isOffline = callNode.getOptionalAttribute("offline")
                 .isPresent();
-        var hasVideo = callNode.findChild("video")
+        var hasVideo = callNode.firstChildByDescription("video")
                 .isPresent();
         var call = new CallBuilder()
                 .chatJid(from)

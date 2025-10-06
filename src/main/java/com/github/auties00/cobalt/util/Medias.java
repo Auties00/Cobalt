@@ -5,7 +5,6 @@ import com.aspose.words.ImageSaveOptions;
 import com.aspose.words.SaveFormat;
 import com.github.auties00.cobalt.exception.HmacValidationException;
 import com.github.auties00.cobalt.exception.MediaDownloadException;
-import com.github.auties00.cobalt.exception.MediaProcessingException;
 import com.github.auties00.cobalt.exception.MediaUploadException;
 import com.github.auties00.cobalt.model.media.*;
 import com.github.kokorin.jaffree.StreamType;
@@ -19,7 +18,9 @@ import javax.crypto.Mac;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -53,23 +54,22 @@ public final class Medias {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
 
-    public static InputStream getProfilePic(InputStream inputStream) {
-        try(inputStream) {
-            var inputImage = ImageIO.read(inputStream);
-            var scaledImage = inputImage.getScaledInstance(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, Image.SCALE_SMOOTH);
-            var outputImage = new BufferedImage(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, BufferedImage.TYPE_INT_RGB);
-            var graphics2D = outputImage.createGraphics();
-            graphics2D.drawImage(scaledImage, 0, 0, null);
-            graphics2D.dispose();
-
-            var pipedOutputStream = new PipedOutputStream();
-            var pipedInputStream = new PipedInputStream(pipedOutputStream);
-
-            ImageIO.write(outputImage, "jpg", pipedOutputStream);
-
-            return pipedInputStream;
+    public static byte[] getProfilePic(InputStream inputStream) {
+        try {
+            try (inputStream) {
+                var inputImage = ImageIO.read(inputStream);
+                var scaledImage = inputImage.getScaledInstance(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, Image.SCALE_SMOOTH);
+                var outputImage = new BufferedImage(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, BufferedImage.TYPE_INT_RGB);
+                var graphics2D = outputImage.createGraphics();
+                graphics2D.drawImage(scaledImage, 0, 0, null);
+                graphics2D.dispose();
+                try (var outputStream = Streams.newByteArrayOutputStream()) {
+                    ImageIO.write(outputImage, "jpg", outputStream);
+                    return outputStream.toByteArray();
+                }
+            }
         } catch (Throwable exception) {
-            throw new MediaProcessingException("Cannot process profile picture", exception);
+            throw new RuntimeException("Cannot get profile pic", exception);
         }
     }
 

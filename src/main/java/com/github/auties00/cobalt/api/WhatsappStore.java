@@ -85,6 +85,7 @@ import java.util.concurrent.ConcurrentMap;
 public final class WhatsappStore implements SignalProtocolStore {
     private static final SecureRandom RANDOM;
     private static final WhatsappStoreSerializer DEFAULT_DESERIALIZER = WhatsappStoreSerializer.discarding();
+    private static final String DEFAULT_NAME = "User";
 
     static {
         try {
@@ -402,8 +403,8 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @see PrivacySettingType
      * @see PrivacySettingValue
      */
-    @ProtobufProperty(index = 26, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
-    final ConcurrentHashMap<String, PrivacySettingEntry> privacySettings;
+    @ProtobufProperty(index = 26, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
+    final ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings;
 
     // =====================================================
     // SECTION: Session Configuration & Behavior
@@ -855,7 +856,7 @@ public final class WhatsappStore implements SignalProtocolStore {
             BusinessCategory businessCategory,
             ConcurrentHashMap<Jid, Contact> contacts,
             ConcurrentHashMap<String, Call> calls,
-            ConcurrentHashMap<String, PrivacySettingEntry> privacySettings,
+            ConcurrentHashMap<PrivacySettingType, PrivacySettingEntry> privacySettings,
             ConcurrentHashMap<String, String> properties,
             boolean unarchiveChats,
             boolean twentyFourHourFormat,
@@ -1251,6 +1252,12 @@ public final class WhatsappStore implements SignalProtocolStore {
     // SECTION: Call Management
     // =====================================================
 
+    public Optional<Call> findCallById(String callId) {
+        return callId == null
+                ? Optional.empty()
+                : Optional.ofNullable(calls.get(callId));
+    }
+
     /**
      * Adds a new call to the store.
      * <p>
@@ -1519,8 +1526,8 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @return Optional containing the name, empty if not yet set or before login
      */
-    public Optional<String> name() {
-        return Optional.ofNullable(name);
+    public String name() {
+        return Objects.requireNonNullElse(name, DEFAULT_NAME);
     }
 
     /**
@@ -2584,5 +2591,16 @@ public final class WhatsappStore implements SignalProtocolStore {
                ", clientType=" + clientType +
                ", jid=" + jid +
                ']';
+    }
+
+    public Optional<PrivacySettingEntry> findPrivacySetting(PrivacySettingType type) {
+        return type == null
+                ? Optional.empty()
+                : Optional.ofNullable(privacySettings.get(type));
+    }
+
+    public void addPrivacySetting(PrivacySettingEntry entry) {
+        Objects.requireNonNull(entry, "entry cannot be null");
+        privacySettings.put(entry.type(), entry);
     }
 }

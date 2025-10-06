@@ -77,13 +77,13 @@ public final class MessageDeserializerHandler extends MessageHandler {
             }
 
 
-            var plainText = node.findChild("plaintext");
+            var plainText = node.firstChildByDescription("plaintext");
             if (plainText.isPresent()) {
                 decodeNewsletterMessage(node, plainText.get(), notify);
                 return;
             }
 
-            var reaction = node.findChild("reaction");
+            var reaction = node.firstChildByDescription("reaction");
             if (reaction.isPresent()) {
                 decodeNewsletterReaction(node, reaction.get(), notify);
                 return;
@@ -103,7 +103,7 @@ public final class MessageDeserializerHandler extends MessageHandler {
     }
 
     private static Optional<String> getBusinessNameFromNode(Node node) {
-        return node.findChild("verified_name")
+        return node.firstChildByDescription("verified_name")
                 .flatMap(Node::toContentBytes)
                 .map(BusinessVerifiedNameCertificateSpec::decode)
                 .flatMap(certificate -> certificate.details().name());
@@ -131,10 +131,10 @@ public final class MessageDeserializerHandler extends MessageHandler {
                     .getRequiredInt("server_id");
             var timestamp = messageInfoNode.attributes()
                     .getNullableLong("t");
-            var views = messageInfoNode.findChild("views_count")
+            var views = messageInfoNode.firstChildByDescription("views_count")
                     .map(value -> value.attributes().getNullableLong("count"))
                     .orElse(null);
-            var reactions = messageInfoNode.findChild("reactions")
+            var reactions = messageInfoNode.firstChildByDescription("reactions")
                     .stream()
                     .map(node -> node.listChildren("reaction"))
                     .flatMap(Collection::stream)
@@ -276,7 +276,7 @@ public final class MessageDeserializerHandler extends MessageHandler {
                 keyBuilder.fromMe(Objects.equals(from.withoutData(), selfJid.withoutData()));
                 messageBuilder.senderJid(from);
             }else if(from.hasServer(JidServer.bot())) {
-                var meta = infoNode.findChild("meta")
+                var meta = infoNode.firstChildByDescription("meta")
                         .orElseThrow();
                 var chatJid = meta.attributes()
                         .getRequiredJid("target_chat_jid");

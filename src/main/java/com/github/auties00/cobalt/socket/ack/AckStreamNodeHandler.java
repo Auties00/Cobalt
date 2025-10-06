@@ -55,7 +55,7 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void digestCallAck(Node node) {
-        var relayNode = node.findChild("relay").orElse(null);
+        var relayNode = node.firstChildByDescription("relay").orElse(null);
         if (relayNode == null) {
             return;
         }
@@ -64,7 +64,7 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
                 .toJid();
         var callId = relayNode.getRequiredAttribute("call-id")
                 .toString();
-        relayNode.findChildren("participant")
+        relayNode.streamChildrenByDescription("participant")
                 .map(entry -> entry.getRequiredAttribute("value"))
                 .map(NodeAttribute::toJid)
                 .forEach(to -> sendRelay(callCreator, callId, to));

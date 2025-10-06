@@ -46,7 +46,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
             return;
         }
 
-        var container = node.findChild().orElse(null);
+        var container = node.firstChildByDescription().orElse(null);
         if (container == null) {
             return;
         }
@@ -73,7 +73,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void printQrCode(WhatsappVerificationHandler.Web.QrCode qrHandler, Node container) {
-        var ref = container.findChild("ref")
+        var ref = container.firstChildByDescription("ref")
                 .flatMap(Node::toContentString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
         var qr = String.join(
@@ -133,7 +133,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     private void confirmPairing(Node node, Node container) {
         try {
             saveCompanion(container);
-            var deviceIdentity = container.findChild("device-identity")
+            var deviceIdentity = container.firstChildByDescription("device-identity")
                     .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
             var advIdentity = SignedDeviceIdentityHMACSpec.decode(deviceIdentity.toContentBytes().orElseThrow());
             var localMac = Mac.getInstance("HmacSHA256");
@@ -189,7 +189,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     }
 
     private UserAgent.PlatformType getWebPlatform(Node node) {
-        var name = node.findChild("platform")
+        var name = node.firstChildByDescription("platform")
                 .flatMap(entry -> entry.attributes().getOptionalString("name"))
                 .orElse(null);
         return switch (name) {
@@ -202,7 +202,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void saveCompanion(Node container) {
-        var node = container.findChild("device")
+        var node = container.firstChildByDescription("device")
                 .orElseThrow(() -> new NoSuchElementException("Missing device"));
         var companion = node.attributes()
                 .getOptionalJid("value")

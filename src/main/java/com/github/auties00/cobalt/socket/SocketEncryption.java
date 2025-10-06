@@ -36,7 +36,6 @@ public final class SocketEncryption {
     private static final byte[] MOBILE_VERSION = new byte[]{5, NodeTokens.DICTIONARY_VERSION};
     private static final byte[] MOBILE_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
     private static final int HEADER_LENGTH = Integer.BYTES + Short.BYTES;
-    private static final String DEFAULT_NAME = "User";
 
     private static GCMParameterSpec createGcmIv(long counter) {
         var iv = new byte[12];
@@ -248,7 +247,7 @@ public final class SocketEncryption {
                 yield new ClientPayloadBuilder()
                         .username(phoneNumber)
                         .passive(false)
-                        .pushName(store.registered() ? store.name().orElse(DEFAULT_NAME) : null)
+                        .pushName(store.registered() ? store.name() : null)
                         .userAgent(agent)
                         .shortConnect(true)
                         .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
@@ -321,7 +320,7 @@ public final class SocketEncryption {
                     case MACOS -> CompanionProperties.PlatformType.IOS_CATALYST;
                 };
                 yield new CompanionPropertiesBuilder()
-                        .os(store.name().orElse(DEFAULT_NAME))
+                        .os(store.name())
                         .platformType(platformType)
                         .requireFullSync(historyLength.isExtended())
                         .historySyncConfig(config)

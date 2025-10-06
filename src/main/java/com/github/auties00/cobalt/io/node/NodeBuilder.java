@@ -3,9 +3,9 @@
 package com.github.auties00.cobalt.io.node;
 
 import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.jid.JidProvider;
 
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -21,8 +21,8 @@ public final class NodeBuilder {
     private String description;
     private final SequencedMap<String, NodeAttribute> attributes;
     private String textContent;
-    private Jid jidContent;
-    private ByteBuffer bufferContent;
+    private JidProvider jidContent;
+    private byte[] bytesContent;
     private InputStream inputStreamContent;
     private int inputStreamContentLength;
     private SequencedCollection<Node> childrenContent;
@@ -146,9 +146,9 @@ public final class NodeBuilder {
      * @return this builder for method chaining
      * @see Jid
      */
-    public NodeBuilder attribute(String key, Jid value) {
+    public NodeBuilder attribute(String key, JidProvider value) {
         if(value != null) {
-            this.attributes.put(key, new NodeAttribute.JidAttribute(value));
+            this.attributes.put(key, new NodeAttribute.JidAttribute(value.toJid()));
         }
         return this;
     }
@@ -163,9 +163,9 @@ public final class NodeBuilder {
      * @return this builder for method chaining
      * @see Jid
      */
-    public NodeBuilder attribute(String key, Jid value, boolean condition) {
+    public NodeBuilder attribute(String key, JidProvider value, boolean condition) {
         if(value != null && condition) {
-            this.attributes.put(key, new NodeAttribute.JidAttribute(value));
+            this.attributes.put(key, new NodeAttribute.JidAttribute(value.toJid()));
         }
         return this;
     }
@@ -177,7 +177,7 @@ public final class NodeBuilder {
      * @param value the binary attribute value, or null to skip adding this attribute
      * @return this builder for method chaining
      */
-    public NodeBuilder attribute(String key, ByteBuffer value) {
+    public NodeBuilder attribute(String key, byte[] value) {
         if(value != null) {
             this.attributes.put(key, new NodeAttribute.BytesAttribute(value));
         }
@@ -192,7 +192,7 @@ public final class NodeBuilder {
      * @param condition the condition that must be true to add the attribute
      * @return this builder for method chaining
      */
-    public NodeBuilder attribute(String key, ByteBuffer value, boolean condition) {
+    public NodeBuilder attribute(String key, byte[] value, boolean condition) {
         if(value != null && condition) {
             this.attributes.put(key, new NodeAttribute.BytesAttribute(value));
         }
@@ -215,7 +215,7 @@ public final class NodeBuilder {
 
     /**
      * Sets the children of the node to a text value.
-     * This method clears any other children previously set (JID, buffer, stream, or children).
+     * This method clears any other children previously set (JID, bytes, stream, or children).
      *
      * @param value the text children value
      * @return this builder for method chaining
@@ -223,7 +223,7 @@ public final class NodeBuilder {
     public NodeBuilder content(String value) {
         this.textContent = value;
         this.jidContent = null;
-        this.bufferContent = null;
+        this.bytesContent = null;
         this.inputStreamContent = null;
         this.childrenContent = null;
         return this;
@@ -231,7 +231,7 @@ public final class NodeBuilder {
 
     /**
      * Sets the children of the node to a numeric value converted to its string representation.
-     * This method clears any other children previously set (JID, buffer, stream, or children).
+     * This method clears any other children previously set (JID, bytes, stream, or children).
      *
      * @param value the numeric children value
      * @return this builder for method chaining
@@ -239,7 +239,7 @@ public final class NodeBuilder {
     public NodeBuilder content(Number value) {
         this.textContent = Objects.toString(value);
         this.jidContent = null;
-        this.bufferContent = null;
+        this.bytesContent = null;
         this.inputStreamContent = null;
         this.childrenContent = null;
         return this;
@@ -247,7 +247,7 @@ public final class NodeBuilder {
 
     /**
      * Sets the children of the node to a boolean value converted to its string representation.
-     * This method clears any other children previously set (JID, buffer, stream, or children).
+     * This method clears any other children previously set (JID, bytes, stream, or children).
      *
      * @param value the boolean children value
      * @return this builder for method chaining
@@ -255,7 +255,7 @@ public final class NodeBuilder {
     public NodeBuilder content(boolean value) {
         this.textContent = Objects.toString(value);
         this.jidContent = null;
-        this.bufferContent = null;
+        this.bytesContent = null;
         this.inputStreamContent = null;
         this.childrenContent = null;
         return this;
@@ -263,32 +263,32 @@ public final class NodeBuilder {
 
     /**
      * Sets the children of the node to a JID.
-     * This method clears any other children previously set (text, buffer, stream, or children).
+     * This method clears any other children previously set (text, bytes, stream, or children).
      *
      * @param value the JID children value
      * @return this builder for method chaining
      * @see Jid
      */
-    public NodeBuilder content(Jid value) {
+    public NodeBuilder content(JidProvider value) {
         this.textContent = null;
         this.jidContent = value;
-        this.bufferContent = null;
+        this.bytesContent = null;
         this.inputStreamContent = null;
         this.childrenContent = null;
         return this;
     }
-
+    
     /**
      * Sets the children of the node to binary data as a ByteBuffer.
      * This method clears any other children previously set (text, JID, stream, or children).
      *
-     * @param value the ByteBuffer children value
+     * @param value the buffer children value
      * @return this builder for method chaining
      */
-    public NodeBuilder content(ByteBuffer value) {
+    public NodeBuilder content(byte[] value) {
         this.textContent = null;
         this.jidContent = null;
-        this.bufferContent = value;
+        this.bytesContent = value;
         this.inputStreamContent = null;
         this.childrenContent = null;
         return this;
@@ -296,7 +296,7 @@ public final class NodeBuilder {
 
     /**
      * Sets the children of the node to binary data as an InputStream.
-     * This method clears any other children previously set (text, JID, buffer, or children).
+     * This method clears any other children previously set (text, JID, bytes, or children).
      *
      * @param value the InputStream children value
      * @param length the length of the InputStream
@@ -305,7 +305,7 @@ public final class NodeBuilder {
     public NodeBuilder content(InputStream value, int length) {
         this.textContent = null;
         this.jidContent = null;
-        this.bufferContent = null;
+        this.bytesContent = null;
         this.inputStreamContent = value;
         this.inputStreamContentLength = length;
         this.childrenContent = null;
@@ -314,7 +314,7 @@ public final class NodeBuilder {
 
     /**
      * Sets the children of the node to a collection of child nodes.
-     * This method clears any other children previously set (text, JID, buffer, or stream).
+     * This method clears any other children previously set (text, JID, bytes, or stream).
      *
      * @param value the collection of child nodes
      * @return this builder for method chaining
@@ -322,7 +322,7 @@ public final class NodeBuilder {
     public NodeBuilder content(SequencedCollection<Node> value) {
         this.textContent = null;
         this.jidContent = null;
-        this.bufferContent = null;
+        this.bytesContent = null;
         this.inputStreamContent = null;
         this.childrenContent = value;
         return this;
@@ -330,7 +330,7 @@ public final class NodeBuilder {
 
     /**
      * Sets the children of the node to a varargs array of child nodes.
-     * This method clears any other children previously set (text, JID, buffer, or stream).
+     * This method clears any other children previously set (text, JID, bytes, or stream).
      * If a content of type children was already set, the two values will be merged into a single collection.
      *
      * @param nodes the varargs array of child nodes
@@ -339,7 +339,7 @@ public final class NodeBuilder {
     public NodeBuilder content(Node... nodes) {
         this.textContent = null;
         this.jidContent = null;
-        this.bufferContent = null;
+        this.bytesContent = null;
         this.inputStreamContent = null;
         if(childrenContent == null) {
             this.childrenContent = new ArrayList<>();
@@ -349,13 +349,45 @@ public final class NodeBuilder {
     }
 
     /**
+     * Checks if an attribute with the specified key is present in this builder.
+     *
+     * @param key the attribute key to check
+     * @return true if an attribute with the given key exists, false otherwise
+     */
+    public boolean hasAttribute(String key) {
+        return attributes.containsKey(key);
+    }
+
+    /**
+     * Checks if any content has been set for this node.
+     * <p>
+     * This method returns true if any of the following content types have been set:
+     * <ul>
+     *   <li>Text content</li>
+     *   <li>JID content</li>
+     *   <li>ByteBuffer content</li>
+     *   <li>InputStream content</li>
+     *   <li>Children nodes</li>
+     * </ul>
+     *
+     * @return true if any content has been set, false otherwise
+     */
+    public boolean hasContent() {
+        return textContent != null
+               || jidContent != null
+               || bytesContent != null
+               || inputStreamContent != null
+               || childrenContent != null;
+    }
+
+    /**
      * Builds and returns the constructed Node instance.
      * <p>
      * The type of node returned depends on the children type that was set:
      * <ul>
      *   <li>{@link Node.TextNode} - if text children was set</li>
      *   <li>{@link Node.JidNode} - if JID children was set</li>
-     *   <li>{@link Node.BufferNode} - if ByteBuffer children was set</li>
+     *   <li>{@link Node.BytesContent} - if ByteBuffer children was set</li>
      *   <li>{@link Node.StreamNode} - if InputStream children was set</li>
      *   <li>{@link Node.ContainerNode} - if child nodes were set</li>
      *   <li>{@link Node.EmptyNode} - if no children was set</li>
@@ -371,9 +403,9 @@ public final class NodeBuilder {
         if(textContent != null) {
             return new Node.TextNode(description, attributes, textContent);
         }else if(jidContent != null){
-            return new Node.JidNode(description, attributes, jidContent);
-        }else if(bufferContent != null){
-            return new Node.BufferNode(description, attributes, bufferContent);
+            return new Node.JidNode(description, attributes, jidContent.toJid());
+        }else if(bytesContent != null){
+            return new Node.BytesContent(description, attributes, bytesContent);
         }else if (inputStreamContent != null){
             return new Node.StreamNode(description, attributes, inputStreamContent, inputStreamContentLength);
         }else if(childrenContent != null){

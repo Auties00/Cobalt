@@ -12,7 +12,7 @@ public final class IbStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        var child = node.findChild();
+        var child = node.firstChildByDescription();
         if(child.isEmpty()) {
             return;
         }

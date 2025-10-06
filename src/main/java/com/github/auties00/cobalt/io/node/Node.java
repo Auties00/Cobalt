@@ -7,8 +7,6 @@ import it.auties.protobuf.model.ProtobufString;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -17,12 +15,12 @@ import java.util.stream.Stream;
  * Nodes are the fundamental building blocks of WhatsApp's binary XML-like protocol, where each node
  * consists of a description (tag name), attributes, and optional children.
  *
- * <p>This interface provides various implementations for different children types:
+ * <p>This interface provides various implementations for different content types:
  * <ul>
  *   <li>{@link EmptyNode} - A node without any children</li>
  *   <li>{@link TextNode} - A node containing text children</li>
  *   <li>{@link JidNode} - A node containing a WhatsApp JID reference</li>
- *   <li>{@link BufferNode} - A node containing binary data</li>
+ *   <li>{@link BytesContent} - A node containing binary data</li>
  *   <li>{@link StreamNode} - A node containing streaming data</li>
  *   <li>{@link ContainerNode} - A node containing child nodes</li>
  * </ul>
@@ -129,7 +127,7 @@ public sealed interface Node {
      *
      * @return an {@code Optional} containing the content a a buffer if possible, otherwise an empty {@code Optional}
      */
-    Optional<ByteBuffer> toContentBytes();
+    Optional<byte[]> toContentBytes();
 
     /**
      * Converts the content of this node to a string, if possible.
@@ -147,7 +145,6 @@ public sealed interface Node {
 
     /**
      * Retrieves the first child Node in this container, if present.
-     * The order of child nodes is determined by their insertion order in the children map.
      *
      * @return an {@code Optional} containing the first child Node if it exists,
      *         otherwise an empty {@code Optional}.
@@ -156,7 +153,6 @@ public sealed interface Node {
 
     /**
      * Retrieves the last child Node in this container, if present.
-     * The order of child nodes is determined by their insertion order in the children map.
      *
      * @return an {@code Optional} containing the last child Node if it exists,
      *         otherwise an empty {@code Optional}.
@@ -179,7 +175,7 @@ public sealed interface Node {
      * @return an {@code Optional} containing the child node if one is found
      *         with the specified description, otherwise an empty {@code Optional}
      */
-    Optional<Node> findChild(String description);
+    Optional<Node> firstChildByDescription(String description);
 
     /**
      * Finds a child node by traversing the hierarchy based on the provided sequence of descriptions.
@@ -191,7 +187,7 @@ public sealed interface Node {
      * @return an {@code Optional} containing the located child node if the sequence matches,
      *         otherwise an empty {@code Optional}
      */
-    Optional<Node> findChild(String... description);
+    Optional<Node> firstChildByDescription(String... description);
 
     /**
      * Finds all children nodes by their descriptions within the current container node.
@@ -201,7 +197,7 @@ public sealed interface Node {
      * @param description the description of the children nodes to find; can be null
      * @return an {@code Stream} containing the children nodes
      */
-    Stream<Node> findChildren(String description);
+    Stream<Node> streamChildrenByDescription(String description);
 
     /**
      * Finds all children nodes by traversing the hierarchy based on the provided sequence of descriptions.
@@ -212,7 +208,7 @@ public sealed interface Node {
      * @param description a sequence of descriptions used to locate a child node; must not be null
      * @return an {@code Stream} containing the children nodes
      */
-    Stream<Node> findChildren(String... description);
+    Stream<Node> streamChildrenByDescription(String... description);
 
     /**
      * Represents a node without any children.
@@ -250,7 +246,7 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<ByteBuffer> toContentBytes() {
+        public Optional<byte[]> toContentBytes() {
             return Optional.empty();
         }
 
@@ -270,22 +266,22 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<Node> findChild(String description) {
+        public Optional<Node> firstChildByDescription(String description) {
             return Optional.empty();
         }
 
         @Override
-        public Optional<Node> findChild(String... description) {
+        public Optional<Node> firstChildByDescription(String... description) {
             return Optional.empty();
         }
 
         @Override
-        public Stream<Node> findChildren(String description) {
+        public Stream<Node> streamChildrenByDescription(String description) {
             return Stream.empty();
         }
 
         @Override
-        public Stream<Node> findChildren(String... description) {
+        public Stream<Node> streamChildrenByDescription(String... description) {
             return Stream.empty();
         }
     }
@@ -296,13 +292,13 @@ public sealed interface Node {
      *
      * @param description the node's description
      * @param attributes the node's attributes
-     * @param content the text children of the node
+     * @param content the text content of the node
      */
     record TextNode(String description, SequencedMap<String, NodeAttribute> attributes, String content) implements Node {
         public TextNode {
             Objects.requireNonNull(description, "description cannot be null");
             Objects.requireNonNull(attributes, "attributes cannot be null");
-            Objects.requireNonNull(content, "children cannot be null");
+            Objects.requireNonNull(content, "content cannot be null");
         }
 
         @Override
@@ -316,8 +312,8 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<ByteBuffer> toContentBytes() {
-            return Optional.of(StandardCharsets.UTF_8.encode(content));
+        public Optional<byte[]> toContentBytes() {
+            return Optional.of(content.getBytes());
         }
 
         @Override
@@ -351,22 +347,22 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<Node> findChild(String description) {
+        public Optional<Node> firstChildByDescription(String description) {
             return Optional.empty();
         }
 
         @Override
-        public Optional<Node> findChild(String... description) {
+        public Optional<Node> firstChildByDescription(String... description) {
             return Optional.empty();
         }
 
         @Override
-        public Stream<Node> findChildren(String description) {
+        public Stream<Node> streamChildrenByDescription(String description) {
             return Stream.empty();
         }
 
         @Override
-        public Stream<Node> findChildren(String... description) {
+        public Stream<Node> streamChildrenByDescription(String... description) {
             return Stream.empty();
         }
     }
@@ -377,13 +373,13 @@ public sealed interface Node {
      *
      * @param description the node's description
      * @param attributes the node's attributes
-     * @param content the JID children of the node
+     * @param content the JID content of the node
      */
     record JidNode(String description, SequencedMap<String, NodeAttribute> attributes, Jid content) implements Node {
         public JidNode {
             Objects.requireNonNull(description, "description cannot be null");
             Objects.requireNonNull(attributes, "attributes cannot be null");
-            Objects.requireNonNull(content, "children cannot be null");
+            Objects.requireNonNull(content, "content cannot be null");
         }
 
         @Override
@@ -402,8 +398,8 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<ByteBuffer> toContentBytes() {
-            return Optional.of(StandardCharsets.UTF_8.encode(content.toString()));
+        public Optional<byte[]> toContentBytes() {
+            return Optional.of(content.toString().getBytes());
         }
 
         @Override
@@ -427,22 +423,22 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<Node> findChild(String description) {
+        public Optional<Node> firstChildByDescription(String description) {
             return Optional.empty();
         }
 
         @Override
-        public Optional<Node> findChild(String... description) {
+        public Optional<Node> firstChildByDescription(String... description) {
             return Optional.empty();
         }
 
         @Override
-        public Stream<Node> findChildren(String description) {
+        public Stream<Node> streamChildrenByDescription(String description) {
             return Stream.empty();
         }
 
         @Override
-        public Stream<Node> findChildren(String... description) {
+        public Stream<Node> streamChildrenByDescription(String... description) {
             return Stream.empty();
         }
     }
@@ -454,37 +450,13 @@ public sealed interface Node {
      *
      * @param description the node's description
      * @param attributes the node's attributes
-     * @param content the binary children of the node as a ByteBuffer
+     * @param content the binary content of the node as a ByteBuffer
      */
-    record BufferNode(String description, SequencedMap<String, NodeAttribute> attributes, ByteBuffer content) implements Node {
-        public BufferNode {
+    record BytesContent(String description, SequencedMap<String, NodeAttribute> attributes, byte[] content) implements Node {
+        public BytesContent {
             Objects.requireNonNull(description, "description cannot be null");
             Objects.requireNonNull(attributes, "attributes cannot be null");
-            Objects.requireNonNull(content, "children cannot be null");
-        }
-
-        /**
-         * Overload to create a node containing binary data as a ByteBuffer from an array of bytes
-         *
-         * @param description the node's description
-         * @param attributes the node's attributes
-         * @param content the binary children of the node as an array of bytes
-         */
-        public BufferNode(String description, SequencedMap<String, NodeAttribute> attributes, byte[] content) {
-            this(description, attributes, ByteBuffer.wrap(content));
-        }
-
-        /**
-         * Overload to create a node containing binary data as a ByteBuffer from an array of bytes
-         *
-         * @param description the node's description
-         * @param attributes the node's attributes
-         * @param content the binary children of the node as an array of bytes
-         * @param offset the offset of the first byte to read
-         * @param length the number of bytes to read from the array
-         */
-        public BufferNode(String description, SequencedMap<String, NodeAttribute> attributes, byte[] content, int offset, int length) {
-            this(description, attributes, ByteBuffer.wrap(content, offset, length));
+            Objects.requireNonNull(content, "content cannot be null");
         }
 
         @Override
@@ -493,15 +465,14 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<ByteBuffer> toContentBytes() {
-            return Optional.of(content.asReadOnlyBuffer());
+        public Optional<byte[]> toContentBytes() {
+            return Optional.of(content);
         }
 
         @Override
         public Optional<Jid> toContentJid() {
             try {
-                var decoded = StandardCharsets.UTF_8.decode(content).toString();
-                var result = Jid.of(decoded);
+                var result = Jid.of(ProtobufString.lazy(content));
                 return Optional.of(result);
             } catch (MalformedJidException exception) {
                 return Optional.empty();
@@ -510,19 +481,8 @@ public sealed interface Node {
 
         @Override
         public Optional<String> toContentString() {
-            var decoded = StandardCharsets.UTF_8.decode(content).toString();
+            var decoded = new String(content);
             return Optional.of(decoded);
-        }
-
-        /**
-         * Returns a read-only view of the children buffer.
-         * This prevents external modification of the node's children.
-         *
-         * @return a read-only ByteBuffer containing the node's children
-         */
-        @Override
-        public ByteBuffer content() {
-            return content.asReadOnlyBuffer();
         }
 
         @Override
@@ -546,22 +506,22 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<Node> findChild(String description) {
+        public Optional<Node> firstChildByDescription(String description) {
             return Optional.empty();
         }
 
         @Override
-        public Optional<Node> findChild(String... description) {
+        public Optional<Node> firstChildByDescription(String... description) {
             return Optional.empty();
         }
 
         @Override
-        public Stream<Node> findChildren(String description) {
+        public Stream<Node> streamChildrenByDescription(String description) {
             return Stream.empty();
         }
 
         @Override
-        public Stream<Node> findChildren(String... description) {
+        public Stream<Node> streamChildrenByDescription(String... description) {
             return Stream.empty();
         }
     }
@@ -580,7 +540,7 @@ public sealed interface Node {
         public StreamNode {
             Objects.requireNonNull(description, "description cannot be null");
             Objects.requireNonNull(attributes, "attributes cannot be null");
-            Objects.requireNonNull(content, "children cannot be null");
+            Objects.requireNonNull(content, "content cannot be null");
             if(contentLength < 0) {
                 throw new IllegalArgumentException("contentLength cannot be negative");
             }
@@ -598,11 +558,10 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<ByteBuffer> toContentBytes() {
+        public Optional<byte[]> toContentBytes() {
             try {
                 var result = content.readNBytes(contentLength);
-                var converted = ByteBuffer.wrap(result);
-                return Optional.of(converted);
+                return Optional.of(result);
             }catch (IOException exception) {
                 return Optional.empty();
             }
@@ -645,22 +604,22 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<Node> findChild(String description) {
+        public Optional<Node> firstChildByDescription(String description) {
             return Optional.empty();
         }
 
         @Override
-        public Optional<Node> findChild(String... description) {
+        public Optional<Node> firstChildByDescription(String... description) {
             return Optional.empty();
         }
 
         @Override
-        public Stream<Node> findChildren(String description) {
+        public Stream<Node> streamChildrenByDescription(String description) {
             return Stream.empty();
         }
 
         @Override
-        public Stream<Node> findChildren(String... description) {
+        public Stream<Node> streamChildrenByDescription(String... description) {
             return Stream.empty();
         }
     }
@@ -693,7 +652,6 @@ public sealed interface Node {
 
         /**
          * Retrieves the first child Node in this container, if present.
-         * The order of child nodes is determined by their insertion order in the children map.
          *
          * @return an {@code Optional} containing the first child Node if it exists,
          *         otherwise an empty {@code Optional}.
@@ -707,7 +665,6 @@ public sealed interface Node {
 
         /**
          * Retrieves the last child Node in this container, if present.
-         * The order of child nodes is determined by their insertion order in the children map.
          *
          * @return an {@code Optional} containing the last child Node if it exists,
          *         otherwise an empty {@code Optional}.
@@ -729,10 +686,10 @@ public sealed interface Node {
          *         with the specified description, otherwise an empty {@code Optional}
          */
         @Override
-        public Optional<Node> findChild(String description) {
+        public Optional<Node> firstChildByDescription(String description) {
             return description == null
                     ? Optional.empty()
-                    : findChildren(description).findFirst();
+                    : streamChildrenByDescription(description).findFirst();
         }
 
         /**
@@ -746,7 +703,7 @@ public sealed interface Node {
          *         otherwise an empty {@code Optional}
          */
         @Override
-        public Optional<Node> findChild(String... description) {
+        public Optional<Node> firstChildByDescription(String... description) {
             if(description == null || description.length == 0) {
                 throw new IllegalArgumentException("description cannot be null or empty");
             }
@@ -762,7 +719,7 @@ public sealed interface Node {
                 }
 
 
-                var nextNode = currentContainerNode.findChild(currentDescription);
+                var nextNode = currentContainerNode.firstChildByDescription(currentDescription);
                 if(nextNode.isEmpty()) {
                     return Optional.empty();
                 }
@@ -773,13 +730,13 @@ public sealed interface Node {
         }
 
         @Override
-        public Stream<Node> findChildren(String description) {
+        public Stream<Node> streamChildrenByDescription(String description) {
             return children.stream()
                     .filter(node -> node.hasDescription(description));
         }
 
         @Override
-        public Stream<Node> findChildren(String... description) {
+        public Stream<Node> streamChildrenByDescription(String... description) {
             if(description == null || description.length == 0) {
                 throw new IllegalArgumentException("description cannot be null or empty");
             }
@@ -797,7 +754,7 @@ public sealed interface Node {
                         continue;
                     }
 
-                    var nextNode = currentContainerNode.findChild(path);
+                    var nextNode = currentContainerNode.firstChildByDescription(path);
                     if(nextNode.isEmpty()) {
                         resultsIterator.remove();
                         continue;
@@ -815,7 +772,7 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<ByteBuffer> toContentBytes() {
+        public Optional<byte[]> toContentBytes() {
             return Optional.empty();
         }
 

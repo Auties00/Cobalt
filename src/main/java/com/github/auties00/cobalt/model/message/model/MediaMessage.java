@@ -15,16 +15,9 @@ import java.util.OptionalLong;
  * Read its children using {@link it.auties.whatsapp.api.Whatsapp#downloadMedia(ChatMessageInfo)}
  */
 public sealed abstract class MediaMessage implements ContextualMessage, MutableAttachmentProvider permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
-    private byte[] decodedMedia;
-    private String handle;
+    public abstract Optional<String> handle();
 
-    public Optional<String> handle() {
-        return Optional.ofNullable(handle);
-    }
-
-    public Optional<byte[]> decodedMedia() {
-        return Optional.ofNullable(decodedMedia);
-    }
+    public abstract void setHandle(String handle);
 
     /**
      * Returns the timestampSeconds, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for{@link MediaMessage#mediaKey()}
@@ -60,14 +53,6 @@ public sealed abstract class MediaMessage implements ContextualMessage, MutableA
     @Override
     public AttachmentType attachmentType() {
         return mediaType().toAttachmentType();
-    }
-    
-    public void setDecodedMedia(byte[] decodedMedia) {
-        this.decodedMedia = decodedMedia;
-    }
-    
-    public void setHandle(String handle) {
-        this.handle = handle;
     }
 
     /**

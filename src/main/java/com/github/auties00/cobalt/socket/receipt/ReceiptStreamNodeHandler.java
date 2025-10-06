@@ -46,9 +46,9 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
         var outerId = node.getOptionalAttribute("id")
                 .map(NodeAttribute::toString)
                 .stream();
-        var innerIds = node.findChild("list")
+        var innerIds = node.firstChildByDescription("list")
                 .stream()
-                .flatMap(list -> list.findChildren("item"))
+                .flatMap(list -> list.streamChildrenByDescription("item"))
                 .flatMap(item -> item.getOptionalAttribute("id").stream())
                 .map(NodeAttribute::toString);
         return Stream.concat(outerId, innerIds);

@@ -441,7 +441,7 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void onMediaConnection(Node node) {
-        var mediaConnection = node.findChild("media_conn").orElse(node);
+        var mediaConnection = node.firstChildByDescription("media_conn").orElse(node);
         var auth = mediaConnection.attributes().getString("auth");
         var ttl = mediaConnection.attributes().getInt("ttl");
         var maxBuckets = mediaConnection.attributes().getInt("max_buckets");

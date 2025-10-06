@@ -230,7 +230,7 @@ public final class NodeEncoder {
      */
     private static int contentLength(Node node){
         return switch (node) {
-            case Node.BufferNode(var _, var _, var buffer) -> bytesLength(buffer);
+            case Node.BytesContent(var _, var _, var buffer) -> bytesLength(buffer);
             case Node.ContainerNode(var _, var _, var children) -> childrenLength(children);
             case Node.EmptyNode _ -> 0;
             case Node.JidNode(var _, var _, var jid) -> jidLength(jid);
@@ -572,7 +572,7 @@ public final class NodeEncoder {
      */
     private static int writeContent(Node content, byte[] output, int offset) {
         return switch (content) {
-            case Node.BufferNode(var _, var _, var buffer) -> writeBytes(buffer, output, offset);
+            case Node.BytesContent(var _, var _, var buffer) -> writeBytes(buffer, output, offset);
             case Node.ContainerNode(var _, var _, var children) -> writeChildren(children, output, offset);
             case Node.EmptyNode _ -> writeNull(output, offset);
             case Node.JidNode(var _, var _, var jid) -> writeJid(jid, output, offset);

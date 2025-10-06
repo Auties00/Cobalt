@@ -23,17 +23,17 @@ public final class ErrorStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        if (node.findChild("xml-not-well-formed").isPresent()) {
+        if (node.firstChildByDescription("xml-not-well-formed").isPresent()) {
             whatsapp.handleFailure(STREAM, new MalformedNodeException());
             return;
         }
 
-        if (node.findChild("conflict").isPresent()) {
+        if (node.firstChildByDescription("conflict").isPresent()) {
             whatsapp.handleFailure(STREAM, new SessionConflictException());
             return;
         }
 
-        if (node.findChild("bad-mac").isPresent()) {
+        if (node.firstChildByDescription("bad-mac").isPresent()) {
             whatsapp.handleFailure(STREAM, new SessionBadMacException());
             return;
         }

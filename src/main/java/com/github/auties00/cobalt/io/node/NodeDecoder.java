@@ -123,9 +123,9 @@ public final class NodeDecoder {
             case LIST_16 -> new Node.ContainerNode(description, attrs, readList16(inputStream));
             case JID_PAIR -> new Node.JidNode(description, attrs, readJidPair(inputStream));
             case HEX_8 -> new Node.TextNode(description, attrs, readPacked(inputStream, HEX_ALPHABET));
-            case BINARY_8 -> new Node.BufferNode(description, attrs, readBinary8(inputStream));
-            case BINARY_20 -> new Node.BufferNode(description, attrs, readBinary20(inputStream));
-            case BINARY_32 -> new Node.BufferNode(description, attrs, readBinary32(inputStream));
+            case BINARY_8 -> new Node.BytesContent(description, attrs, readBinary8(inputStream));
+            case BINARY_20 -> new Node.BytesContent(description, attrs, readBinary20(inputStream));
+            case BINARY_32 -> new Node.BytesContent(description, attrs, readBinary32(inputStream));
             case NIBBLE_8 -> new Node.TextNode(description, attrs, readPacked(inputStream, NIBBLE_ALPHABET));
             case DICTIONARY_0 -> new Node.TextNode(description, attrs, readDictionaryToken(inputStream, DICTIONARY_0_TOKENS));
             case DICTIONARY_1 -> new Node.TextNode(description, attrs, readDictionaryToken(inputStream, DICTIONARY_1_TOKENS));
