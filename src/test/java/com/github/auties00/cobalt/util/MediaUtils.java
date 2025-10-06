@@ -1,0 +1,15 @@
+package com.github.auties00.cobalt.util;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.URI;
+
+public final class MediaUtils {
+    public static byte[] readBytes(String url) {
+        try(var stream = URI.create(url).toURL().openStream()) {
+            return stream.readAllBytes();
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot download media", exception);
+        }
+    }
+}

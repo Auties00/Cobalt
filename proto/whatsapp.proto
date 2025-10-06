@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package it.auties.whatsapp.model.unsupported;
+package com.github.auties00.whatsapp.model.unsupported;
 
 
 message ADVDeviceIdentity {

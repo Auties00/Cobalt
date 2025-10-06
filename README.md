@@ -352,7 +352,7 @@ Listeners can be used either as:
    To create a new concrete listener, declare a class or record that implements the Listener interface:
 
    ```java
-   import it.auties.whatsapp.api.WhatsappListener;
+   import com.github.auties00.cobalt.api.WhatsappListener;
 
    public class MyListener implements WhatsappListener {
     @Override
@@ -425,8 +425,8 @@ These are the three reasons that can cause a disconnect:
    The client was logged out by itself or by its companion.
    By default, no error is thrown if this happens, though this behaviour can be changed easily:
     ```java
-    import it.auties.whatsapp.api.WhatsappDisconnectReason;
-    import it.auties.whatsapp.api.WhatsappListener;
+
+    import com.github.auties00.cobalt.api.WhatsappListener;
 
     class ThrowOnLogOut implements WhatsappListener {
         @Override

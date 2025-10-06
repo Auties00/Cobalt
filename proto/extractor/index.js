@@ -380,7 +380,7 @@ async function findAppModules() {
 	const decodedProto = Object.keys(decodedProtoMap).sort()
 	const sortedStr = decodedProto.map(d => decodedProtoMap[d]).join('\n')
 
-	const decodedProtoStr = `syntax = "proto2";\n\npackage it.auties.whatsapp.model.unsupported;\n\n\n${sortedStr}`
+	const decodedProtoStr = `syntax = "proto2";\n\npackage com.github.auties00.whatsapp.model.unsupported;\n\n\n${sortedStr}`
 	const destinationPath = '../whatsapp.proto'
 	await fs.writeFile(destinationPath, decodedProtoStr)
 

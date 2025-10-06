@@ -1,0 +1,17 @@
+package com.github.auties00.cobalt.socket.state;
+
+import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
+import com.github.auties00.cobalt.io.node.Node;
+import com.github.auties00.cobalt.socket.SocketStream;
+
+public final class StreamEndStreamNodeHandler extends SocketStream.Handler {
+    public StreamEndStreamNodeHandler(Whatsapp whatsapp) {
+        super(whatsapp, "xmlstreamend");
+    }
+
+    @Override
+    public void handle(Node node) {
+        whatsapp.disconnect(WhatsappDisconnectReason.RECONNECTING);
+    }
+}

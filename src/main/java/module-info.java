@@ -1,4 +1,4 @@
-module it.auties.cobalt {
+module com.github.auties00.cobalt {
     // Http client
     requires java.net.http;
 
@@ -25,37 +25,34 @@ module it.auties.cobalt {
     // Mobile api
     requires net.dongliu.apkparser;
     requires com.google.i18n.phonenumbers.libphonenumber;
-    requires it.auties.cobalt;
 
-    exports it.auties.whatsapp.api;
-    exports it.auties.whatsapp.controller;
-    exports it.auties.whatsapp.model.action;
-    exports it.auties.whatsapp.model.business;
-    exports it.auties.whatsapp.model.chat;
-    exports it.auties.whatsapp.model.contact;
-    exports it.auties.whatsapp.model.info;
-    exports it.auties.whatsapp.model.media;
-    exports it.auties.whatsapp.model.message.server;
-    exports it.auties.whatsapp.model.message.model;
-    exports it.auties.whatsapp.model.message.payment;
-    exports it.auties.whatsapp.model.message.standard;
-    exports it.auties.whatsapp.model.product;
-    exports it.auties.whatsapp.model.setting;
-    exports it.auties.whatsapp.io.json.response;
-    exports it.auties.whatsapp.model.payment;
-    exports it.auties.whatsapp.model.message.button;
-    exports it.auties.whatsapp.model.privacy;
-    exports it.auties.whatsapp.model.poll;
-    exports it.auties.whatsapp.model.button.interactive;
-    exports it.auties.whatsapp.model.button.base;
-    exports it.auties.whatsapp.model.button.template.hydrated;
-    exports it.auties.whatsapp.model.auth;
-    exports it.auties.whatsapp.model.sync;
-    exports it.auties.whatsapp.model.call;
-    exports it.auties.whatsapp.model.button.template.highlyStructured;
-    exports it.auties.whatsapp.model.jid;
-    exports it.auties.whatsapp.model.newsletter;
-    exports it.auties.whatsapp.exception;
-    exports it.auties.whatsapp.io.node;
-    exports it.auties.whatsapp.stream.webAppState2;
+    exports com.github.auties00.cobalt.api;
+    exports com.github.auties00.cobalt.model.action;
+    exports com.github.auties00.cobalt.model.business;
+    exports com.github.auties00.cobalt.model.chat;
+    exports com.github.auties00.cobalt.model.contact;
+    exports com.github.auties00.cobalt.model.info;
+    exports com.github.auties00.cobalt.model.media;
+    exports com.github.auties00.cobalt.model.message.server;
+    exports com.github.auties00.cobalt.model.message.model;
+    exports com.github.auties00.cobalt.model.message.payment;
+    exports com.github.auties00.cobalt.model.message.standard;
+    exports com.github.auties00.cobalt.model.product;
+    exports com.github.auties00.cobalt.model.setting;
+    exports com.github.auties00.cobalt.io.json.response;
+    exports com.github.auties00.cobalt.model.payment;
+    exports com.github.auties00.cobalt.model.message.button;
+    exports com.github.auties00.cobalt.model.privacy;
+    exports com.github.auties00.cobalt.model.poll;
+    exports com.github.auties00.cobalt.model.button.interactive;
+    exports com.github.auties00.cobalt.model.button.base;
+    exports com.github.auties00.cobalt.model.button.template.hydrated;
+    exports com.github.auties00.cobalt.model.auth;
+    exports com.github.auties00.cobalt.model.sync;
+    exports com.github.auties00.cobalt.model.call;
+    exports com.github.auties00.cobalt.model.button.template.highlyStructured;
+    exports com.github.auties00.cobalt.model.jid;
+    exports com.github.auties00.cobalt.model.newsletter;
+    exports com.github.auties00.cobalt.exception;
+    exports com.github.auties00.cobalt.io.node;
 }
