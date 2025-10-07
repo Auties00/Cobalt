@@ -1,8 +1,5 @@
 package com.github.auties00.cobalt.model.info;
 
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.business.BusinessPrivacyStatus;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.contact.Contact;
@@ -15,6 +12,9 @@ import com.github.auties00.cobalt.model.poll.PollAdditionalMetadata;
 import com.github.auties00.cobalt.model.poll.PollUpdate;
 import com.github.auties00.cobalt.model.sync.PhotoChange;
 import com.github.auties00.cobalt.util.Clock;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.*;

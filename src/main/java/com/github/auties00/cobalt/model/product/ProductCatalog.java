@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.model.product;
 
+import com.github.auties00.cobalt.model.message.standard.ImageMessage;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.model.message.standard.ImageMessage;
 
 import java.util.Objects;
 

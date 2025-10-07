@@ -1,15 +1,15 @@
 package com.github.auties00.cobalt.model.message.button;
 
-import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.button.base.TemplateFormatter;
 import com.github.auties00.cobalt.model.button.interactive.*;
 import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.message.model.ButtonMessage;
 import com.github.auties00.cobalt.model.message.model.ContextualMessage;
 import com.github.auties00.cobalt.model.message.model.Message;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Optional;
 

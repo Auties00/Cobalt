@@ -10,7 +10,8 @@ import java.nio.file.Path;
 import java.util.function.BiConsumer;
 
 import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.*;
-import static java.lang.System.Logger.Level.*;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.WARNING;
 
 /**
  * A handler interface for managing error scenarios that occur within the WhatsApp API.

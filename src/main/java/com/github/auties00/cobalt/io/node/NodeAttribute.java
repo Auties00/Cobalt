@@ -5,6 +5,9 @@ import com.github.auties00.cobalt.model.jid.Jid;
 import it.auties.protobuf.model.ProtobufString;
 
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalLong;
 
 /**
  * A sealed interface representing attribute values within WhatsApp protocol nodes.
@@ -36,18 +39,22 @@ public sealed interface NodeAttribute {
     String toString();
 
     /**
-     * Converts this attribute value to its jid representation.
-     *
-     * @return a non-null jid representation of this attribute value
-     */
-    Jid toJid();
-
-    /**
      * Converts this attribute value to its byte array representation.
      *
      * @return a non-null byte array representing this attribute value
      */
     byte[] toBytes();
+
+    /**
+     * Converts this attribute value to its jid representation.
+     *
+     * @return a non-null jid representation of this attribute value
+     */
+    Optional<Jid> toJid();
+
+    OptionalLong toLong();
+
+    OptionalDouble toDouble();
 
     /**
      * A record representing a text-based attribute value.
@@ -81,8 +88,33 @@ public sealed interface NodeAttribute {
          * @throws MalformedJidException if the text value is not a jid
          */
         @Override
-        public Jid toJid() {
-            return Jid.of(value);
+        public Optional<Jid> toJid() {
+            try {
+                var result = Jid.of(value);
+                return Optional.of(result);
+            }catch (MalformedJidException exception) {
+                return Optional.empty();
+            }
+        }
+
+        @Override
+        public OptionalLong toLong() {
+            try {
+                var result = Long.parseLong(value);
+                return OptionalLong.of(result);
+            }catch (NumberFormatException exception) {
+                return OptionalLong.empty();
+            }
+        }
+
+        @Override
+        public OptionalDouble toDouble() {
+            try {
+                var result = Double.parseDouble(value);
+                return OptionalDouble.of(result);
+            }catch (NumberFormatException exception) {
+                return OptionalDouble.empty();
+            }
         }
     }
 
@@ -112,16 +144,6 @@ public sealed interface NodeAttribute {
         }
 
         /**
-         * Returns the value that this attribute represents.
-         *
-         * @return a non-null {@link Jid}
-         */
-        @Override
-        public Jid toJid() {
-            return value;
-        }
-
-        /**
          * Converts the Jid to its UTF-8 byte representation.
          * <p>
          * The Jid is first converted to its string form, then encoded to bytes
@@ -132,6 +154,26 @@ public sealed interface NodeAttribute {
         @Override
         public byte[] toBytes() {
             return value.toString().getBytes();
+        }
+
+        /**
+         * Returns the value that this attribute represents.
+         *
+         * @return a non-null {@link Jid}
+         */
+        @Override
+        public Optional<Jid> toJid() {
+            return Optional.of(value);
+        }
+
+        @Override
+        public OptionalLong toLong() {
+            return OptionalLong.empty();
+        }
+
+        @Override
+        public OptionalDouble toDouble() {
+            return OptionalDouble.empty();
         }
     }
 
@@ -163,16 +205,6 @@ public sealed interface NodeAttribute {
         }
 
         /**
-         * Converts the binary data to a jid representation.
-         *
-         * @return a non-null {@link Jid}
-         */
-        @Override
-        public Jid toJid() {
-            return Jid.of(ProtobufString.lazy(value));
-        }
-
-        /**
          * Returns the binary data as-is.
          * <p>
          * Since this attribute already contains raw bytes, no conversion is needed.
@@ -182,6 +214,41 @@ public sealed interface NodeAttribute {
         @Override
         public byte[] toBytes() {
             return value;
+        }
+
+        /**
+         * Converts the binary data to a jid representation.
+         *
+         * @return a non-null {@link Jid}
+         */
+        @Override
+        public Optional<Jid> toJid() {
+            try {
+                var result = Jid.of(ProtobufString.lazy(value));
+                return Optional.of(result);
+            }catch (MalformedJidException exception) {
+                return Optional.empty();
+            }
+        }
+
+        @Override
+        public OptionalLong toLong() {
+            try {
+                var result = Long.parseLong(toString());
+                return OptionalLong.of(result);
+            }catch (NumberFormatException exception) {
+                return OptionalLong.empty();
+            }
+        }
+
+        @Override
+        public OptionalDouble toDouble() {
+            try {
+                var result = Double.parseDouble(toString());
+                return OptionalDouble.of(result);
+            }catch (NumberFormatException exception) {
+                return OptionalDouble.empty();
+            }
         }
     }
 }

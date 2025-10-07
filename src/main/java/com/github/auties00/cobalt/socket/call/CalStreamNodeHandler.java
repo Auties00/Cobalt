@@ -16,7 +16,7 @@ public final class CalStreamNodeHandler extends SocketStream.Handler {
     @Override
     public void handle(Node node) {
         whatsapp.sendAck(node);
-        var callNode = node.firstChild()
+        var callNode = node.findChild()
                 .orElse(null);
         if (callNode == null) {
             return;
@@ -30,16 +30,16 @@ public final class CalStreamNodeHandler extends SocketStream.Handler {
                 .toJid();
         var callId = callNode.getRequiredAttribute("call-id")
                 .toString();
-        var caller = callNode.getOptionalAttribute("call-creator")
+        var caller = callNode.getAttribute("call-creator")
                 .map(NodeAttribute::toJid)
                 .orElse(from);
         var status = getCallStatus(callNode);
-        var timestampSeconds = callNode.getOptionalAttribute("t")
+        var timestampSeconds = callNode.getAttribute("t")
                 .map(entry -> Long.parseUnsignedLong(entry.toString()))
                 .orElseGet(Clock::nowSeconds);
-        var isOffline = callNode.getOptionalAttribute("offline")
+        var isOffline = callNode.getAttribute("offline")
                 .isPresent();
-        var hasVideo = callNode.firstChildByDescription("video")
+        var hasVideo = callNode.findChild("video")
                 .isPresent();
         var call = new CallBuilder()
                 .chatJid(from)
@@ -60,7 +60,7 @@ public final class CalStreamNodeHandler extends SocketStream.Handler {
     private CallStatus getCallStatus(Node node) {
         return switch (node.description()) {
             case "terminate" -> {
-                var reason = node.getOptionalAttribute("reason")
+                var reason = node.getAttribute("reason")
                         .map(NodeAttribute::toString)
                         .orElse("");
                 yield reason.equals("timeout") ? CallStatus.TIMED_OUT : CallStatus.REJECTED;

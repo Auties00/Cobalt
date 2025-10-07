@@ -1,6 +1,8 @@
 package com.github.auties00.cobalt.util;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 public final class Streams {

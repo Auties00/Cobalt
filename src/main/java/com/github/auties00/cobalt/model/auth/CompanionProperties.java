@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.model.auth;
 
+import com.github.auties00.cobalt.model.sync.HistorySyncConfig;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import com.github.auties00.cobalt.model.sync.HistorySyncConfig;
 
 import static it.auties.protobuf.model.ProtobufType.*;
 

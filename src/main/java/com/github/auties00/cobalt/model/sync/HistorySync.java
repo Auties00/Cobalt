@@ -1,13 +1,13 @@
 package com.github.auties00.cobalt.model.sync;
 
-import it.auties.protobuf.annotation.ProtobufEnum;
-import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.chat.GroupPastParticipants;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.setting.GlobalSettings;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
 
 import java.util.List;
 import java.util.Objects;

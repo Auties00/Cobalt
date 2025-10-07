@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.model.button.base;
 
+import com.github.auties00.cobalt.util.Bytes;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.util.Bytes;
 
 import java.util.HexFormat;
 import java.util.Objects;

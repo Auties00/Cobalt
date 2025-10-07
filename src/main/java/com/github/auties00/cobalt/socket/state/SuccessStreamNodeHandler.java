@@ -1,18 +1,18 @@
 package com.github.auties00.cobalt.socket.state;
 
-import com.github.auties00.cobalt.io.node.NodeAttribute;
-import com.github.auties00.cobalt.io.node.NodeBuilder;
-import com.github.auties00.cobalt.socket.SocketStream;
-import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
 import com.github.auties00.cobalt.io.node.Node;
+import com.github.auties00.cobalt.io.node.NodeAttribute;
+import com.github.auties00.cobalt.io.node.NodeBuilder;
 import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.media.MediaConnection;
 import com.github.auties00.cobalt.model.sync.PatchType;
+import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Clock;
+import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -21,7 +21,8 @@ import java.util.HexFormat;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.*;
+import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.LOGIN;
+import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.MEDIA_CONNECTION;
 
 public final class SuccessStreamNodeHandler extends SocketStream.Handler {
     private static final int PRE_KEYS_UPLOAD_CHUNK = 10;
@@ -32,7 +33,7 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        node.getOptionalAttribute("lid")
+        node.getAttribute("lid")
                 .map(NodeAttribute::toJid)
                 .ifPresent(whatsapp.store()::setLid);
         switch (whatsapp.store().clientType()) {
@@ -441,7 +442,7 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void onMediaConnection(Node node) {
-        var mediaConnection = node.firstChildByDescription("media_conn").orElse(node);
+        var mediaConnection = node.findChild("media_conn").orElse(node);
         var auth = mediaConnection.attributes().getString("auth");
         var ttl = mediaConnection.attributes().getInt("ttl");
         var maxBuckets = mediaConnection.attributes().getInt("max_buckets");

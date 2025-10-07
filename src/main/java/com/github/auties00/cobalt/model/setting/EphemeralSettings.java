@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.model.setting;
 
+import com.github.auties00.cobalt.util.Clock;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.util.Clock;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;

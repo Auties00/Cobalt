@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.message.model;
 
-import com.github.auties00.cobalt.model.info.ChatMessageInfo;
+import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.model.media.AttachmentType;
 import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
 import com.github.auties00.cobalt.model.message.payment.PaymentInvoiceMessage;
@@ -12,46 +12,44 @@ import java.util.OptionalLong;
 
 /**
  * A media message
- * Read its children using {@link it.auties.whatsapp.api.Whatsapp#downloadMedia(ChatMessageInfo)}
+ * Read its content using {@link Whatsapp#downloadMedia(MediaMessage)}
  */
-public sealed abstract class MediaMessage implements ContextualMessage, MutableAttachmentProvider permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
-    public abstract Optional<String> handle();
-
-    public abstract void setHandle(String handle);
-
+public sealed interface MediaMessage
+        extends ContextualMessage, MutableAttachmentProvider
+        permits PaymentInvoiceMessage, AudioMessage, DocumentMessage, ImageMessage, StickerMessage, VideoOrGifMessage {
     /**
      * Returns the timestampSeconds, that is the seconds elapsed since {@link java.time.Instant#EPOCH}, for{@link MediaMessage#mediaKey()}
      *
      * @return an unsigned long
      */
-    public abstract OptionalLong mediaKeyTimestampSeconds();
+    OptionalLong mediaKeyTimestampSeconds();
 
     /**
      * Returns the timestampSeconds for{@link MediaMessage#mediaKey()}
      *
      * @return a zoned date time
      */
-    public abstract Optional<ZonedDateTime> mediaKeyTimestamp();
+    Optional<ZonedDateTime> mediaKeyTimestamp();
 
     /**
      * Returns the media type of the media that this object wraps
      *
      * @return a non-null {@link Type}
      */
-    public abstract Type mediaType();
+    Type mediaType();
 
     @Override
-    public Category category() {
-        return Category.MEDIA;
+    default Message.Category category() {
+        return Message.Category.MEDIA;
     }
 
     @Override
-    public Message.Type type() {
+    default Message.Type type() {
         return mediaType().toMessageType();
     }
 
     @Override
-    public AttachmentType attachmentType() {
+    default AttachmentType attachmentType() {
         return mediaType().toAttachmentType();
     }
 
@@ -59,7 +57,7 @@ public sealed abstract class MediaMessage implements ContextualMessage, MutableA
      * The constants of this enumerated type describe the various types of media type that a
      * {@link MediaMessage} can hold
      */
-    public enum Type {
+    enum Type {
         /**
          * No media
          */

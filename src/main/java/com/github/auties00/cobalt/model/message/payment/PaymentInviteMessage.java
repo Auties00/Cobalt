@@ -1,12 +1,12 @@
 package com.github.auties00.cobalt.model.message.payment;
 
+import com.github.auties00.cobalt.model.message.model.PaymentMessage;
+import com.github.auties00.cobalt.util.Clock;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.model.message.model.PaymentMessage;
-import com.github.auties00.cobalt.util.Clock;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;

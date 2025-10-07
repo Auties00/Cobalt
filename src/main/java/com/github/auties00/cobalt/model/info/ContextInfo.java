@@ -1,14 +1,14 @@
 package com.github.auties00.cobalt.model.info;
 
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.button.base.ButtonActionLink;
 import com.github.auties00.cobalt.model.chat.ChatDisappear;
 import com.github.auties00.cobalt.model.contact.Contact;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.ArrayList;
 import java.util.List;

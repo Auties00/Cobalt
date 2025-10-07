@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.model.business;
 
+import com.github.auties00.cobalt.io.node.Node;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.io.node.Node;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -30,10 +30,10 @@ public final class BusinessCollectionEntry {
     }
 
     public static BusinessCollectionEntry of(Node node) {
-        var id = node.firstChildByDescription("id")
+        var id = node.findChild("id")
                 .flatMap(Node::toContentString)
                 .orElseThrow(() -> new NoSuchElementException("Missing id from business collections"));
-        var name = node.firstChildByDescription("name")
+        var name = node.findChild("name")
                 .flatMap(Node::toContentString)
                 .orElseThrow(() -> new NoSuchElementException("Missing name from business collections"));
         var products = node.listChildren("product")

@@ -1,9 +1,5 @@
 package com.github.auties00.cobalt.model.message.button;
 
-import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.button.base.TemplateFormatter;
 import com.github.auties00.cobalt.model.button.template.highlyStructured.HighlyStructuredFourRowTemplate;
 import com.github.auties00.cobalt.model.button.template.hydrated.HydratedFourRowTemplate;
@@ -11,6 +7,10 @@ import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.message.model.ButtonMessage;
 import com.github.auties00.cobalt.model.message.model.ContextualMessage;
 import com.github.auties00.cobalt.util.Bytes;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.HexFormat;
 import java.util.Objects;

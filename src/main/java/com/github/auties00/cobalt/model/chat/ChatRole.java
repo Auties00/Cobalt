@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.model.chat;
 
+import com.github.auties00.cobalt.api.Whatsapp;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import com.github.auties00.cobalt.api.Whatsapp;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;

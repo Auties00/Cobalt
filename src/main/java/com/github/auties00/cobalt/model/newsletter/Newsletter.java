@@ -1,14 +1,14 @@
 package com.github.auties00.cobalt.model.newsletter;
 
 import com.alibaba.fastjson2.JSONObject;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.info.MessageInfoParent;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.util.ConcurrentLinkedSet;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Collection;
 import java.util.Collections;

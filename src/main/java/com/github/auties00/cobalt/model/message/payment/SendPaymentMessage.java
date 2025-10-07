@@ -1,12 +1,12 @@
 package com.github.auties00.cobalt.model.message.payment;
 
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
 import com.github.auties00.cobalt.model.message.model.PaymentMessage;
 import com.github.auties00.cobalt.model.payment.PaymentBackground;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Objects;
 import java.util.Optional;

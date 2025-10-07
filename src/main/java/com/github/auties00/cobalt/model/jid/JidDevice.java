@@ -1,11 +1,11 @@
 package com.github.auties00.cobalt.model.jid;
 
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.api.WhatsappClientType;
 import com.github.auties00.cobalt.model.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.auth.Version;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 import java.util.Objects;

@@ -1,9 +1,5 @@
 package com.github.auties00.cobalt.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.ContextInfo;
@@ -13,6 +9,10 @@ import com.github.auties00.cobalt.model.poll.PollOption;
 import com.github.auties00.cobalt.model.poll.SelectedPollOption;
 import com.github.auties00.cobalt.model.poll.SelectedPollOptionBuilder;
 import com.github.auties00.cobalt.util.Bytes;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

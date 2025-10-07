@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.model.message.button;
 
-import it.auties.protobuf.annotation.ProtobufEnum;
-import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import com.github.auties00.cobalt.model.button.interactive.InteractiveCollection;
 import com.github.auties00.cobalt.model.button.interactive.InteractiveNativeFlow;
 import com.github.auties00.cobalt.model.button.interactive.InteractiveShop;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
 
 /**
  * A model class that represents a message that can be used as the children of a {@link InteractiveMessage}

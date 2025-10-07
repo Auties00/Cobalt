@@ -18,7 +18,7 @@ public final class PresenceStreamNodeHandler extends SocketStream.Handler {
         var status = getUpdateType(node);
         var chatJid = node.getRequiredAttribute("from")
                 .toJid();
-        var participantJid = node.getOptionalAttribute("participant")
+        var participantJid = node.getAttribute("participant")
                 .map(NodeAttribute::toJid);
         if(participantJid.isEmpty()) {
             whatsapp.store()
@@ -48,17 +48,17 @@ public final class PresenceStreamNodeHandler extends SocketStream.Handler {
         }
     }
     private ContactStatus getUpdateType(Node node) {
-        var media = node.firstChild()
-                .flatMap(entry -> entry.getOptionalAttribute("media"))
+        var media = node.findChild()
+                .flatMap(entry -> entry.getAttribute("media"))
                 .map(NodeAttribute::toString)
                 .orElse("");
         if (media.equals("audio")) {
             return ContactStatus.RECORDING;
         }
 
-        return node.getOptionalAttribute("type")
+        return node.getAttribute("type")
                 .map(NodeAttribute::toString)
-                .or(() -> node.firstChild().map(Node::description))
+                .or(() -> node.findChild().map(Node::description))
                 .flatMap(ContactStatus::of)
                 .orElse(ContactStatus.AVAILABLE);
     }

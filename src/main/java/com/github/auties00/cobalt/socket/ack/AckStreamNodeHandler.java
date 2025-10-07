@@ -34,7 +34,7 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void digestMessageAck(Node node) {
-        var error = node.getOptionalAttribute("error")
+        var error = node.getAttribute("error")
                 .isPresent();
         var messageId = node.getRequiredAttribute("id")
                 .toString();
@@ -55,7 +55,7 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void digestCallAck(Node node) {
-        var relayNode = node.firstChildByDescription("relay").orElse(null);
+        var relayNode = node.findChild("relay").orElse(null);
         if (relayNode == null) {
             return;
         }
@@ -64,7 +64,7 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
                 .toJid();
         var callId = relayNode.getRequiredAttribute("call-id")
                 .toString();
-        relayNode.streamChildrenByDescription("participant")
+        relayNode.streamChildren("participant")
                 .map(entry -> entry.getRequiredAttribute("value"))
                 .map(NodeAttribute::toJid)
                 .forEach(to -> sendRelay(callCreator, callId, to));

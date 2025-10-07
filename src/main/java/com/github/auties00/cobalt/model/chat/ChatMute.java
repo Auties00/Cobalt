@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.model.chat;
 
+import com.github.auties00.cobalt.util.Clock;
 import it.auties.protobuf.annotation.ProtobufDeserializer;
 import it.auties.protobuf.annotation.ProtobufSerializer;
-import com.github.auties00.cobalt.util.Clock;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;

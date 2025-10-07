@@ -1,11 +1,5 @@
 package com.github.auties00.cobalt.socket.notification;
 
-import com.github.auties00.cobalt.socket.SocketStream;
-import com.github.auties00.curve25519.Curve25519;
-import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
-import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
-import com.github.auties00.libsignal.key.SignalPreKeyPair;
-import it.auties.curve25519.Curve25519;
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.io.json.response.NewsletterLeaveResponse;
 import com.github.auties00.cobalt.io.json.response.NewsletterMuteResponse;
@@ -31,9 +25,14 @@ import com.github.auties00.cobalt.model.privacy.PrivacySettingEntryBuilder;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.sync.PatchType;
+import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.PhonePairingCode;
 import com.github.auties00.cobalt.util.Scalar;
+import com.github.auties00.curve25519.Curve25519;
+import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
+import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
+import com.github.auties00.libsignal.key.SignalPreKeyPair;
 
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
@@ -88,20 +87,20 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             return;
         }
 
-        var liveUpdates = node.firstChildByDescription("live_updates")
+        var liveUpdates = node.findChild("live_updates")
                 .orElse(null);
         if (liveUpdates == null) {
             return;
         }
 
 
-        var messages = liveUpdates.firstChildByDescription("messages")
+        var messages = liveUpdates.findChild("messages")
                 .orElse(null);
         if (messages == null) {
             return;
         }
 
-        messages.streamChildrenByDescription("message").forEachOrdered(messageNode -> {
+        messages.streamChildren("message").forEachOrdered(messageNode -> {
             var messageId = messageNode.getRequiredAttribute("server_id")
                     .toString();
             var newsletterMessage = whatsapp.store()
@@ -111,9 +110,9 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 return;
             }
 
-            messageNode.firstChildByDescription("reactions")
+            messageNode.findChild("reactions")
                     .stream()
-                    .flatMap(reactions -> reactions.streamChildrenByDescription("reaction"))
+                    .flatMap(reactions -> reactions.streamChildren("reaction"))
                     .forEachOrdered(reaction -> onNewsletterReaction(reaction, newsletterMessage));
         });
     }
@@ -130,7 +129,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleMexNamespace(Node node) {
-        var update = node.firstChildByDescription("update")
+        var update = node.findChild("update")
                 .orElse(null);
         if (update == null) {
             return;
@@ -309,7 +308,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleRegistrationNotification(Node node) {
-        var child = node.firstChildByDescription("wa_old_registration");
+        var child = node.findChild("wa_old_registration");
         if (child.isEmpty()) {
             return;
         }
@@ -364,7 +363,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 .getOptionalJid("participant")
                 .orElse(null);
         var notificationType = node.description();
-        var child = node.firstChildByDescription();
+        var child = node.findChild();
         var bodyType = child.map(Node::description)
                 .orElse(null);
         var stubType = ChatMessageStubType.getStubType(notificationType, bodyType);
@@ -399,7 +398,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         if (!chat.isServerJid(JidServer.user())) {
             return;
         }
-        var keysSize = node.firstChildByDescription("count")
+        var keysSize = node.findChild("count")
                 .orElseThrow(() -> new NoSuchElementException("Missing count in notification"))
                 .attributes()
                 .getInt("value");
@@ -431,7 +430,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleAccountSyncNotification(Node node) {
-        var child = node.firstChildByDescription();
+        var child = node.findChild();
         if (child.isEmpty()) {
             return;
         }
@@ -514,7 +513,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             Thread.startVirtualThread(() -> listener.onLinkedDevices(devices.keySet()));
             Thread.startVirtualThread(() -> listener.onLinkedDevices(whatsapp, devices.keySet()));
         }
-        var keyIndexListNode = child.firstChildByDescription("key-index-list")
+        var keyIndexListNode = child.findChild("key-index-list")
                 .orElseThrow(() -> new NoSuchElementException("Missing index key node from device sync"));
         var signedKeyIndexBytes = keyIndexListNode.toContentBytes()
                 .orElseThrow(() -> new NoSuchElementException("Missing index key from device sync"));
@@ -613,15 +612,15 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                     .phoneNumber()
                     .map(PhoneNumber::toJid)
                     .orElseThrow(() -> new IllegalArgumentException("Missing phone value"));
-            var linkCodeCompanionReg = node.firstChildByDescription("link_code_companion_reg")
+            var linkCodeCompanionReg = node.findChild("link_code_companion_reg")
                     .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
-            var ref = linkCodeCompanionReg.firstChildByDescription("link_code_pairing_ref")
+            var ref = linkCodeCompanionReg.findChild("link_code_pairing_ref")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_ref: " + node));
-            var primaryIdentityPublicKey = linkCodeCompanionReg.firstChildByDescription("primary_identity_pub")
+            var primaryIdentityPublicKey = linkCodeCompanionReg.findChild("primary_identity_pub")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new IllegalArgumentException("Missing primary_identity_pub: " + node));
-            var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.firstChildByDescription("link_code_pairing_wrapped_primary_ephemeral_pub")
+            var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findChild("link_code_pairing_wrapped_primary_ephemeral_pub")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
             var codePairingPublicKey = pairingCode.decrypt(primaryEphemeralPublicKeyWrapped);

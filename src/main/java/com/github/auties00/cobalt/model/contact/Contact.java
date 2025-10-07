@@ -1,13 +1,13 @@
 package com.github.auties00.cobalt.model.contact;
 
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.util.Clock;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;

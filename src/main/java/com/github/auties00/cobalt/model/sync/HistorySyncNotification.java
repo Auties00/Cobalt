@@ -1,11 +1,11 @@
 package com.github.auties00.cobalt.model.sync;
 
+import com.github.auties00.cobalt.model.media.AttachmentType;
+import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import com.github.auties00.cobalt.model.media.AttachmentType;
-import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;

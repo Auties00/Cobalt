@@ -1,11 +1,11 @@
 package com.github.auties00.cobalt.model.button.template.hydrated;
 
-import it.auties.protobuf.annotation.ProtobufEnum;
-import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import com.github.auties00.cobalt.model.message.standard.DocumentMessage;
 import com.github.auties00.cobalt.model.message.standard.ImageMessage;
 import com.github.auties00.cobalt.model.message.standard.LocationMessage;
 import com.github.auties00.cobalt.model.message.standard.VideoOrGifMessage;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
 
 /**
  * A model that represents the title of a {@link HydratedFourRowTemplate}

@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.model.chat;
 
-import it.auties.protobuf.annotation.ProtobufEnum;
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.model.contact.Contact;
+import it.auties.protobuf.annotation.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various actions that can be executed on a

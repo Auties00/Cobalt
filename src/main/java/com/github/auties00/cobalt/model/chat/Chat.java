@@ -1,10 +1,5 @@
 package com.github.auties00.cobalt.model.chat;
 
-import it.auties.protobuf.annotation.ProtobufEnum;
-import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfoParent;
@@ -16,6 +11,11 @@ import com.github.auties00.cobalt.model.message.model.Message;
 import com.github.auties00.cobalt.model.sync.HistorySyncMessage;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.ConcurrentLinkedSet;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;

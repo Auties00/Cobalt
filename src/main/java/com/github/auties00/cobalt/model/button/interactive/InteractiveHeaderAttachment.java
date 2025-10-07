@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.model.button.interactive;
 
-import it.auties.protobuf.annotation.ProtobufEnum;
-import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import com.github.auties00.cobalt.model.message.standard.DocumentMessage;
 import com.github.auties00.cobalt.model.message.standard.ImageMessage;
 import com.github.auties00.cobalt.model.message.standard.VideoOrGifMessage;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
 
 /**
  * A sealed class that describes the various types of headers

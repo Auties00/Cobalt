@@ -1,11 +1,11 @@
 package com.github.auties00.cobalt.model.button.base;
 
-import it.auties.protobuf.annotation.ProtobufEnum;
-import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import com.github.auties00.cobalt.model.button.template.highlyStructured.HighlyStructuredFourRowTemplate;
 import com.github.auties00.cobalt.model.button.template.hydrated.HydratedFourRowTemplate;
 import com.github.auties00.cobalt.model.message.button.InteractiveMessage;
 import com.github.auties00.cobalt.model.message.button.TemplateMessage;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
 
 /**
  * A formatter used to structure a button message

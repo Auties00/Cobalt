@@ -1,10 +1,13 @@
 package com.github.auties00.cobalt.model.info;
 
+import com.github.auties00.cobalt.io.node.Node;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import com.github.auties00.cobalt.io.node.Node;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * The constants of this enumerated type describe the various types of a server message that a {@link ChatMessageInfo} can describe

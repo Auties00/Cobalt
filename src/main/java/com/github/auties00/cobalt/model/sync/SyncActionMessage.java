@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.model.sync;
 
+import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
-import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 
 import static it.auties.protobuf.model.ProtobufType.INT64;
 import static it.auties.protobuf.model.ProtobufType.MESSAGE;

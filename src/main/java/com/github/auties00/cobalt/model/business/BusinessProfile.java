@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.model.business;
 
+import com.github.auties00.cobalt.io.node.Node;
+import com.github.auties00.cobalt.model.jid.Jid;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.io.node.Node;
 
 import java.net.URI;
 import java.util.Collection;
@@ -55,10 +55,10 @@ public final class BusinessProfile {
     public static BusinessProfile of(Node node) {
         var jid = node.attributes()
                 .getRequiredJid("value");
-        var address = node.firstChildByDescription("address")
+        var address = node.findChild("address")
                 .flatMap(Node::toContentString)
                 .orElse(null);
-        var description = node.firstChildByDescription("description")
+        var description = node.findChild("description")
                 .flatMap(Node::toContentString)
                 .orElse(null);
         var websites = node.listChildren("website")
@@ -67,7 +67,7 @@ public final class BusinessProfile {
                 .flatMap(Optional::stream)
                 .map(URI::create)
                 .toList();
-        var email = node.firstChildByDescription("email")
+        var email = node.findChild("email")
                 .flatMap(Node::toContentString)
                 .orElse(null);
         var categories = node.listChildren("categories")
@@ -76,15 +76,15 @@ public final class BusinessProfile {
                 .flatMap(Optional::stream)
                 .map(BusinessCategory::of)
                 .toList();
-        var commerceExperience = node.firstChildByDescription("profile_options");
-        var cartEnabled = commerceExperience.flatMap(entry -> entry.firstChildByDescription("cart_enabled"))
+        var commerceExperience = node.findChild("profile_options");
+        var cartEnabled = commerceExperience.flatMap(entry -> entry.findChild("cart_enabled"))
                 .flatMap(Node::contentAsBoolean)
                 .orElse(commerceExperience.isEmpty());
-        var hours = node.firstChildByDescription("business_hours")
+        var hours = node.findChild("business_hours")
                 .map(Node::attributes)
                 .map(attributes -> attributes.getNullableString("timezone"))
                 .map(timezone -> {
-                    var entries = node.firstChildByDescription("business_hours")
+                    var entries = node.findChild("business_hours")
                             .stream()
                             .map(entry -> entry.listChildren("business_hours_config"))
                             .flatMap(Collection::stream)

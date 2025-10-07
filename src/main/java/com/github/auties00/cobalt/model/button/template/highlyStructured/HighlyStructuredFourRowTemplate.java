@@ -1,14 +1,14 @@
 package com.github.auties00.cobalt.model.button.template.highlyStructured;
 
-import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.button.base.TemplateFormatter;
 import com.github.auties00.cobalt.model.message.standard.DocumentMessage;
 import com.github.auties00.cobalt.model.message.standard.ImageMessage;
 import com.github.auties00.cobalt.model.message.standard.LocationMessage;
 import com.github.auties00.cobalt.model.message.standard.VideoOrGifMessage;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.ArrayList;
 import java.util.List;

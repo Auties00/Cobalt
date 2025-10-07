@@ -1,13 +1,13 @@
 package com.github.auties00.cobalt.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.Medias;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNullElse;
  * A model class that represents a message holding a sticker inside
  */
 @ProtobufMessage(name = "Message.StickerMessage")
-public final class StickerMessage extends MediaMessage {
+public final class StickerMessage implements MediaMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     String mediaUrl;
 
@@ -96,14 +96,12 @@ public final class StickerMessage extends MediaMessage {
 
     @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
     static StickerMessage simpleBuilder(byte[] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
-        var result = new StickerMessageBuilder()
+        return new StickerMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, STICKER.mimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, false))
                 .animated(animated)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build();
-        result.setDecodedMedia(media);
-        return result;
     }
 
     public OptionalInt height() {

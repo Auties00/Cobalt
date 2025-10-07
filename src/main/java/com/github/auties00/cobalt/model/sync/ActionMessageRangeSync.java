@@ -1,11 +1,11 @@
 package com.github.auties00.cobalt.model.sync;
 
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Collections;
 import java.util.List;

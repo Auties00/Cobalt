@@ -1,9 +1,5 @@
 package com.github.auties00.cobalt.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.model.button.interactive.InteractiveHeaderAttachment;
 import com.github.auties00.cobalt.model.button.interactive.InteractiveLocationAnnotation;
@@ -15,6 +11,10 @@ import com.github.auties00.cobalt.model.message.button.ButtonsMessageHeader;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.Medias;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -26,8 +26,8 @@ import static java.util.Objects.requireNonNullElse;
  * A model class that represents a message holding an image inside
  */
 @ProtobufMessage(name = "Message.ImageMessage")
-public final class ImageMessage extends MediaMessage
-        implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
+public final class ImageMessage
+        implements MediaMessage, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     String mediaUrl;
 
@@ -150,7 +150,7 @@ public final class ImageMessage extends MediaMessage
     @ProtobufBuilder(className = "ImageMessageSimpleBuilder")
     static ImageMessage simpleBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, false);
-        var result = new ImageMessageBuilder()
+        return new ImageMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, IMAGE.mimeType()))
                 .caption(caption)
                 .width(dimensions.width())
@@ -158,8 +158,6 @@ public final class ImageMessage extends MediaMessage
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, true))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build();
-        result.setDecodedMedia(media);
-        return result;
     }
 
     @Override

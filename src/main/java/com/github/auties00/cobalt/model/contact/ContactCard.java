@@ -1,12 +1,12 @@
 package com.github.auties00.cobalt.model.contact;
 
+import com.github.auties00.cobalt.model.jid.Jid;
 import ezvcard.Ezvcard;
 import ezvcard.VCard;
 import ezvcard.VCardVersion;
 import ezvcard.property.Telephone;
 import it.auties.protobuf.annotation.ProtobufDeserializer;
 import it.auties.protobuf.annotation.ProtobufSerializer;
-import com.github.auties00.cobalt.model.jid.Jid;
 
 import java.util.*;
 import java.util.stream.Collectors;

@@ -1,5 +1,6 @@
 package com.github.auties00.cobalt.api;
 
+import com.github.auties00.cobalt.io.node.Node;
 import com.github.auties00.cobalt.model.action.Action;
 import com.github.auties00.cobalt.model.call.Call;
 import com.github.auties00.cobalt.model.chat.Chat;
@@ -12,7 +13,6 @@ import com.github.auties00.cobalt.model.info.QuotedMessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.model.newsletter.Newsletter;
-import com.github.auties00.cobalt.io.node.Node;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
 import com.github.auties00.cobalt.model.setting.Setting;
 

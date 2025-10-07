@@ -3,7 +3,10 @@ package com.github.auties00.cobalt.model.sync;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 @ProtobufEnum

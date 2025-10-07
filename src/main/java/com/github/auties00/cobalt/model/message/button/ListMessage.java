@@ -1,16 +1,16 @@
 package com.github.auties00.cobalt.model.message.button;
 
-import it.auties.protobuf.annotation.ProtobufEnum;
-import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.button.base.ButtonSection;
 import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.info.ProductListInfo;
 import com.github.auties00.cobalt.model.message.model.ButtonMessage;
 import com.github.auties00.cobalt.model.message.model.ContextualMessage;
 import com.github.auties00.cobalt.model.message.model.Message;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 import java.util.Optional;

@@ -1,7 +1,5 @@
 package com.github.auties00.cobalt.socket.iq;
 
-import com.github.auties00.cobalt.socket.SocketStream;
-import it.auties.curve25519.Curve25519;
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
 import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
@@ -11,8 +9,10 @@ import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.mobile.PhoneNumber;
+import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.PhonePairingCode;
+import it.auties.curve25519.Curve25519;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -46,7 +46,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
             return;
         }
 
-        var container = node.firstChildByDescription().orElse(null);
+        var container = node.findChild().orElse(null);
         if (container == null) {
             return;
         }
@@ -73,7 +73,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void printQrCode(WhatsappVerificationHandler.Web.QrCode qrHandler, Node container) {
-        var ref = container.firstChildByDescription("ref")
+        var ref = container.findChild("ref")
                 .flatMap(Node::toContentString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
         var qr = String.join(
@@ -133,7 +133,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     private void confirmPairing(Node node, Node container) {
         try {
             saveCompanion(container);
-            var deviceIdentity = container.firstChildByDescription("device-identity")
+            var deviceIdentity = container.findChild("device-identity")
                     .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
             var advIdentity = SignedDeviceIdentityHMACSpec.decode(deviceIdentity.toContentBytes().orElseThrow());
             var localMac = Mac.getInstance("HmacSHA256");
@@ -189,7 +189,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     }
 
     private UserAgent.PlatformType getWebPlatform(Node node) {
-        var name = node.firstChildByDescription("platform")
+        var name = node.findChild("platform")
                 .flatMap(entry -> entry.attributes().getOptionalString("name"))
                 .orElse(null);
         return switch (name) {
@@ -202,7 +202,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void saveCompanion(Node container) {
-        var node = container.firstChildByDescription("device")
+        var node = container.findChild("device")
                 .orElseThrow(() -> new NoSuchElementException("Missing device"));
         var companion = node.attributes()
                 .getOptionalJid("value")

@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.model.sync;
 
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
 import com.github.auties00.cobalt.model.media.AttachmentType;
 import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
 
 import java.util.Optional;
 import java.util.OptionalLong;

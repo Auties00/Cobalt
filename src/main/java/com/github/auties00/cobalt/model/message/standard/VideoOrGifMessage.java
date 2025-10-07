@@ -1,10 +1,5 @@
 package com.github.auties00.cobalt.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufEnum;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.button.interactive.InteractiveHeaderAttachment;
 import com.github.auties00.cobalt.model.button.interactive.InteractiveLocationAnnotation;
 import com.github.auties00.cobalt.model.button.template.highlyStructured.HighlyStructuredFourRowTemplateTitle;
@@ -14,6 +9,11 @@ import com.github.auties00.cobalt.model.message.button.ButtonsMessageHeader;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.Medias;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -25,8 +25,8 @@ import static java.util.Objects.requireNonNullElse;
  * A model class that represents a message holding a video inside
  */
 @ProtobufMessage(name = "Message.VideoMessage")
-public final class VideoOrGifMessage extends MediaMessage
-        implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
+public final class VideoOrGifMessage
+        implements MediaMessage, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     String mediaUrl;
 
@@ -126,7 +126,7 @@ public final class VideoOrGifMessage extends MediaMessage
     static VideoOrGifMessage videoBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
-        var result = new VideoOrGifMessageBuilder()
+        return new VideoOrGifMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, VIDEO.mimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media))
                 .caption(caption)
@@ -135,8 +135,6 @@ public final class VideoOrGifMessage extends MediaMessage
                 .duration(duration)
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build();
-        result.setDecodedMedia(media);
-        return result;
     }
 
     @ProtobufBuilder(className = "GifMessageSimpleBuilder")
@@ -146,7 +144,7 @@ public final class VideoOrGifMessage extends MediaMessage
         }
         var dimensions = Medias.getDimensions(media, true);
         var duration = Medias.getDuration(media);
-        var result = new VideoOrGifMessageBuilder()
+        return new VideoOrGifMessageBuilder()
                 .mimetype(requireNonNullElse(mimeType, VIDEO.mimeType()))
                 .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media))
                 .caption(caption)
@@ -157,8 +155,6 @@ public final class VideoOrGifMessage extends MediaMessage
                 .gifAttribution(requireNonNullElse(gifAttribution, Attribution.NONE))
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .build();
-        result.setDecodedMedia(media);
-        return result;
     }
 
     private static boolean isNotGif(byte[] media, String mimeType) {

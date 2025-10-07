@@ -1,14 +1,14 @@
 package com.github.auties00.cobalt.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.message.model.ButtonMessage;
 import com.github.auties00.cobalt.model.message.model.ContextualMessage;
 import com.github.auties00.cobalt.model.product.Product;
 import com.github.auties00.cobalt.model.product.ProductCatalog;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Optional;
 

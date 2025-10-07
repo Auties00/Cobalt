@@ -1,15 +1,15 @@
 package com.github.auties00.cobalt.model.message.model;
 
 import com.alibaba.fastjson2.JSONObject;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.button.template.highlyStructured.HighlyStructuredMessage;
 import com.github.auties00.cobalt.model.info.DeviceContextInfo;
 import com.github.auties00.cobalt.model.message.button.*;
 import com.github.auties00.cobalt.model.message.payment.*;
 import com.github.auties00.cobalt.model.message.server.*;
 import com.github.auties00.cobalt.model.message.standard.*;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Objects;
 import java.util.Optional;

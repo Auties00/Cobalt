@@ -1,9 +1,5 @@
 package com.github.auties00.cobalt.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.button.interactive.InteractiveHeaderAttachment;
 import com.github.auties00.cobalt.model.button.template.highlyStructured.HighlyStructuredFourRowTemplateTitle;
 import com.github.auties00.cobalt.model.button.template.hydrated.HydratedFourRowTemplateTitle;
@@ -13,6 +9,10 @@ import com.github.auties00.cobalt.model.message.button.ButtonsMessageHeader;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.Medias;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -26,8 +26,8 @@ import static com.github.auties00.cobalt.model.message.model.MediaMessage.Type.D
  * A model class that represents a message holding a document inside
  */
 @ProtobufMessage
-public final class DocumentMessage extends MediaMessage
-        implements InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
+public final class DocumentMessage
+        implements MediaMessage, InteractiveHeaderAttachment, ButtonsMessageHeader, HighlyStructuredFourRowTemplateTitle, HydratedFourRowTemplateTitle {
     private static final int THUMBNAIL_WIDTH = 480;
     private static final int THUMBNAIL_HEIGHT = 339;
 
@@ -121,7 +121,7 @@ public final class DocumentMessage extends MediaMessage
             throw new IllegalArgumentException("Expected fileName to be formatted as name.extension");
         }
 
-        var result = new DocumentMessageBuilder()
+        return new DocumentMessageBuilder()
                 .mimetype(getMimeType(media, fileName, mimeType))
                 .fileName(fileName)
                 .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media))
@@ -132,8 +132,6 @@ public final class DocumentMessage extends MediaMessage
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .caption(caption)
                 .build();
-        result.setDecodedMedia(media);
-        return result;
     }
 
     private static String getMimeType(byte[] media, String fileName, String mimeType) {

@@ -1,12 +1,12 @@
 package com.github.auties00.cobalt.model.button.interactive;
 
+import com.github.auties00.cobalt.model.message.standard.DocumentMessage;
+import com.github.auties00.cobalt.model.message.standard.ImageMessage;
+import com.github.auties00.cobalt.model.message.standard.VideoOrGifMessage;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.model.message.standard.DocumentMessage;
-import com.github.auties00.cobalt.model.message.standard.ImageMessage;
-import com.github.auties00.cobalt.model.message.standard.VideoOrGifMessage;
 
 import java.util.Objects;
 import java.util.Optional;

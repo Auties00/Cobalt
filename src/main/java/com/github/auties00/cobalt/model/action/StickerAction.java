@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.model.action;
 
+import com.github.auties00.cobalt.model.media.AttachmentType;
+import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.model.media.AttachmentType;
-import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
 
 import java.util.*;
 

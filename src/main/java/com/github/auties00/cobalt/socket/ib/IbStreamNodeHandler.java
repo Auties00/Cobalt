@@ -12,7 +12,7 @@ public final class IbStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        var child = node.firstChildByDescription();
+        var child = node.findChild();
         if(child.isEmpty()) {
             return;
         }
@@ -46,7 +46,7 @@ public final class IbStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleIbOfflinePreview(Node offlinePreview) {
-        var count = offlinePreview.getOptionalAttribute("count")
+        var count = offlinePreview.getAttribute("count")
                 .map(attribute -> Long.parseUnsignedLong(attribute.toString()))
                 .orElse(0L);
         var ibBody = new NodeBuilder()

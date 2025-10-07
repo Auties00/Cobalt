@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.util;
 
-import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
 import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
+import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;

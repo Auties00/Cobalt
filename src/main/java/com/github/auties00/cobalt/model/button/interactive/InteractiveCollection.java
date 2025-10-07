@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.model.button.interactive;
 
+import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.message.button.InteractiveMessageContent;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.message.button.InteractiveMessageContent;
 
 import java.util.Objects;
 

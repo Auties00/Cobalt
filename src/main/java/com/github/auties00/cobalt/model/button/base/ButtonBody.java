@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.model.button.base;
 
+import com.github.auties00.cobalt.model.info.NativeFlowInfo;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
-import com.github.auties00.cobalt.model.info.NativeFlowInfo;
 
 /**
  * A model that represents the body of a button

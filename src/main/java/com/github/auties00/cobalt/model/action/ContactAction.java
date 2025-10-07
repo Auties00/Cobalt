@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.model.action;
 
+import com.github.auties00.cobalt.model.jid.Jid;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.model.jid.Jid;
 
 import java.util.Objects;
 import java.util.Optional;

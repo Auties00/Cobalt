@@ -23,17 +23,17 @@ public final class ErrorStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        if (node.firstChildByDescription("xml-not-well-formed").isPresent()) {
+        if (node.findChild("xml-not-well-formed").isPresent()) {
             whatsapp.handleFailure(STREAM, new MalformedNodeException());
             return;
         }
 
-        if (node.firstChildByDescription("conflict").isPresent()) {
+        if (node.findChild("conflict").isPresent()) {
             whatsapp.handleFailure(STREAM, new SessionConflictException());
             return;
         }
 
-        if (node.firstChildByDescription("bad-mac").isPresent()) {
+        if (node.findChild("bad-mac").isPresent()) {
             whatsapp.handleFailure(STREAM, new SessionBadMacException());
             return;
         }
@@ -45,11 +45,11 @@ public final class ErrorStreamNodeHandler extends SocketStream.Handler {
                     whatsapp.disconnect(retriedConnection.getAndSet(true) ? WhatsappDisconnectReason.BANNED : WhatsappDisconnectReason.RECONNECTING);
             case "500" -> whatsapp.disconnect(WhatsappDisconnectReason.LOGGED_OUT);
             case "401" -> {
-                var type = node.firstChild()
+                var type = node.findChild()
                         .map(child -> child.getRequiredAttribute("type"))
                         .map(NodeAttribute::toString)
                         .orElse("");
-                var reason = node.firstChild()
+                var reason = node.findChild()
                         .map(child -> child.getRequiredAttribute("reason"))
                         .map(NodeAttribute::toString)
                         .orElse(type);

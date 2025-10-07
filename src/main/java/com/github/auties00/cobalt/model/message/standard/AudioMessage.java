@@ -1,14 +1,14 @@
 package com.github.auties00.cobalt.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.media.AttachmentType;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.Medias;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -17,7 +17,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 @ProtobufMessage(name = "Message.AudioMessage")
-public final class AudioMessage extends MediaMessage {
+public final class AudioMessage implements MediaMessage {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     String mediaUrl;
 
@@ -79,15 +79,13 @@ public final class AudioMessage extends MediaMessage {
 
     @ProtobufBuilder(className = "AudioMessageSimpleBuilder")
     static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
-        var result = new AudioMessageBuilder()
+        return new AudioMessageBuilder()
                 .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
                 .duration(Medias.getDuration(media))
                 .mimetype(getMimeType(media, mimeType))
                 .voiceMessage(voiceMessage)
                 .waveform(Medias.getAudioWaveForm(media))
                 .build();
-        result.setDecodedMedia(media);
-        return result;
     }
 
     private static String getMimeType(byte[] media, String mimeType) {

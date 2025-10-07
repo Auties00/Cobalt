@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.model.message.server;
 
+import com.github.auties00.cobalt.model.message.model.ServerMessage;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
-import com.github.auties00.cobalt.model.message.model.ServerMessage;
 
 import java.util.List;
 import java.util.Objects;

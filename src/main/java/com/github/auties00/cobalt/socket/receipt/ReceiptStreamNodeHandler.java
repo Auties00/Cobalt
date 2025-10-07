@@ -43,27 +43,27 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
     }
 
     private Stream<String> getReceiptsMessageIds(Node node) {
-        var outerId = node.getOptionalAttribute("id")
+        var outerId = node.getAttribute("id")
                 .map(NodeAttribute::toString)
                 .stream();
-        var innerIds = node.firstChildByDescription("list")
+        var innerIds = node.findChild("list")
                 .stream()
-                .flatMap(list -> list.streamChildrenByDescription("item"))
-                .flatMap(item -> item.getOptionalAttribute("id").stream())
+                .flatMap(list -> list.streamChildren("item"))
+                .flatMap(item -> item.getAttribute("id").stream())
                 .map(NodeAttribute::toString);
         return Stream.concat(outerId, innerIds);
     }
 
 
     private void updateChatReceipt(Node node, ChatMessageInfo message) {
-        var status = node.getOptionalAttribute("type")
+        var status = node.getAttribute("type")
                 .map(NodeAttribute::toString)
                 .flatMap(MessageStatus::of)
                 .orElse(MessageStatus.DELIVERED);
         message.chat().ifPresent(chat -> {
             var newCount = chat.unreadMessagesCount() - 1;
             chat.setUnreadMessagesCount(newCount);
-            var participant = node.getOptionalAttribute("participant")
+            var participant = node.getAttribute("participant")
                     .map(NodeAttribute::toJid)
                     .flatMap(whatsapp.store()::findContactByJid)
                     .orElse(null);
@@ -88,7 +88,7 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
                 Thread.startVirtualThread(() -> listener.onMessageStatus(whatsapp, message));
             }
         });
-        var type = node.getOptionalAttribute("type")
+        var type = node.getAttribute("type")
                 .map(NodeAttribute::toString)
                 .orElse("");
         if(type.equals("retry")) {
@@ -98,7 +98,7 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void updateNewsletterReceipt(Node node, NewsletterMessageInfo message) {
-        var status = node.getOptionalAttribute("type")
+        var status = node.getAttribute("type")
                 .map(NodeAttribute::toString)
                 .flatMap(MessageStatus::of)
                 .orElse(MessageStatus.DELIVERED);
@@ -107,7 +107,7 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
             Thread.startVirtualThread(() -> listener.onMessageStatus(message));
             Thread.startVirtualThread(() -> listener.onMessageStatus(whatsapp, message));
         }
-        var type = node.getOptionalAttribute("type")
+        var type = node.getAttribute("type")
                 .map(NodeAttribute::toString)
                 .orElse("");
         if(type.equals("retry")) {

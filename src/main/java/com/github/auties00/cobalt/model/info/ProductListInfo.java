@@ -1,11 +1,11 @@
 package com.github.auties00.cobalt.model.info;
 
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.product.ProductListHeaderImage;
 import com.github.auties00.cobalt.model.product.ProductSection;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 import java.util.Objects;

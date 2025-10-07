@@ -1,9 +1,5 @@
 package com.github.auties00.cobalt.model.message.standard;
 
-import it.auties.protobuf.annotation.ProtobufBuilder;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
@@ -14,6 +10,10 @@ import com.github.auties00.cobalt.model.poll.PollOption;
 import com.github.auties00.cobalt.model.poll.PollUpdateEncryptedMetadata;
 import com.github.auties00.cobalt.model.poll.PollUpdateMessageMetadata;
 import com.github.auties00.cobalt.util.Clock;
+import it.auties.protobuf.annotation.ProtobufBuilder;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.Collections;

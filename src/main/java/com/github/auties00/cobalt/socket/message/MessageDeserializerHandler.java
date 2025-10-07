@@ -1,13 +1,7 @@
 package com.github.auties00.cobalt.socket.message;
 
-import com.github.auties00.libsignal.SignalSessionCipher;
-import com.github.auties00.libsignal.groups.SignalGroupCipher;
-import com.github.auties00.libsignal.groups.SignalSenderKeyName;
-import com.github.auties00.libsignal.protocol.SignalMessage;
-import com.github.auties00.libsignal.protocol.SignalPreKeyMessage;
-import com.github.auties00.libsignal.protocol.SignalSenderKeyDistributionMessage;
-import it.auties.protobuf.stream.ProtobufInputStream;
 import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.io.node.Node;
 import com.github.auties00.cobalt.model.action.ContactActionBuilder;
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificateSpec;
 import com.github.auties00.cobalt.model.chat.Chat;
@@ -20,12 +14,18 @@ import com.github.auties00.cobalt.model.message.model.*;
 import com.github.auties00.cobalt.model.message.server.ProtocolMessage;
 import com.github.auties00.cobalt.model.message.server.SenderKeyDistributionMessage;
 import com.github.auties00.cobalt.model.newsletter.NewsletterReaction;
-import com.github.auties00.cobalt.io.node.Node;
 import com.github.auties00.cobalt.model.setting.EphemeralSettingsBuilder;
 import com.github.auties00.cobalt.model.sync.*;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.Medias;
 import com.github.auties00.cobalt.util.Streams;
+import com.github.auties00.libsignal.SignalSessionCipher;
+import com.github.auties00.libsignal.groups.SignalGroupCipher;
+import com.github.auties00.libsignal.groups.SignalSenderKeyName;
+import com.github.auties00.libsignal.protocol.SignalMessage;
+import com.github.auties00.libsignal.protocol.SignalPreKeyMessage;
+import com.github.auties00.libsignal.protocol.SignalSenderKeyDistributionMessage;
+import it.auties.protobuf.stream.ProtobufInputStream;
 
 import java.io.IOException;
 import java.util.*;
@@ -77,13 +77,13 @@ public final class MessageDeserializerHandler extends MessageHandler {
             }
 
 
-            var plainText = node.firstChildByDescription("plaintext");
+            var plainText = node.findChild("plaintext");
             if (plainText.isPresent()) {
                 decodeNewsletterMessage(node, plainText.get(), notify);
                 return;
             }
 
-            var reaction = node.firstChildByDescription("reaction");
+            var reaction = node.findChild("reaction");
             if (reaction.isPresent()) {
                 decodeNewsletterReaction(node, reaction.get(), notify);
                 return;
@@ -103,7 +103,7 @@ public final class MessageDeserializerHandler extends MessageHandler {
     }
 
     private static Optional<String> getBusinessNameFromNode(Node node) {
-        return node.firstChildByDescription("verified_name")
+        return node.findChild("verified_name")
                 .flatMap(Node::toContentBytes)
                 .map(BusinessVerifiedNameCertificateSpec::decode)
                 .flatMap(certificate -> certificate.details().name());
@@ -131,10 +131,10 @@ public final class MessageDeserializerHandler extends MessageHandler {
                     .getRequiredInt("server_id");
             var timestamp = messageInfoNode.attributes()
                     .getNullableLong("t");
-            var views = messageInfoNode.firstChildByDescription("views_count")
+            var views = messageInfoNode.findChild("views_count")
                     .map(value -> value.attributes().getNullableLong("count"))
                     .orElse(null);
-            var reactions = messageInfoNode.firstChildByDescription("reactions")
+            var reactions = messageInfoNode.findChild("reactions")
                     .stream()
                     .map(node -> node.listChildren("reaction"))
                     .flatMap(Collection::stream)
@@ -276,7 +276,7 @@ public final class MessageDeserializerHandler extends MessageHandler {
                 keyBuilder.fromMe(Objects.equals(from.withoutData(), selfJid.withoutData()));
                 messageBuilder.senderJid(from);
             }else if(from.hasServer(JidServer.bot())) {
-                var meta = infoNode.firstChildByDescription("meta")
+                var meta = infoNode.findChild("meta")
                         .orElseThrow();
                 var chatJid = meta.attributes()
                         .getRequiredJid("target_chat_jid");

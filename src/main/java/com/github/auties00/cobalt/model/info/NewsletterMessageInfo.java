@@ -1,9 +1,6 @@
 package com.github.auties00.cobalt.model.info;
 
 import com.alibaba.fastjson2.JSONObject;
-import it.auties.protobuf.annotation.ProtobufMessage;
-import it.auties.protobuf.annotation.ProtobufProperty;
-import it.auties.protobuf.model.ProtobufType;
 import com.github.auties00.cobalt.model.contact.Contact;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
@@ -11,6 +8,9 @@ import com.github.auties00.cobalt.model.message.model.MessageStatus;
 import com.github.auties00.cobalt.model.newsletter.Newsletter;
 import com.github.auties00.cobalt.model.newsletter.NewsletterReaction;
 import com.github.auties00.cobalt.util.Clock;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.*;

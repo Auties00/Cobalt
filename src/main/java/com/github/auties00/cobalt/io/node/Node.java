@@ -1,13 +1,14 @@
 package com.github.auties00.cobalt.io.node;
 
 import com.github.auties00.cobalt.exception.MalformedJidException;
-import com.github.auties00.cobalt.exception.MissingRequiredNodeAttributeException;
 import com.github.auties00.cobalt.model.jid.Jid;
 import it.auties.protobuf.model.ProtobufString;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.stream.DoubleStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
@@ -53,22 +54,6 @@ public sealed interface Node {
     String description();
 
     /**
-     * Returns the attributes of this node as an unmodifiable sequenced map.
-     * Attributes provide metadata about the node, similar to XML attributes.
-     *
-     * @return a sequenced map of attribute names to attribute values
-     */
-    SequencedMap<String, NodeAttribute> attributes();
-
-    /**
-     * Checks whether this node has children.
-     * Empty nodes return {@code false}, while all other node types return {@code true}.
-     *
-     * @return {@code true} if the node has children, {@code false} otherwise
-     */
-    boolean hasContent();
-
-    /**
      * Checks if this node's description matches the specified description.
      *
      * @param description the description to compare against
@@ -79,31 +64,231 @@ public sealed interface Node {
     }
 
     /**
+     * Returns the attributes of this node as an unmodifiable sequenced map.
+     * Attributes provide metadata about the node, similar to XML attributes.
+     *
+     * @return a sequenced map of attribute names to attribute values
+     */
+    SequencedMap<String, NodeAttribute> attributes();
+
+    /**
      * Retrieves an optional attribute by key.
      *
      * @param key the attribute key to look up
      * @return an {@link Optional} containing the attribute if present, or empty if not found
      */
-    default Optional<NodeAttribute> getOptionalAttribute(String key) {
+    default Optional<NodeAttribute> getAttribute(String key) {
+        Objects.requireNonNull(key, "key cannot be null");
         return Optional.ofNullable(attributes().get(key));
+    }
+
+    default Optional<String> getAttributeAsString(String key) {
+        return getAttribute(key)
+                .map(NodeAttribute::toString);
+    }
+
+    default String getAttributeAsString(String key, String defaultValue) {
+        return getAttribute(key)
+                .map(NodeAttribute::toString)
+                .orElse(defaultValue);
+    }
+
+    default Optional<byte[]> getAttributeAsBytes(String key) {
+        return getAttribute(key)
+                .map(NodeAttribute::toBytes);
+    }
+
+    default byte[] getAttributeAsBytes(String key, byte[] defaultValue) {
+        return getAttribute(key)
+                .map(NodeAttribute::toBytes)
+                .orElse(defaultValue);
+    }
+
+    default Optional<Jid> getAttributeAsJid(String key) {
+        return getAttribute(key)
+                .flatMap(NodeAttribute::toJid);
+    }
+
+    default Jid getAttributeAsJid(String key, Jid defaultValue) {
+        return getAttribute(key)
+                .flatMap(NodeAttribute::toJid)
+                .orElse(defaultValue);
+    }
+
+    default OptionalLong getAttributeAsLong(String key) {
+        var result = getAttribute(key);
+        return result.isEmpty() ? OptionalLong.empty() : result.get().toLong();
+    }
+
+    default long getAttributeAsLong(String key, long defaultValue) {
+        var result = getAttribute(key);
+        return result.isEmpty() ? defaultValue : result.get().toLong().orElse(defaultValue);
+    }
+
+    default OptionalDouble getAttributeAsDouble(String key) {
+        var result = getAttribute(key);
+        return result.isEmpty() ? OptionalDouble.empty() : result.get().toDouble();
+    }
+
+    default double getAttributeAsDouble(String key, double defaultValue) {
+        var result = getAttribute(key);
+        return result.isEmpty() ? defaultValue : result.get().toDouble().orElse(defaultValue);
+    }
+
+    /**
+     * Retrieves an optional attribute by key.
+     *
+     * @param key the attribute key to look up
+     * @return an {@link Optional} containing the attribute if present, or empty if not found
+     */
+    default Stream<NodeAttribute> streamAttribute(String key) {
+        Objects.requireNonNull(key, "key cannot be null");
+        return Stream.ofNullable(attributes().get(key));
+    }
+
+    default Stream<String> streamAttributeAsString(String key) {
+        return streamAttribute(key)
+                .map(NodeAttribute::toString);
+    }
+
+    default Stream<byte[]> streamAttributeAsBytes(String key) {
+        return streamAttribute(key)
+                .map(NodeAttribute::toBytes);
+    }
+
+    default Stream<Jid> streamAttributeAsJid(String key) {
+        Objects.requireNonNull(key, "key cannot be null");
+        var attributeValue = attributes().get(key);
+        return attributeValue != null
+                ? attributeValue.toJid().stream()
+                : Stream.empty();
+    }
+
+    default LongStream streamAttributeAsLong(String key) {
+        Objects.requireNonNull(key, "key cannot be null");
+        var attributeValue = attributes().get(key);
+        return attributeValue != null
+                ? attributeValue.toLong().stream()
+                : LongStream.empty();
+    }
+
+    default DoubleStream streamAttributeAsDouble(String key) {
+        Objects.requireNonNull(key, "key cannot be null");
+        var attributeValue = attributes().get(key);
+        return attributeValue != null
+                ? attributeValue.toDouble().stream()
+                : DoubleStream.empty();
     }
 
     /**
      * Retrieves a required attribute by key.
-     * If the attribute is not present, a {@link MissingRequiredNodeAttributeException} is thrown.
      *
      * @param key the attribute key to look up
      * @return the attribute value
-     * @throws MissingRequiredNodeAttributeException if the attribute is not present
+     * @throws NoSuchElementException if the attribute is not present
      */
     default NodeAttribute getRequiredAttribute(String key) {
         var result = attributes().get(key);
         if(result == null) {
-            throw new MissingRequiredNodeAttributeException(this, key);
+            throw new NoSuchElementException("No attribute with key " + key + " found in node " + description() + " with attributes " + attributes());
         }
 
         return result;
     }
+
+    default String getRequiredAttributeAsString(String key) {
+        return getRequiredAttribute(key)
+                .toString();
+    }
+
+    default byte[] getRequiredAttributeAsBytes(String key) {
+        return getRequiredAttribute(key)
+                .toBytes();
+    }
+
+    default Jid getRequiredAttributeAsJid(String key) {
+        var requiredAttribute = getRequiredAttribute(key);
+        return requiredAttribute
+                .toJid()
+                .orElseThrow(() -> new IllegalArgumentException("Cannot convert required attribute " + key + " to JID. Attribute value: " + requiredAttribute));
+    }
+
+    default long getRequiredAttributeAsLong(String key) {
+        var requiredAttribute = getRequiredAttribute(key);
+        return requiredAttribute
+                .toLong()
+                .orElseThrow(() -> new IllegalArgumentException("Cannot convert required attribute " + key + " to long. Attribute value: " + requiredAttribute));
+    }
+
+    default double getRequiredAttributeAsDouble(String key) {
+        var requiredAttribute = getRequiredAttribute(key);
+        return requiredAttribute
+                .toDouble()
+                .orElseThrow(() -> new IllegalArgumentException("Cannot convert required attribute " + key + " to double. Attribute value: " + requiredAttribute));
+    }
+
+    default boolean hasAttribute(String key) {
+        Objects.requireNonNull(key, "key cannot be null");
+        return attributes().containsKey(key);
+    }
+
+    default boolean hasAttribute(String key, String value) {
+        Objects.requireNonNull(key, "key cannot be null");
+        var attribute = attributes().get(key);
+        return attribute != null
+                && attribute.toString().equals(value);
+    }
+
+    default boolean hasAttribute(String key, byte[] value) {
+        Objects.requireNonNull(key, "key cannot be null");
+        var attribute = attributes().get(key);
+        return attribute != null
+               && Arrays.equals(attribute.toBytes(), value);
+    }
+
+    default boolean hasAttribute(String key, Jid value) {
+        Objects.requireNonNull(key, "key cannot be null");
+        var attribute = attributes().get(key);
+        if(attribute == null) {
+            return false;
+        }
+
+        var attributeValue = attribute.toJid();
+        return attributeValue.isPresent()
+               && Objects.equals(attributeValue.get(), value);
+    }
+
+    default boolean hasAttribute(String key, long value) {
+        Objects.requireNonNull(key, "key cannot be null");
+        var attribute = attributes().get(key);
+        if(attribute == null) {
+            return false;
+        }
+
+        var attributeValue = attribute.toLong();
+        return attributeValue.isPresent()
+                && attributeValue.getAsLong() == value;
+    }
+
+    default boolean hasAttribute(String key, double value) {
+        Objects.requireNonNull(key, "key cannot be null");
+        var attribute = attributes().get(key);
+        if(attribute == null) {
+            return false;
+        }
+
+        var attributeValue = attribute.toDouble();
+        return attributeValue.isPresent()
+                && attributeValue.getAsDouble() == value;
+    }
+
+    /**
+     * Checks whether this node has children.
+     * Empty nodes return {@code false}, while all other node types return {@code true}.
+     *
+     * @return {@code true} if the node has children, {@code false} otherwise
+     */
+    boolean hasContent();
 
     /**
      * Calculates the size of the node based on its attributes and whether it contains children.
@@ -144,22 +329,6 @@ public sealed interface Node {
     Optional<Jid> toContentJid();
 
     /**
-     * Retrieves the first child Node in this container, if present.
-     *
-     * @return an {@code Optional} containing the first child Node if it exists,
-     *         otherwise an empty {@code Optional}.
-     */
-    Optional<Node> firstChild();
-
-    /**
-     * Retrieves the last child Node in this container, if present.
-     *
-     * @return an {@code Optional} containing the last child Node if it exists,
-     *         otherwise an empty {@code Optional}.
-     */
-    Optional<Node> lastChild();
-
-    /**
      * Retrieves the child nodes contained in this container node, if any.
      *
      * @return a sequenced collection of child nodes contained in this container node
@@ -167,48 +336,89 @@ public sealed interface Node {
     SequencedCollection<Node> children();
 
     /**
-     * Finds a child node by its description within the current container node.
-     * If the given description is null, or if no child node with the specified
-     * description exists, an empty {@code Optional} is returned.
+     * Retrieves the first child Node in this container, if present.
      *
-     * @param description the description of the child node to find; can be null
-     * @return an {@code Optional} containing the child node if one is found
-     *         with the specified description, otherwise an empty {@code Optional}
+     * @return an {@code Optional} containing the first child Node if it exists,
+     *         otherwise an empty {@code Optional}.
      */
-    Optional<Node> firstChildByDescription(String description);
+    default Optional<Node> findChild() {
+        var children = children();
+        return children.isEmpty()
+                ? Optional.empty()
+                : Optional.ofNullable(children.getFirst());
+    }
 
     /**
-     * Finds a child node by traversing the hierarchy based on the provided sequence of descriptions.
-     * Each description in the sequence is used to locate a child node within the current container node.
-     * If any description is null, or if a node matching the sequence cannot be found,
-     * an empty {@code Optional} is returned.
+     * Retrieves the first child Node in this container, if present.
      *
-     * @param description a sequence of descriptions used to locate a child node; must not be null
-     * @return an {@code Optional} containing the located child node if the sequence matches,
-     *         otherwise an empty {@code Optional}
+     * @return a {@code Stream} containing the first child Node if it exists,
+     *         otherwise an empty {@code Stream}.
      */
-    Optional<Node> firstChildByDescription(String... description);
+    default Stream<Node> streamChild() {
+        var children = children();
+        return children.isEmpty()
+                ? Stream.empty()
+                : Stream.of(children.getFirst());
+    }
+
+    /**
+     * Finds a child node by its description within the current container node.
+     * If no child node with the specified description exists, an empty {@code Optional} is returned.
+     *
+     * @param description the description of the child node to find; cannot be null
+     * @return an {@code Optional} containing the child node if one is found
+     *         with the specified description, otherwise an empty {@code Optional}
+     * @throws NullPointerException if the given description is null
+     */
+    default Optional<Node> findChild(String description) {
+        Objects.requireNonNull(description, "description cannot be null");
+        return streamChildren(description)
+                .findFirst();
+    }
+
+    /**
+     * Finds a child node by its description within the current container node.
+     * If no child node with the specified description exists, an empty {@code Stream} is returned.
+     *
+     * @param description the description of the child node to find; cannot be null
+     * @return a {@code Stream} containing the child node if one is found
+     *         with the specified description, otherwise an empty {@code Stream}
+     * @throws NullPointerException if the given description is null
+     */
+    default Stream<Node> streamChild(String description) {
+        Objects.requireNonNull(description, "description cannot be null");
+        return streamChildren(description)
+                .findFirst()
+                .stream();
+    }
 
     /**
      * Finds all children nodes by their descriptions within the current container node.
-     * If the given description is null, or if no child node with the specified
-     * description exists, an empty {@code Stream} is returned.
+     * If no child node with the specified description exists, an empty {@code Stream} is returned.
      *
-     * @param description the description of the children nodes to find; can be null
+     * @param description the description of the children nodes to find; cannot be null
      * @return an {@code Stream} containing the children nodes
+     * @throws NullPointerException if the given description is null
      */
-    Stream<Node> streamChildrenByDescription(String description);
+    default Stream<Node> streamChildren(String description) {
+        Objects.requireNonNull(description, "description cannot be null");
+        return children()
+                .stream()
+                .filter(node -> node.hasDescription(description));
+    }
 
     /**
-     * Finds all children nodes by traversing the hierarchy based on the provided sequence of descriptions.
-     * Each description in the sequence is used to locate a child node within the current container node.
-     * If any description is null, or if no nodes matching the sequence can be found,
-     * an empty {@code Optional} is returned.
+     * Checks whether this node has a child node with the specified description.
      *
-     * @param description a sequence of descriptions used to locate a child node; must not be null
-     * @return an {@code Stream} containing the children nodes
+     * @param description the description of the child node to check for; cannot be null
+     * @return {@code true} if a child node with the specified description exists, {@code false} otherwise
      */
-    Stream<Node> streamChildrenByDescription(String... description);
+    default boolean hasChild(String description) {
+        Objects.requireNonNull(description, "description cannot be null");
+        return children()
+                .stream()
+                .anyMatch(node -> node.hasDescription(description));
+    }
 
     /**
      * Represents a node without any children.
@@ -246,43 +456,13 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<byte[]> toContentBytes() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> firstChild() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> lastChild() {
-            return Optional.empty();
-        }
-
-        @Override
         public SequencedCollection<Node> children() {
             return List.of();
         }
 
         @Override
-        public Optional<Node> firstChildByDescription(String description) {
+        public Optional<byte[]> toContentBytes() {
             return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> firstChildByDescription(String... description) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String description) {
-            return Stream.empty();
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String... description) {
-            return Stream.empty();
         }
     }
 
@@ -332,38 +512,8 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<Node> firstChild() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> lastChild() {
-            return Optional.empty();
-        }
-
-        @Override
         public SequencedCollection<Node> children() {
             return List.of();
-        }
-
-        @Override
-        public Optional<Node> firstChildByDescription(String description) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> firstChildByDescription(String... description) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String description) {
-            return Stream.empty();
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String... description) {
-            return Stream.empty();
         }
     }
 
@@ -408,38 +558,8 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<Node> firstChild() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> lastChild() {
-            return Optional.empty();
-        }
-
-        @Override
         public SequencedCollection<Node> children() {
             return List.of();
-        }
-
-        @Override
-        public Optional<Node> firstChildByDescription(String description) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> firstChildByDescription(String... description) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String description) {
-            return Stream.empty();
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String... description) {
-            return Stream.empty();
         }
     }
 
@@ -491,38 +611,8 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<Node> firstChild() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> lastChild() {
-            return Optional.empty();
-        }
-
-        @Override
         public SequencedCollection<Node> children() {
             return List.of();
-        }
-
-        @Override
-        public Optional<Node> firstChildByDescription(String description) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> firstChildByDescription(String... description) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String description) {
-            return Stream.empty();
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String... description) {
-            return Stream.empty();
         }
     }
 
@@ -589,38 +679,8 @@ public sealed interface Node {
         }
 
         @Override
-        public Optional<Node> firstChild() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> lastChild() {
-            return Optional.empty();
-        }
-
-        @Override
         public SequencedCollection<Node> children() {
             return List.of();
-        }
-
-        @Override
-        public Optional<Node> firstChildByDescription(String description) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Node> firstChildByDescription(String... description) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String description) {
-            return Stream.empty();
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String... description) {
-            return Stream.empty();
         }
     }
 
@@ -648,122 +708,6 @@ public sealed interface Node {
         @Override
         public SequencedCollection<Node> children() {
             return Collections.unmodifiableSequencedCollection(children);
-        }
-
-        /**
-         * Retrieves the first child Node in this container, if present.
-         *
-         * @return an {@code Optional} containing the first child Node if it exists,
-         *         otherwise an empty {@code Optional}.
-         */
-        @Override
-        public Optional<Node> firstChild() {
-            return children.isEmpty()
-                    ? Optional.empty()
-                    : Optional.ofNullable(children.getFirst());
-        }
-
-        /**
-         * Retrieves the last child Node in this container, if present.
-         *
-         * @return an {@code Optional} containing the last child Node if it exists,
-         *         otherwise an empty {@code Optional}.
-         */
-        @Override
-        public Optional<Node> lastChild() {
-            return children.isEmpty()
-                    ? Optional.empty()
-                    : Optional.ofNullable(children.getLast());
-        }
-
-        /**
-         * Finds a child node by its description within the current container node.
-         * If the given description is null, or if no child node with the specified
-         * description exists, an empty {@code Optional} is returned.
-         *
-         * @param description the description of the child node to find; can be null
-         * @return an {@code Optional} containing the child node if one is found
-         *         with the specified description, otherwise an empty {@code Optional}
-         */
-        @Override
-        public Optional<Node> firstChildByDescription(String description) {
-            return description == null
-                    ? Optional.empty()
-                    : streamChildrenByDescription(description).findFirst();
-        }
-
-        /**
-         * Finds a child node by traversing the hierarchy based on the provided sequence of descriptions.
-         * Each description in the sequence is used to locate a child node within the current container node.
-         * If any description is null, or if a node matching the sequence cannot be found,
-         * an empty {@code Optional} is returned.
-         *
-         * @param description a sequence of descriptions used to locate a child node; must not be null
-         * @return an {@code Optional} containing the located child node if the sequence matches,
-         *         otherwise an empty {@code Optional}
-         */
-        @Override
-        public Optional<Node> firstChildByDescription(String... description) {
-            if(description == null || description.length == 0) {
-                throw new IllegalArgumentException("description cannot be null or empty");
-            }
-
-            Node currentNode = this;
-            for(var currentDescription : description) {
-                if(currentDescription == null) {
-                    return Optional.empty();
-                }
-
-                if(!(currentNode instanceof ContainerNode currentContainerNode)) {
-                    return Optional.empty();
-                }
-
-
-                var nextNode = currentContainerNode.firstChildByDescription(currentDescription);
-                if(nextNode.isEmpty()) {
-                    return Optional.empty();
-                }
-
-                currentNode = nextNode.get();
-            }
-            return Optional.of(currentNode);
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String description) {
-            return children.stream()
-                    .filter(node -> node.hasDescription(description));
-        }
-
-        @Override
-        public Stream<Node> streamChildrenByDescription(String... description) {
-            if(description == null || description.length == 0) {
-                throw new IllegalArgumentException("description cannot be null or empty");
-            }
-
-            var descriptionIndex = 0;
-            var resultsQueue = new LinkedList<Node>();
-            resultsQueue.add(this);
-            while(!resultsQueue.isEmpty() && descriptionIndex < description.length) {
-                var path = description[descriptionIndex++];
-                var resultsIterator = resultsQueue.listIterator();
-                while (resultsIterator.hasNext()) {
-                    var currentNode = resultsIterator.next();
-                    if(!(currentNode instanceof ContainerNode currentContainerNode)) {
-                        resultsIterator.remove();
-                        continue;
-                    }
-
-                    var nextNode = currentContainerNode.firstChildByDescription(path);
-                    if(nextNode.isEmpty()) {
-                        resultsIterator.remove();
-                        continue;
-                    }
-
-                    resultsIterator.set(nextNode.get());
-                }
-            }
-            return resultsQueue.stream();
         }
 
         @Override
