@@ -18,7 +18,6 @@ import com.github.auties00.cobalt.model.setting.EphemeralSettingsBuilder;
 import com.github.auties00.cobalt.model.sync.*;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.Medias;
-import com.github.auties00.cobalt.util.Streams;
 import com.github.auties00.libsignal.SignalSessionCipher;
 import com.github.auties00.libsignal.groups.SignalGroupCipher;
 import com.github.auties00.libsignal.groups.SignalSenderKeyName;

@@ -1,28 +1,28 @@
-
 package com.github.auties00.cobalt.io.node;
 
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.zip.InflaterInputStream;
+import java.util.zip.Inflater;
+import java.util.zip.DataFormatException;
 
 import static com.github.auties00.cobalt.io.node.NodeTags.*;
 import static com.github.auties00.cobalt.io.node.NodeTokens.*;
 
 /**
- * A utility class for decoding WhatsApp protocol nodes from binary input streams.
+ * A decoder for deserializing WhatsApp protocol nodes from binary ByteBuffer data.
  * <p>
  * This decoder implements the WhatsApp binary protocol specification for deserializing
  * node-based data structures used in WhatsApp communication. It handles various node types,
- * attributes, and children formats including compressed streams, JID pairs, binary data,
+ * attributes, and children formats including compressed data, JID pairs, binary data,
  * and tokenized strings.
  * <p>
  * The decoder supports:
  * <ul>
- *     <li>Compressed and uncompressed streams using DEFLATE algorithm</li>
+ *     <li>Compressed and uncompressed data using DEFLATE algorithm</li>
  *     <li>Multiple binary data formats (8-bit, 20-bit, and 32-bit size prefixes)</li>
  *     <li>Packed hexadecimal and nibble-encoded strings</li>
  *     <li>Dictionary-based token resolution for efficient string encoding</li>
@@ -30,7 +30,12 @@ import static com.github.auties00.cobalt.io.node.NodeTokens.*;
  *     <li>Nested node structures with attributes and child nodes</li>
  * </ul>
  * <p>
- * This class cannot be instantiated as it serves as a utility class with static methods only.
+ * Usage example:
+ * <pre>{@code
+ * ByteBuffer buffer = ByteBuffer.wrap(encodedData);
+ * NodeDecoder decoder = new NodeDecoder(buffer);
+ * Node node = decoder.decode();
+ * }</pre>
  *
  * @see Node
  * @see NodeAttribute
@@ -38,7 +43,7 @@ import static com.github.auties00.cobalt.io.node.NodeTokens.*;
  * @see NodeTokens
  * @see NodeTags
  */
-public final class NodeDecoder {
+public final class NodeDecoder implements AutoCloseable {
     /**
      * Alphabet used for decoding nibble-encoded strings (4-bit per character).
      * Contains digits, hyphen, period, and special characters.
@@ -52,35 +57,197 @@ public final class NodeDecoder {
     private static final char[] HEX_ALPHABET = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
     /**
-     * Private constructor to prevent instantiation of this utility class.
-     *
-     * @throws UnsupportedOperationException always thrown when instantiation is attempted
+     * Maximum size of the temporary buffer used for decompression operations.
      */
-    private NodeDecoder() {
-        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
-    }
+    private static final int MAX_DECOMPRESSION_BUFFER_SIZE = 8192;
 
     /**
-     * Decodes a node from the provided input stream.
-     * <p>
-     * This method automatically detects whether the stream is compressed by reading
-     * the first byte's compression flag (bit 2). If compression is detected, the stream
-     * is wrapped in an {@link InflaterInputStream} before decoding.
-     *
-     * @param stream the input stream containing the encoded node data
-     * @return the decoded {@link Node} object representing the node structure
-     * @throws IOException if an I/O error occurs while reading from the stream
+     * The source ByteBuffer containing the encoded node data.
      */
-    public static Node decode(InputStream stream) throws IOException {
-        if((stream.read() & 2) == 0) {
-            return readNode(stream);
-        }else {
-            return readNode(new InflaterInputStream(stream));
+    private final ByteBuffer source;
+
+    /**
+     * Indicates whether the data is compressed and requires decompression.
+     */
+    private final boolean compressionEnabled;
+
+    /**
+     * The inflater used for decompressing data when compression is enabled.
+     */
+    private final Inflater inflater;
+
+    /**
+     * Temporary buffer used for decompression operations.
+     * Only allocated when compression is enabled.
+     * Size is determined based on source ByteBuffer capacity with a maximum of 8192 bytes.
+     */
+    private final byte[] decompressionBuffer;
+
+    /**
+     * Current position in the decompression buffer for reading.
+     */
+    private int bufferPosition;
+
+    /**
+     * Number of valid bytes available in the decompression buffer.
+     */
+    private int bufferLimit;
+
+    /**
+     * Constructs a new NodeDecoder with the provided ByteBuffer.
+     * <p>
+     * The constructor automatically detects whether the data is compressed by reading
+     * the first byte's compression flag (bit 2). If compression is detected, an
+     * inflater and temporary decompression buffer are initialized. The decompression
+     * buffer size is calculated as the minimum of 8192 bytes and the maximum possible
+     * expanded size based on the source ByteBuffer's remaining capacity.
+     *
+     * @param source the ByteBuffer containing the encoded node data
+     */
+    public NodeDecoder(ByteBuffer source) {
+        this.source = source;
+        var flags = source.get() & 0xFF;
+        this.compressionEnabled = (flags & 2) != 0;
+        if (compressionEnabled) {
+            this.inflater = new Inflater();
+            this.decompressionBuffer = new byte[MAX_DECOMPRESSION_BUFFER_SIZE];
+            this.bufferPosition = 0;
+            this.bufferLimit = 0;
+        } else {
+            this.inflater = null;
+            this.decompressionBuffer = null;
         }
     }
 
     /**
-     * Reads and decodes a complete node from the input stream.
+     * Decodes a node from the ByteBuffer.
+     * <p>
+     * This method reads from either the source ByteBuffer directly (if compression
+     * is disabled) or from the decompression buffer (if compression is enabled).
+     *
+     * @return the decoded {@link Node} object representing the node structure
+     * @throws IOException if an I/O error occurs while reading or decompressing data
+     */
+    public Node decode() throws IOException {
+        return readNode();
+    }
+
+    /**
+     * Checks if there is more data available to be processed.
+     * <p>
+     * If compression is disabled, this checks if the source ByteBuffer has remaining bytes.
+     * If compression is enabled, this checks if there are bytes in the decompression buffer
+     * or if the inflater has not finished processing all data.
+     *
+     * @return true if more data is available to read, false otherwise
+     */
+    public boolean hasData() {
+        if (!compressionEnabled) {
+            return source.hasRemaining();
+        }else {
+            return bufferPosition < bufferLimit
+                   || !inflater.finished()
+                   || source.hasRemaining();
+        }
+    }
+
+    /**
+     * Reads a single byte from the appropriate source.
+     * <p>
+     * If compression is disabled, reads directly from the source ByteBuffer.
+     * If compression is enabled, reads from the decompression buffer, filling it
+     * from the compressed source as needed.
+     *
+     * @return the next byte value (0-255)
+     * @throws IOException if an I/O error occurs or end of data is reached
+     */
+    private int read() throws IOException {
+        if (!compressionEnabled) {
+            if (!source.hasRemaining()) {
+                throw new IOException("Unexpected end of data");
+            }
+            return source.get() & 0xFF;
+        }
+
+        if (bufferPosition >= bufferLimit) {
+            fillDecompressionBuffer();
+        }
+
+        if (bufferPosition >= bufferLimit) {
+            throw new IOException("Unexpected end of decompressed data");
+        }
+
+        return decompressionBuffer[bufferPosition++] & 0xFF;
+    }
+
+    /**
+     * Reads the specified number of bytes into a new byte array.
+     * <p>
+     * If compression is disabled, reads directly from the source ByteBuffer.
+     * If compression is enabled, reads from the decompression buffer, filling it
+     * from the compressed source as needed.
+     *
+     * @param length the number of bytes to read
+     * @return a byte array containing the read data
+     * @throws IOException if an I/O error occurs or insufficient data is available
+     */
+    private byte[] readBytes(int length) throws IOException {
+        var result = new byte[length];
+
+        if (!compressionEnabled) {
+            if (source.remaining() < length) {
+                throw new IOException("Insufficient data available");
+            }
+            source.get(result);
+            return result;
+        }
+
+        var offset = 0;
+        while (offset < length) {
+            if (bufferPosition >= bufferLimit) {
+                fillDecompressionBuffer();
+            }
+
+            if (bufferPosition >= bufferLimit) {
+                throw new IOException("Unexpected end of decompressed data");
+            }
+
+            var available = bufferLimit - bufferPosition;
+            var toRead = Math.min(available, length - offset);
+            System.arraycopy(decompressionBuffer, bufferPosition, result, offset, toRead);
+            bufferPosition += toRead;
+            offset += toRead;
+        }
+
+        return result;
+    }
+
+    /**
+     * Fills the decompression buffer by inflating data from the source ByteBuffer.
+     * <p>
+     * This method feeds compressed data from the source to the inflater and
+     * decompresses it into the temporary buffer.
+     *
+     * @throws IOException if a decompression error occurs
+     */
+    private void fillDecompressionBuffer() throws IOException {
+        try {
+            if (inflater.needsInput() && source.hasRemaining()) {
+                var available = source.remaining();
+                var input = new byte[Math.min(available, decompressionBuffer.length)];
+                source.get(input);
+                inflater.setInput(input);
+            }
+
+            bufferPosition = 0;
+            bufferLimit = inflater.inflate(decompressionBuffer);
+        } catch (DataFormatException e) {
+            throw new IOException("Decompression error", e);
+        }
+    }
+
+    /**
+     * Reads and decodes a complete node from the data source.
      * <p>
      * The node structure consists of:
      * <ul>
@@ -90,53 +257,47 @@ public final class NodeDecoder {
      *     <li>Content (present if size is odd after accounting for attributes)</li>
      * </ul>
      *
-     * @param inputStream the input stream to read from
      * @return the decoded {@link Node} which may be an EmptyNode, TextNode, BufferNode,
      *         JidNode, ContainerNode, or null
      * @throws IOException if an I/O error occurs during reading or decoding
      */
-    private static Node readNode(InputStream inputStream) throws IOException {
-        // Read the size of the node
-        var size = readNodeSize(inputStream);
+    private Node readNode() throws IOException {
+        var size = readNodeSize();
 
-        // the description takes up one length unit
         var description = "";
         if(size > 0) {
             size--;
-            description = readString(inputStream);
+            description = readString();
         }
 
-        // the attributes take up two length units for each entry(key and value pair)
-        var attrs = readAttributes(inputStream, size);
+        var attrs = readAttributes(size);
 
-        // if the length, including the attributes but not the description, is odd then there is children
         if((size & 1) == 1) {
             return new Node.EmptyNode(description, attrs);
         }
 
-        // Read the children of the node
-        var tag = (byte) inputStream.read();
+        var tag = (byte) read();
         return switch (tag) {
             case LIST_EMPTY -> new Node.EmptyNode(description, attrs);
-            case AD_JID -> new Node.JidNode(description, attrs, readAdJid(inputStream));
-            case LIST_8 -> new Node.ContainerNode(description, attrs, readList8(inputStream));
-            case LIST_16 -> new Node.ContainerNode(description, attrs, readList16(inputStream));
-            case JID_PAIR -> new Node.JidNode(description, attrs, readJidPair(inputStream));
-            case HEX_8 -> new Node.TextNode(description, attrs, readPacked(inputStream, HEX_ALPHABET));
-            case BINARY_8 -> new Node.BytesContent(description, attrs, readBinary8(inputStream));
-            case BINARY_20 -> new Node.BytesContent(description, attrs, readBinary20(inputStream));
-            case BINARY_32 -> new Node.BytesContent(description, attrs, readBinary32(inputStream));
-            case NIBBLE_8 -> new Node.TextNode(description, attrs, readPacked(inputStream, NIBBLE_ALPHABET));
-            case DICTIONARY_0 -> new Node.TextNode(description, attrs, readDictionaryToken(inputStream, DICTIONARY_0_TOKENS));
-            case DICTIONARY_1 -> new Node.TextNode(description, attrs, readDictionaryToken(inputStream, DICTIONARY_1_TOKENS));
-            case DICTIONARY_2 -> new Node.TextNode(description, attrs, readDictionaryToken(inputStream, DICTIONARY_2_TOKENS));
-            case DICTIONARY_3 -> new Node.TextNode(description, attrs, readDictionaryToken(inputStream, DICTIONARY_3_TOKENS));
+            case AD_JID -> new Node.JidNode(description, attrs, readAdJid());
+            case LIST_8 -> new Node.ContainerNode(description, attrs, readList8());
+            case LIST_16 -> new Node.ContainerNode(description, attrs, readList16());
+            case JID_PAIR -> new Node.JidNode(description, attrs, readJidPair());
+            case HEX_8 -> new Node.TextNode(description, attrs, readPacked(HEX_ALPHABET));
+            case BINARY_8 -> new Node.BytesContent(description, attrs, readBinary8());
+            case BINARY_20 -> new Node.BytesContent(description, attrs, readBinary20());
+            case BINARY_32 -> new Node.BytesContent(description, attrs, readBinary32());
+            case NIBBLE_8 -> new Node.TextNode(description, attrs, readPacked(NIBBLE_ALPHABET));
+            case DICTIONARY_0 -> new Node.TextNode(description, attrs, readDictionaryToken(DICTIONARY_0_TOKENS));
+            case DICTIONARY_1 -> new Node.TextNode(description, attrs, readDictionaryToken(DICTIONARY_1_TOKENS));
+            case DICTIONARY_2 -> new Node.TextNode(description, attrs, readDictionaryToken(DICTIONARY_2_TOKENS));
+            case DICTIONARY_3 -> new Node.TextNode(description, attrs, readDictionaryToken(DICTIONARY_3_TOKENS));
             default -> new Node.TextNode(description, attrs, readSingleByteToken(tag));
         };
     }
 
     /**
-     * Reads the size indicator from the input stream that determines the node structure.
+     * Reads the size indicator that determines the node structure.
      * <p>
      * Supports two size formats:
      * <ul>
@@ -144,43 +305,41 @@ public final class NodeDecoder {
      *     <li>LIST_16: 16-bit size (0-65535)</li>
      * </ul>
      *
-     * @param inputStream the input stream to read from
      * @return the size value indicating number of elements in the node structure
      * @throws IOException if an I/O error occurs
      * @throws IllegalStateException if an unexpected size token is encountered
      */
-    private static int readNodeSize(InputStream inputStream) throws IOException {
-        var token = (byte) inputStream.read();
+    private int readNodeSize() throws IOException {
+        var token = (byte) read();
         return switch (token) {
-            case LIST_8 -> inputStream.read() & 0xFF;
-            case LIST_16 -> (inputStream.read() << 8) | inputStream.read();
+            case LIST_8 -> read() & 0xFF;
+            case LIST_16 -> (read() << 8) | read();
             default -> throw new IllegalStateException("Unexpected value: " + token);
         };
     }
 
     /**
-     * Reads and decodes a string from the input stream based on its encoding tag.
+     * Reads and decodes a string based on its encoding tag.
      * <p>
      * Supports multiple string encoding formats including packed hexadecimal,
      * nibble encoding, binary data, dictionary tokens, and single-byte tokens.
      *
-     * @param inputStream the input stream to read from
      * @return the decoded string, or null if LIST_EMPTY tag is encountered
      * @throws IOException if an I/O error occurs during reading or decoding
      */
-    private static String readString(InputStream inputStream) throws IOException {
-        var tag = (byte) inputStream.read();
+    private String readString() throws IOException {
+        var tag = (byte) read();
         return switch (tag) {
             case LIST_EMPTY -> null;
-            case HEX_8 -> readPacked(inputStream, HEX_ALPHABET);
-            case NIBBLE_8 -> readPacked(inputStream, NIBBLE_ALPHABET);
-            case BINARY_8 -> new String(readBinary8(inputStream));
-            case BINARY_20 -> new String(readBinary20(inputStream));
-            case BINARY_32 -> new String(readBinary32(inputStream));
-            case DICTIONARY_0 -> readDictionaryToken(inputStream, DICTIONARY_0_TOKENS);
-            case DICTIONARY_1 -> readDictionaryToken(inputStream, DICTIONARY_1_TOKENS);
-            case DICTIONARY_2 -> readDictionaryToken(inputStream, DICTIONARY_2_TOKENS);
-            case DICTIONARY_3 -> readDictionaryToken(inputStream, DICTIONARY_3_TOKENS);
+            case HEX_8 -> readPacked(HEX_ALPHABET);
+            case NIBBLE_8 -> readPacked(NIBBLE_ALPHABET);
+            case BINARY_8 -> new String(readBinary8());
+            case BINARY_20 -> new String(readBinary20());
+            case BINARY_32 -> new String(readBinary32());
+            case DICTIONARY_0 -> readDictionaryToken(DICTIONARY_0_TOKENS);
+            case DICTIONARY_1 -> readDictionaryToken(DICTIONARY_1_TOKENS);
+            case DICTIONARY_2 -> readDictionaryToken(DICTIONARY_2_TOKENS);
+            case DICTIONARY_3 -> readDictionaryToken(DICTIONARY_3_TOKENS);
             default -> readSingleByteToken(tag);
         };
     }
@@ -188,13 +347,12 @@ public final class NodeDecoder {
     /**
      * Reads binary data with an 8-bit size prefix (up to 255 bytes).
      *
-     * @param inputStream the input stream to read from
      * @return a byte array containing the read data
      * @throws IOException if an I/O error occurs
      */
-    private static byte[] readBinary8(InputStream inputStream) throws IOException {
-        var size = inputStream.read() & 0xFF;
-        return inputStream.readNBytes(size);
+    private byte[] readBinary8() throws IOException {
+        var size = read() & 0xFF;
+        return readBytes(size);
     }
 
     /**
@@ -202,15 +360,14 @@ public final class NodeDecoder {
      * <p>
      * Size is encoded in big-endian format across 3 bytes.
      *
-     * @param inputStream the input stream to read from
      * @return a byte array containing the read data
      * @throws IOException if an I/O error occurs
      */
-    private static byte[] readBinary20(InputStream inputStream) throws IOException {
-        var size = (inputStream.read() << 16)
-                | (inputStream.read() << 8)
-                | inputStream.read();
-        return inputStream.readNBytes(size);
+    private byte[] readBinary20() throws IOException {
+        var size = (read() << 16)
+                   | (read() << 8)
+                   | read();
+        return readBytes(size);
     }
 
     /**
@@ -218,16 +375,15 @@ public final class NodeDecoder {
      * <p>
      * Size is encoded in big-endian format across 4 bytes.
      *
-     * @param inputStream the input stream to read from
      * @return a byte array containing the read data
      * @throws IOException if an I/O error occurs
      */
-    private static byte[] readBinary32(InputStream inputStream) throws IOException {
-        var size = (inputStream.read() << 24)
-                | (inputStream.read() << 16)
-                | (inputStream.read() << 8)
-                | inputStream.read();
-        return inputStream.readNBytes(size);
+    private byte[] readBinary32() throws IOException {
+        var size = (read() << 24)
+                   | (read() << 16)
+                   | (read() << 8)
+                   | read();
+        return readBytes(size);
     }
 
     /**
@@ -236,13 +392,12 @@ public final class NodeDecoder {
      * Dictionaries provide efficient string encoding by mapping frequently used
      * strings to single-byte indices.
      *
-     * @param inputStream the input stream to read from
      * @param dictionary the token dictionary to use for lookup
      * @return the string value associated with the read index
      * @throws IOException if an I/O error occurs
      */
-    private static String readDictionaryToken(InputStream inputStream, NodeTokens dictionary) throws IOException {
-        var index = inputStream.read() & 0xFF;
+    private String readDictionaryToken(NodeTokens dictionary) throws IOException {
+        var index = read() & 0xFF;
         return dictionary.get(index);
     }
 
@@ -254,27 +409,26 @@ public final class NodeDecoder {
      * @param tag the byte tag representing the token index
      * @return the string value associated with the token
      */
-    private static String readSingleByteToken(byte tag) {
+    private String readSingleByteToken(byte tag) {
         var index = tag & 0xFF;
         return SINGLE_BYTE_TOKENS.get(index);
     }
 
     /**
-     * Reads a sequenced map of attributes from the input stream.
+     * Reads a sequenced map of attributes.
      * <p>
      * Each attribute consists of a key-value pair, consuming 2 size units.
      * The order of attributes is preserved in the returned map.
      *
-     * @param inputStream the input stream to read from
      * @param size the number of remaining size units (must be even for complete attributes)
      * @return a sequenced map of attribute keys to {@link NodeAttribute} values
      * @throws IOException if an I/O error occurs during reading
      */
-    private static SequencedMap<String, NodeAttribute> readAttributes(InputStream inputStream, int size) throws IOException {
+    private SequencedMap<String, NodeAttribute> readAttributes(int size) throws IOException {
         var attributes = new LinkedHashMap<String, NodeAttribute>();
         while (size >= 2) {
-            var key = readString(inputStream);
-            var value = readAttribute(inputStream);
+            var key = readString();
+            var value = readAttribute();
             attributes.put(key, value);
             size -= 2;
         }
@@ -282,33 +436,32 @@ public final class NodeDecoder {
     }
 
     /**
-     * Reads and decodes a single attribute value from the input stream.
+     * Reads and decodes a single attribute value.
      * <p>
      * Attributes can be text, bytes, or JID values, encoded using various formats
      * similar to node children encoding.
      *
-     * @param inputStream the input stream to read from
      * @return a {@link NodeAttribute} object representing the attribute value, or null if empty
      * @throws IOException if an I/O error occurs
      * @throws IllegalStateException if unexpected list tags (LIST_8 or LIST_16) are encountered
      */
-    private static NodeAttribute readAttribute(InputStream inputStream) throws IOException {
-        var tag = (byte) inputStream.read();
+    private NodeAttribute readAttribute() throws IOException {
+        var tag = (byte) read();
         return switch (tag) {
             case LIST_EMPTY -> null;
-            case AD_JID -> new NodeAttribute.JidAttribute(readAdJid(inputStream));
+            case AD_JID -> new NodeAttribute.JidAttribute(readAdJid());
             case LIST_8 -> throw new IllegalStateException("Unexpected LIST_8 tag");
             case LIST_16 -> throw new IllegalStateException("Unexpected LIST_16 tag");
-            case JID_PAIR -> new NodeAttribute.JidAttribute(readJidPair(inputStream));
-            case HEX_8 -> new NodeAttribute.TextAttribute(readPacked(inputStream, HEX_ALPHABET));
-            case BINARY_8 -> new NodeAttribute.BytesAttribute(readBinary8(inputStream));
-            case BINARY_20 -> new NodeAttribute.BytesAttribute(readBinary20(inputStream));
-            case BINARY_32 -> new NodeAttribute.BytesAttribute(readBinary32(inputStream));
-            case NIBBLE_8 -> new NodeAttribute.TextAttribute(readPacked(inputStream, NIBBLE_ALPHABET));
-            case DICTIONARY_0 -> new NodeAttribute.TextAttribute(readDictionaryToken(inputStream, DICTIONARY_0_TOKENS));
-            case DICTIONARY_1 -> new NodeAttribute.TextAttribute(readDictionaryToken(inputStream, DICTIONARY_1_TOKENS));
-            case DICTIONARY_2 -> new NodeAttribute.TextAttribute(readDictionaryToken(inputStream, DICTIONARY_2_TOKENS));
-            case DICTIONARY_3 -> new NodeAttribute.TextAttribute(readDictionaryToken(inputStream, DICTIONARY_3_TOKENS));
+            case JID_PAIR -> new NodeAttribute.JidAttribute(readJidPair());
+            case HEX_8 -> new NodeAttribute.TextAttribute(readPacked(HEX_ALPHABET));
+            case BINARY_8 -> new NodeAttribute.BytesAttribute(readBinary8());
+            case BINARY_20 -> new NodeAttribute.BytesAttribute(readBinary20());
+            case BINARY_32 -> new NodeAttribute.BytesAttribute(readBinary32());
+            case NIBBLE_8 -> new NodeAttribute.TextAttribute(readPacked(NIBBLE_ALPHABET));
+            case DICTIONARY_0 -> new NodeAttribute.TextAttribute(readDictionaryToken(DICTIONARY_0_TOKENS));
+            case DICTIONARY_1 -> new NodeAttribute.TextAttribute(readDictionaryToken(DICTIONARY_1_TOKENS));
+            case DICTIONARY_2 -> new NodeAttribute.TextAttribute(readDictionaryToken(DICTIONARY_2_TOKENS));
+            case DICTIONARY_3 -> new NodeAttribute.TextAttribute(readDictionaryToken(DICTIONARY_3_TOKENS));
             default -> new NodeAttribute.TextAttribute(readSingleByteToken(tag));
         };
     }
@@ -316,13 +469,12 @@ public final class NodeDecoder {
     /**
      * Reads a sequence of nodes with an 8-bit length prefix (up to 255 nodes).
      *
-     * @param inputStream the input stream to read from
      * @return a sequence of decoded {@link Node} objects
      * @throws IOException if an I/O error occurs
      */
-    private static SequencedCollection<Node> readList8(InputStream inputStream) throws IOException {
-        var length = inputStream.read() & 0xFF;
-        return readList(inputStream, length);
+    private SequencedCollection<Node> readList8() throws IOException {
+        var length = read() & 0xFF;
+        return readList(length);
     }
 
     /**
@@ -330,14 +482,13 @@ public final class NodeDecoder {
      * <p>
      * Length is encoded in big-endian format across 2 bytes.
      *
-     * @param inputStream the input stream to read from
      * @return a sequence of decoded {@link Node} objects
      * @throws IOException if an I/O error occurs
      */
-    private static SequencedCollection<Node> readList16(InputStream inputStream) throws IOException {
-        var length = (inputStream.read() << 8)
-                | inputStream.read();
-        return readList(inputStream, length);
+    private SequencedCollection<Node> readList16() throws IOException {
+        var length = (read() << 8)
+                     | read();
+        return readList(length);
     }
 
     /**
@@ -345,15 +496,14 @@ public final class NodeDecoder {
      * <p>
      * Each node in the list is decoded sequentially.
      *
-     * @param inputStream the input stream to read from
      * @param size the number of nodes to read
      * @return a sequence of decoded {@link Node} objects
      * @throws IOException if an I/O error occurs during reading or decoding
      */
-    private static SequencedCollection<Node> readList(InputStream inputStream, int size) throws IOException {
+    private SequencedCollection<Node> readList(int size) throws IOException {
         var results = new ArrayList<Node>(size);
-        for (int index = 0; index < size; index++) {
-            var node = readNode(inputStream);
+        for (var index = 0; index < size; index++) {
+            var node = readNode();
             results.add(node);
         }
         return results;
@@ -371,23 +521,22 @@ public final class NodeDecoder {
      * If the start offset is 1, the last character is stored in the high nibble
      * of an additional byte.
      *
-     * @param inputStream the input stream to read from
      * @param alphabet the character alphabet to use for decoding nibbles (must have 16 elements)
      * @return the decoded string
      * @throws IOException if an I/O error occurs
      */
-    private static String readPacked(InputStream inputStream, char[] alphabet) throws IOException {
-        var token = inputStream.read() & 0xFF;
+    private String readPacked(char[] alphabet) throws IOException {
+        var token = read() & 0xFF;
         var start = token >>> 7;
         var end = token & 127;
         var string = new char[2 * end - start];
         for(var index = 0; index < string.length - 1; index += 2) {
-            token = inputStream.read() & 0xFF;
+            token = read() & 0xFF;
             string[index] = alphabet[token >>> 4];
             string[index + 1] = alphabet[15 & token];
         }
         if (start != 0) {
-            token = inputStream.read() & 0xFF;
+            token = read() & 0xFF;
             string[string.length - 1] = alphabet[token >>> 4];
         }
         return String.valueOf(string);
@@ -399,14 +548,13 @@ public final class NodeDecoder {
      * A JID pair represents a WhatsApp user or group identifier. If the user
      * component is null, a server-only JID is created.
      *
-     * @param inputStream the input stream to read from
      * @return a {@link Jid} object representing the user or group
      * @throws IOException if an I/O error occurs
      * @throws NullPointerException if the server component is null (malformed pair)
      */
-    private static Jid readJidPair(InputStream inputStream) throws IOException {
-        var user = readString(inputStream);
-        var server = JidServer.of(Objects.requireNonNull(readString(inputStream), "Malformed value pair: no server"));
+    private Jid readJidPair() throws IOException {
+        var user = readString();
+        var server = JidServer.of(Objects.requireNonNull(readString(), "Malformed value pair: no server"));
         return user == null ? Jid.of(server) : Jid.of(user, server);
     }
 
@@ -421,14 +569,18 @@ public final class NodeDecoder {
      * </ul>
      * The resulting JID uses the user server type with device and agent metadata.
      *
-     * @param inputStream the input stream to read from
      * @return a {@link Jid} object representing the device-specific user identifier
      * @throws IOException if an I/O error occurs
      */
-    private static Jid readAdJid(InputStream inputStream) throws IOException {
-        var agent = inputStream.read() & 0xFF;
-        var device = inputStream.read() & 0xFF;
-        var user = readString(inputStream);
+    private Jid readAdJid() throws IOException {
+        var agent = read() & 0xFF;
+        var device = read() & 0xFF;
+        var user = readString();
         return Jid.of(user, JidServer.user(), device, agent);
+    }
+
+    @Override
+    public void close() {
+        inflater.close();
     }
 }

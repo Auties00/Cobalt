@@ -42,11 +42,6 @@
 
     <repositories>
         <repository>
-            <id>AsposeJavaAPI</id>
-            <name>Aspose Java API</name>
-            <url>https://releases.aspose.com/java/repo/</url>
-        </repository>
-        <repository>
             <id>jitpack.io</id>
             <name>Jitpack</name>
             <url>https://jitpack.io</url>
@@ -190,8 +185,6 @@
         <libphonenumber.version>9.0.4</libphonenumber.version>
         <maven.versions.version>2.15.0</maven.versions.version>
         <plist.version>1.27</plist.version>
-        <aspose.words.version>22.11</aspose.words.version>
-        <ffmpeg.version>2023.09.10</ffmpeg.version>
         <sl4j.version>2.0.13</sl4j.version>
         <apk.parser.version>2.6.10</apk.parser.version>
     </properties>
@@ -291,17 +284,6 @@
             <groupId>com.github.auties00</groupId>
             <artifactId>link-preview</artifactId>
             <version>${linkpreview.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.aspose</groupId>
-            <artifactId>aspose-words</artifactId>
-            <version>${aspose.words.version}</version>
-            <classifier>jdk17</classifier>
-        </dependency>
-        <dependency>
-            <groupId>com.github.kokorin.jaffree</groupId>
-            <artifactId>jaffree</artifactId>
-            <version>${ffmpeg.version}</version>
         </dependency>
         <dependency>
             <groupId>com.googlecode.ez-vcard</groupId>

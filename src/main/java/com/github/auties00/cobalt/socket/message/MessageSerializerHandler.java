@@ -14,7 +14,6 @@ import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.media.AttachmentType;
-import com.github.auties00.cobalt.model.media.MediaFile;
 import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
 import com.github.auties00.cobalt.model.message.button.ButtonsMessage;
 import com.github.auties00.cobalt.model.message.button.InteractiveMessage;
@@ -164,7 +163,7 @@ public final class MessageSerializerHandler extends MessageHandler {
         };
     }
 
-    private void attributeMediaMessage(MutableAttachmentProvider attachmentProvider, MediaFile upload) {
+    private void attributeMediaMessage(MutableAttachmentProvider attachmentProvider, Medias.MediaUpload upload) {
         if (attachmentProvider instanceof MediaMessage mediaMessage) {
             mediaMessage.setHandle(upload.handle());
         }

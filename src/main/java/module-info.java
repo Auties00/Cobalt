@@ -18,8 +18,6 @@ module com.github.auties00.cobalt {
 
     // Generate message previews
     requires it.auties.linkpreview;
-    requires com.aspose.words;
-    requires com.github.kokorin.jaffree;
     requires com.googlecode.ezvcard;
 
     // Mobile api

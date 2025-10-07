@@ -42,7 +42,6 @@ import com.github.auties00.cobalt.socket.message.MessageRequest;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.Medias;
-import com.github.auties00.cobalt.util.Streams;
 
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
@@ -220,9 +219,9 @@ public final class Whatsapp {
             return;
         }
 
-        try (var stream = Streams.newInputStream(message)) {
-            while (stream.available() > 0) {
-                var node = NodeDecoder.decode(stream);
+        try(var decoder = new NodeDecoder(message)) {
+            while (decoder.hasData()) {
+                var node = decoder.decode();
                 for (var listener : store.listeners()) {
                     Thread.startVirtualThread(() -> listener.onNodeReceived(node));
                     Thread.startVirtualThread(() -> listener.onNodeReceived(this, node));

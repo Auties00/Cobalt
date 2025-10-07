@@ -1,44 +1,34 @@
 package com.github.auties00.cobalt.util;
 
-import com.aspose.words.Document;
-import com.aspose.words.ImageSaveOptions;
-import com.aspose.words.SaveFormat;
+import com.alibaba.fastjson2.JSON;
 import com.github.auties00.cobalt.exception.HmacValidationException;
 import com.github.auties00.cobalt.exception.MediaDownloadException;
 import com.github.auties00.cobalt.exception.MediaUploadException;
-import com.github.auties00.cobalt.model.media.*;
-import com.github.kokorin.jaffree.StreamType;
-import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
-import com.github.kokorin.jaffree.ffmpeg.PipeInput;
-import com.github.kokorin.jaffree.ffmpeg.PipeOutput;
-import com.github.kokorin.jaffree.ffprobe.FFprobe;
+import com.github.auties00.cobalt.model.media.AttachmentType;
+import com.github.auties00.cobalt.model.media.MediaConnection;
+import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
 
 import javax.crypto.Cipher;
+import javax.crypto.KDF;
 import javax.crypto.Mac;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.HKDFParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterInputStream;
 
@@ -49,6 +39,7 @@ public final class Medias {
     private static final String DEFAULT_HOST = "mmg.whatsapp.net";
     private static final int THUMBNAIL_SIZE = 32;
     private static final int MAC_LENGTH = 10;
+    private static final int BUFFER_LENGTH = 8192;
 
     private Medias() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
@@ -63,7 +54,7 @@ public final class Medias {
                 var graphics2D = outputImage.createGraphics();
                 graphics2D.drawImage(scaledImage, 0, 0, null);
                 graphics2D.dispose();
-                try (var outputStream = Streams.newByteArrayOutputStream()) {
+                try (var outputStream = new UnsafeByteArrayOutputStream()) {
                     ImageIO.write(outputImage, "jpg", outputStream);
                     return outputStream.toByteArray();
                 }
@@ -73,120 +64,322 @@ public final class Medias {
         }
     }
 
-    // TODO: Make this take an InputStream somehow
-    public static MediaFile upload(byte[] file, AttachmentType type, MediaConnection mediaConnection, String userAgent) {
-        var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
-        var mediaFile = prepareUpload(file, type);
+    // TODO: Validate that we can just use a random token or at least omit it
+    public static MediaUpload upload(InputStream file, AttachmentType type, MediaConnection mediaConnection, String userAgent) {
         var path = type.path()
                 .orElseThrow(() -> new MediaUploadException(type + " cannot be uploaded"));
-        var token = Base64.getUrlEncoder()
-                .withoutPadding()
-                .encodeToString(Objects.requireNonNullElse(mediaFile.fileEncSha256(), mediaFile.fileSha256()));
-        var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(DEFAULT_HOST, path, token, auth, token));
-        var requestBuilder = HttpRequest.newBuilder()
-                .uri(uri)
-                .POST(HttpRequest.BodyPublishers.ofByteArray(mediaFile.encryptedFile()));
-        if (userAgent != null) {
-            requestBuilder.header("User-Agent", userAgent);
-        }
-        var request = requestBuilder.header("Content-Type", "application/octet-stream")
-                .header("Accept", "application/json")
-                .headers("Origin", WEB_ORIGIN_VALUE)
-                .build();
+        var auth = URLEncoder.encode(mediaConnection.auth(), StandardCharsets.UTF_8);
         try (var client = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build()) {
-            var response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-            var upload = MediaUpload.ofJson(response.body())
-                    .orElseThrow(() -> new MediaUploadException("Cannot parse upload response: " + new String(response.body())));
-            return new MediaFile(
-                    mediaFile.encryptedFile(),
-                    mediaFile.fileSha256(),
-                    mediaFile.fileEncSha256(),
-                    mediaFile.mediaKey(),
-                    mediaFile.fileLength(),
-                    upload.directPath(),
-                    upload.url(),
-                    upload.handle(),
-                    mediaFile.timestamp()
-            );
-        } catch (IOException | InterruptedException exception) {
-            throw new MediaUploadException(exception);
-        }
-    }
-
-    private static MediaFile prepareUpload(byte[] input, AttachmentType type) {
-        try {
             var timestamp = Clock.nowSeconds();
-            var digest = MessageDigest.getInstance("SHA-256");
-            if(!type.inflatable() && !type.cipherable()) {
-                var fileSha256 = digest.digest(input);
-                return new MediaFile(input, fileSha256, null, null, input.length, null, null, null, timestamp);
-            }else if(type.cipherable() && !type.inflatable()) {
-                var fileSha256 = digest.digest(input);
-                var keyName = type.keyName()
-                        .orElseThrow(() -> new InternalError("No key name for cipherable media"));
-                var mediaKeys = MediaKeys.random(keyName);
-                var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                cipher.init(Cipher.ENCRYPT_MODE, mediaKeys.cipherKey(), mediaKeys.iv());
-                var encryptedLength = cipher.getOutputSize(input.length);
-                var ciphertextFile = new byte[encryptedLength + MAC_LENGTH];
-                if (cipher.doFinal(input, 0, input.length, ciphertextFile, 0) != encryptedLength) {
-                    throw new InternalError("Ciphertext length mismatch");
-                }
-                computeMac(mediaKeys, ciphertextFile, encryptedLength);
-                digest.update(ciphertextFile);
-                var fileEncSha256 = digest.digest();
-                return new MediaFile(ciphertextFile, fileSha256, fileEncSha256, mediaKeys.mediaKey(), input.length, null, null, null, timestamp);
-            }else if(!type.cipherable()) {
-                try(var deflater = new Deflater(3)) {
-                    deflater.setInput(input);
-                    deflater.finish();
-                    var compressed = Streams.newByteArrayOutputStream();
-                    var buffer = new byte[8192];
-                    while (!deflater.finished()) {
-                        var count = deflater.deflate(buffer);
-                        compressed.write(buffer, 0, count);
-                        digest.update(buffer, 0, count);
-                    }
-                    var plaintextFile = compressed.toByteArray();
-                    var fileSha256 = digest.digest();
-                    return new MediaFile(plaintextFile, fileSha256, null, null, plaintextFile.length, null, null, null, timestamp);
-                }
-            }else {
-                try (var deflater = new Deflater(3)) {
-                    var compressed = new DeflaterInputStream(new ByteArrayInputStream(input), deflater, 8192);
-                    var keyName = type.keyName()
-                            .orElseThrow(() -> new InternalError("No key name for cipherable media"));
-                    var mediaKeys = MediaKeys.random(keyName);
-                    var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                    cipher.init(Cipher.ENCRYPT_MODE, mediaKeys.cipherKey(), mediaKeys.iv());
-                    var buffer = new byte[8192];
-                    int read;
-                    var totalLength = 0;
-                    while ((read = compressed.read(buffer)) != -1) {
-                        digest.update(buffer, 0, read);
-                        cipher.update(buffer, 0, read);
-                        totalLength += read;
-                    }
-                    var fileSha256 = digest.digest();
-                    var encryptedLength = cipher.getOutputSize(0);
-                    var encrypted = new byte[encryptedLength + MAC_LENGTH];
-                    if (cipher.doFinal(encrypted, 0) != encryptedLength) {
-                        throw new InternalError("Ciphertext length mismatch");
-                    }
-                    computeMac(mediaKeys, encrypted, encryptedLength);
-                    digest.update(encrypted);
-                    var fileEncSha256 = digest.digest();
-                    return new MediaFile(encrypted, fileSha256, fileEncSha256, mediaKeys.mediaKey(), totalLength, null, null, null, timestamp);
-                }
+            var mediaKeys = type.keyName()
+                    .map(MediaKeys::random)
+                    .orElse(null);
+            var uploadStream = createUploadStream(file, type, mediaKeys);
+            var token = Base64.getUrlEncoder()
+                    .withoutPadding()
+                    .encodeToString(Bytes.random(32));
+            var uri = URI.create("https://%s/%s/%s?auth=%s&token=%s".formatted(DEFAULT_HOST, path, token, auth, token));
+            var requestBuilder = HttpRequest.newBuilder()
+                    .uri(uri)
+                    .POST(HttpRequest.BodyPublishers.ofInputStream(() -> uploadStream));
+            if (userAgent != null) {
+                requestBuilder.header("User-Agent", userAgent);
             }
-        } catch (IOException | GeneralSecurityException exception) {
+            var request = requestBuilder.header("Content-Type", "application/octet-stream")
+                    .header("Accept", "application/json")
+                    .headers("Origin", WEB_ORIGIN_VALUE)
+                    .build();
+            var response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if(response.statusCode() != 200) {
+                throw new MediaUploadException("Cannot upload media: status code " + response.statusCode());
+            }
+
+            var jsonObject = JSON.parseObject(response.body());
+            if(jsonObject == null) {
+                throw new MediaUploadException("Cannot parse upload response: " + new String(response.body()));
+            }
+
+            var directPath = jsonObject.getString("direct_path");
+            var url = jsonObject.getString("url");
+            var handle = jsonObject.getString("handle");
+            return new MediaUpload(
+                    uploadStream.fileSha256(),
+                    uploadStream.fileEncSha256(),
+                    mediaKeys != null ? mediaKeys.mediaKey() : null,
+                    uploadStream.fileLength(),
+                    directPath,
+                    url,
+                    handle,
+                    timestamp
+            );
+        } catch (InterruptedException | IOException | GeneralSecurityException exception) {
             throw new MediaUploadException(exception);
         }
     }
 
-    private static void computeMac(MediaKeys mediaKeys, byte[] ciphertext, int ciphertextOffset) throws NoSuchAlgorithmException, InvalidKeyException {
+    private record MediaKeys(byte[] mediaKey, IvParameterSpec iv, SecretKeySpec cipherKey, SecretKeySpec macKey, byte[] ref) {
+        private static final int EXPANDED_SIZE = 112;
+        private static final int KEY_LENGTH = 32;
+        private static final int IV_LENGTH = 16;
+
+        public static MediaKeys random(String type) {
+            return of(Bytes.random(32), type);
+        }
+
+        public static MediaKeys of(byte[] key, String type) {
+            try {
+                var keyName = type.getBytes(StandardCharsets.UTF_8);
+                var hkdf = KDF.getInstance("HKDF-SHA256");
+                var params = HKDFParameterSpec.ofExtract()
+                        .addIKM(new SecretKeySpec(key, "AES"))
+                        .thenExpand(keyName, EXPANDED_SIZE);
+                var expanded = hkdf.deriveData(params);
+                var iv = new IvParameterSpec(expanded, 0, IV_LENGTH);
+                var cipherKey = new SecretKeySpec(expanded, IV_LENGTH,  KEY_LENGTH, "AES");
+                var macKey = new SecretKeySpec(expanded, IV_LENGTH + KEY_LENGTH, KEY_LENGTH, "HmacSHA256");
+                var ref = Arrays.copyOfRange(expanded, IV_LENGTH + KEY_LENGTH + KEY_LENGTH + KEY_LENGTH, expanded.length);
+                return new MediaKeys(key, iv, cipherKey, macKey, ref);
+            }catch (GeneralSecurityException exception) {
+                throw new RuntimeException("Cannot generate media keys", exception);
+            }
+        }
+    }
+
+    public record MediaUpload(byte[] fileSha256, byte[] fileEncSha256, byte[] mediaKey, long fileLength, String directPath, String url, String handle, Long timestamp) {
+
+    }
+
+    private static MediaUploadInputStream createUploadStream(InputStream input, AttachmentType type, MediaKeys mediaKeys) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
+        if(!type.inflatable() && !type.cipherable()) {
+            return new PlaintextMediaUploadInputStream(input);
+        }else if(type.cipherable() && !type.inflatable()) {
+            return new CiphertextMediaUploadInputStream(input, mediaKeys);
+        }else if(!type.cipherable()) {
+            return new PlaintextDeflatedMediaUploadInputStream(input);
+        }else {
+            return new CiphertextDeflatedMediaUploadInputStream(input, mediaKeys);
+        }
+    }
+
+    private abstract static class MediaUploadInputStream extends InputStream {
+        public abstract long fileLength();
+        public abstract byte[] fileSha256();
+        public abstract byte[] fileEncSha256();
+    }
+
+    private static class PlaintextMediaUploadInputStream extends MediaUploadInputStream {
+        private final InputStream plaintextInput;
+        private final MessageDigest plaintextDigest;
+        private long plaintextLength;
+
+        private PlaintextMediaUploadInputStream(InputStream plaintextInput) throws NoSuchAlgorithmException {
+            this.plaintextInput = plaintextInput;
+            this.plaintextDigest = MessageDigest.getInstance("SHA-256");
+            this.plaintextLength = 0;
+        }
+
+        @Override
+        public int read() throws IOException {
+            var ch = plaintextInput.read();
+            if (ch != -1) {
+                plaintextDigest.update((byte)ch);
+                plaintextLength++;
+            }
+            return ch;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            var result = plaintextInput.read(b, off, len);
+            if (result != -1) {
+                plaintextDigest.update(b, off, result);
+                plaintextLength += result;
+            }
+            return result;
+        }
+
+        @Override
+        public void close() throws IOException {
+            plaintextInput.close();
+        }
+
+        @Override
+        public long fileLength() {
+            return plaintextLength;
+        }
+
+        @Override
+        public byte[] fileSha256() {
+            return plaintextDigest.digest();
+        }
+
+        @Override
+        public byte[] fileEncSha256() {
+            return null;
+        }
+    }
+
+    private static final class PlaintextDeflatedMediaUploadInputStream extends PlaintextMediaUploadInputStream {
+        private final Deflater deflater;
+
+        private PlaintextDeflatedMediaUploadInputStream(InputStream plaintextInput) throws NoSuchAlgorithmException {
+            var deflater = new Deflater();
+            super(new DeflaterInputStream(plaintextInput, deflater, BUFFER_LENGTH));
+            this.deflater = deflater;
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.close();
+            deflater.close();
+        }
+    }
+
+    private static class CiphertextMediaUploadInputStream extends MediaUploadInputStream {
+        private final InputStream plaintextInput;
+        private final MessageDigest plaintextDigest;
+        private final MessageDigest ciphertextDigest;
+        private final Mac ciphertextMac;
+        private final Cipher cipher;
+        private final byte[] plaintextBuffer;
+        private final byte[] ciphertextBuffer;
+        private final byte[] outputBuffer;
+
+        private long plaintextLength;
+        private boolean finalized;
+        private int outputPosition;
+        private int outputLimit;
+
+        private CiphertextMediaUploadInputStream(InputStream plaintextInput, MediaKeys mediaKeys) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
+            this.plaintextInput = plaintextInput;
+            this.plaintextDigest = MessageDigest.getInstance("SHA-256");
+            this.ciphertextDigest = MessageDigest.getInstance("SHA-256");
+            this.cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, mediaKeys.cipherKey(), mediaKeys.iv());
+
+            this.ciphertextMac = Mac.getInstance("HmacSHA256");
+            ciphertextMac.init(mediaKeys.macKey());
+            ciphertextMac.update(mediaKeys.iv().getIV());
+
+            this.plaintextBuffer = new byte[BUFFER_LENGTH];
+            var blockSize = cipher.getBlockSize();
+            this.ciphertextBuffer = new byte[BUFFER_LENGTH + blockSize];
+            this.outputBuffer = new byte[BUFFER_LENGTH];
+            this.plaintextLength = 0;
+        }
+
+        @Override
+        public int read() throws IOException {
+            ensureDataAvailable();
+            if (outputPosition >= outputLimit) {
+                return -1;
+            }
+
+            return outputBuffer[outputPosition++] & 0xFF;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            ensureDataAvailable();
+            if (outputPosition >= outputLimit) {
+                return -1;
+            }
+
+            var available = outputLimit - outputPosition;
+            var toRead = Math.min(len, available);
+            System.arraycopy(outputBuffer, outputPosition, b, off, toRead);
+            outputPosition += toRead;
+            return toRead;
+        }
+
+        private void ensureDataAvailable() throws IOException{
+            try {
+                while (outputPosition >= outputLimit && !finalized) {
+                    this.outputPosition = 0;
+                    this.outputLimit = 0;
+
+                    var plaintextRead = plaintextInput.read(plaintextBuffer, 0, plaintextBuffer.length);
+                    if (plaintextRead == -1) {
+                        plaintextInput.close();
+
+                        var finalCiphertextLen = cipher.doFinal(ciphertextBuffer, 0);
+                        processChunk(finalCiphertextLen);
+
+                        var mac = ciphertextMac.doFinal();
+                        ciphertextDigest.update(mac, 0, MAC_LENGTH);
+
+                        var macSpace = outputBuffer.length - outputLimit;
+                        var macToCopy = Math.min(MAC_LENGTH, macSpace);
+                        System.arraycopy(mac, 0, outputBuffer, outputLimit, macToCopy);
+                        outputLimit += macToCopy;
+
+                        finalized = true;
+                        break;
+                    }
+
+                    plaintextDigest.update(plaintextBuffer, 0, plaintextRead);
+                    plaintextLength += plaintextRead;
+
+                    var ciphertextLen = cipher.update(plaintextBuffer, 0, plaintextRead, ciphertextBuffer, 0);
+                    processChunk(ciphertextLen);
+                }
+            }catch (GeneralSecurityException exception) {
+                throw new IOException("Cannot encrypt data", exception);
+            }
+        }
+
+        private void processChunk(int length) {
+            if (length <= 0) {
+                return;
+            }
+
+            ciphertextDigest.update(ciphertextBuffer, 0, length);
+            ciphertextMac.update(ciphertextBuffer, 0, length);
+            var toCopy = Math.min(length, outputBuffer.length);
+            System.arraycopy(ciphertextBuffer, 0, outputBuffer, 0, toCopy);
+            outputLimit = toCopy;
+        }
+
+        @Override
+        public void close() throws IOException {
+            plaintextInput.close();
+        }
+
+        @Override
+        public long fileLength() {
+            return plaintextLength;
+        }
+
+        @Override
+        public byte[] fileSha256() {
+            return plaintextDigest.digest();
+        }
+
+        @Override
+        public byte[] fileEncSha256() {
+            return ciphertextDigest.digest();
+        }
+    }
+
+    private static final class CiphertextDeflatedMediaUploadInputStream extends CiphertextMediaUploadInputStream {
+        private final Deflater deflater;
+
+        private CiphertextDeflatedMediaUploadInputStream(InputStream plaintextInput, MediaKeys mediaKeys) throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, InvalidKeyException {
+            var deflater = new Deflater();
+            super(new DeflaterInputStream(plaintextInput, deflater, BUFFER_LENGTH), mediaKeys);
+            this.deflater = deflater;
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.close();
+            deflater.close();
+        }
+    }
+
+    private static void computeUploadMac(MediaKeys mediaKeys, byte[] ciphertext, int ciphertextOffset) throws NoSuchAlgorithmException, InvalidKeyException {
         var mac = Mac.getInstance("HmacSHA256");
         mac.init(mediaKeys.macKey());
         mac.update(mediaKeys.iv().getIV());
@@ -203,12 +396,11 @@ public final class Medias {
             throw new MediaDownloadException("Missing url or direct path from media");
         }
 
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .build();
-        try {
-            var client = HttpClient.newBuilder()
+        try(var client = HttpClient.newBuilder()
                     .followRedirects(HttpClient.Redirect.ALWAYS)
+                    .build()) {
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
                     .build();
             var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
             var payloadLength = (int) response.headers()
@@ -220,7 +412,6 @@ public final class Medias {
             var keyName = provider.attachmentType().keyName().orElse(null);
             var mediaKey = provider.mediaKey().orElse(null);
             var hasCipher = keyName != null && mediaKey != null;
-
             if (hasCipher) {
                 return new MediaDecryptionInputStream(
                         rawInputStream,
@@ -228,15 +419,13 @@ public final class Medias {
                         provider,
                         keyName,
                         mediaKey,
-                        expectedPlaintextSha256,
-                        client
+                        expectedPlaintextSha256
                 );
             } else {
                 return new MediaValidationInputStream(
                         rawInputStream,
                         payloadLength,
-                        expectedPlaintextSha256,
-                        client
+                        expectedPlaintextSha256
                 );
             }
         } catch (GeneralSecurityException | IOException | InterruptedException throwable) {
@@ -246,8 +435,7 @@ public final class Medias {
 
     private static final class MediaDecryptionInputStream extends InputStream {
         private final InputStream rawInputStream;
-        private final HttpClient client;
-        private final byte[] buffer;
+        private final byte[] ciphertextBuffer;
         private final byte[] plaintextBuffer;
         private final MessageDigest plaintextDigest;
         private final MessageDigest ciphertextDigest;
@@ -264,12 +452,10 @@ public final class Medias {
 
         private MediaDecryptionInputStream(InputStream rawInputStream, int payloadLength,
                                            MutableAttachmentProvider provider, String keyName,
-                                           byte[] mediaKey, byte[] expectedPlaintextSha256,
-                                           HttpClient client) throws GeneralSecurityException {
+                                           byte[] mediaKey, byte[] expectedPlaintextSha256) throws GeneralSecurityException {
             this.rawInputStream = rawInputStream;
-            this.client = client;
-            this.buffer = new byte[8192];
-            this.plaintextBuffer = new byte[8192];
+            this.ciphertextBuffer = new byte[BUFFER_LENGTH];
+            this.plaintextBuffer = new byte[BUFFER_LENGTH];
             this.expectedPlaintextSha256 = expectedPlaintextSha256;
             this.plaintextDigest = expectedPlaintextSha256 != null ? MessageDigest.getInstance("SHA-256") : null;
 
@@ -301,8 +487,8 @@ public final class Medias {
                 return -1;
             }
 
-            int available = bufferLimit - bufferOffset;
-            int toRead = Math.min(len, available);
+            var available = bufferLimit - bufferOffset;
+            var toRead = Math.min(len, available);
             System.arraycopy(plaintextBuffer, bufferOffset, b, off, toRead);
             bufferOffset += toRead;
             return toRead;
@@ -311,13 +497,22 @@ public final class Medias {
         private boolean ensureDataAvailable() throws IOException {
             try {
                 while (bufferOffset >= bufferLimit && !finished) {
-                    if (remainingCiphertext <= 0) {
-                        // Final decryption
+                    if (remainingCiphertext == 0) {
                         bufferOffset = 0;
                         bufferLimit = cipher.doFinal(plaintextBuffer, 0);
 
                         // Validate MAC
-                        var expectedCiphertextMac = rawInputStream.readNBytes(MAC_LENGTH);
+                        var expectedCiphertextMac = new byte[MAC_LENGTH];
+                        var expectedCiphertextMacOffset = 0;
+                        while (expectedCiphertextMacOffset < expectedCiphertextSha256.length) {
+                            var read = rawInputStream.read(expectedCiphertextMac, expectedCiphertextMacOffset, MAC_LENGTH - expectedCiphertextMacOffset);
+                            if(read == -1) {
+                                throw new IOException("Unexpected end of stream");
+                            }
+
+                            expectedCiphertextMacOffset += read;
+                        }
+
                         if (ciphertextDigest != null) {
                             ciphertextDigest.update(expectedCiphertextMac);
                             var actualCipherTextSha256 = ciphertextDigest.digest();
@@ -325,6 +520,7 @@ public final class Medias {
                                 throw new MediaDownloadException("Ciphertext SHA256 hash doesn't match the expected value");
                             }
                         }
+
                         var actualCiphertextMac = mac.doFinal();
                         if (!Arrays.equals(expectedCiphertextMac, 0, MAC_LENGTH, actualCiphertextMac, 0, MAC_LENGTH)) {
                             throw new HmacValidationException("media_decryption");
@@ -332,9 +528,8 @@ public final class Medias {
 
                         finished = true;
                     } else {
-                        // Read and decrypt chunk
-                        int toRead = (int) Math.min(remainingCiphertext, buffer.length);
-                        int read = rawInputStream.readNBytes(buffer, 0, toRead);
+                        var toRead = remainingCiphertext < ciphertextBuffer.length ? Math.toIntExact(remainingCiphertext) : ciphertextBuffer.length;
+                        var read = rawInputStream.read(ciphertextBuffer, 0, toRead);
                         if (read == 0) {
                             throw new IOException("Unexpected end of stream: expected " + remainingCiphertext + " more bytes");
                         }
@@ -342,12 +537,12 @@ public final class Medias {
                         remainingCiphertext -= read;
 
                         if (ciphertextDigest != null) {
-                            ciphertextDigest.update(buffer, 0, read);
+                            ciphertextDigest.update(ciphertextBuffer, 0, read);
                         }
-                        mac.update(buffer, 0, read);
+                        mac.update(ciphertextBuffer, 0, read);
 
                         bufferOffset = 0;
-                        bufferLimit = cipher.update(buffer, 0, read, plaintextBuffer, 0);
+                        bufferLimit = cipher.update(ciphertextBuffer, 0, read, plaintextBuffer, 0);
                     }
 
                     if (plaintextDigest != null && bufferLimit > 0) {
@@ -356,7 +551,6 @@ public final class Medias {
                 }
 
                 if (finished && bufferOffset >= bufferLimit && !validated) {
-                    // Final validation
                     if (plaintextDigest != null) {
                         var actualPlaintextSha256 = plaintextDigest.digest();
                         if (!Arrays.equals(expectedPlaintextSha256, actualPlaintextSha256)) {
@@ -374,26 +568,20 @@ public final class Medias {
 
         @Override
         public void close() throws IOException {
-            try {
-                rawInputStream.close();
-            } finally {
-                client.close();
-            }
+            rawInputStream.close();
         }
     }
 
     private static final class MediaValidationInputStream extends InputStream {
         private final InputStream rawInputStream;
-        private final HttpClient client;
         private final MessageDigest plaintextDigest;
         private final byte[] expectedPlaintextSha256;
         private long remainingBytes;
         private boolean validated = false;
 
         private MediaValidationInputStream(InputStream rawInputStream, int payloadLength,
-                                           byte[] expectedPlaintextSha256, HttpClient client) throws NoSuchAlgorithmException {
+                                           byte[] expectedPlaintextSha256) throws NoSuchAlgorithmException {
             this.rawInputStream = rawInputStream;
-            this.client = client;
             this.expectedPlaintextSha256 = expectedPlaintextSha256;
             this.plaintextDigest = expectedPlaintextSha256 != null ? MessageDigest.getInstance("SHA-256") : null;
             this.remainingBytes = payloadLength;
@@ -406,7 +594,7 @@ public final class Medias {
                 return -1;
             }
 
-            int b = rawInputStream.read();
+            var b = rawInputStream.read();
             if (b == -1) {
                 throw new IOException("Unexpected end of stream");
             }
@@ -430,8 +618,8 @@ public final class Medias {
                 return -1;
             }
 
-            int toRead = (int) Math.min(len, remainingBytes);
-            int read = rawInputStream.read(b, off, toRead);
+            var toRead = (int) Math.min(len, remainingBytes);
+            var read = rawInputStream.read(b, off, toRead);
             if (read == -1) {
                 throw new IOException("Unexpected end of stream");
             }
@@ -460,11 +648,7 @@ public final class Medias {
 
         @Override
         public void close() throws IOException {
-            try {
-                rawInputStream.close();
-            } finally {
-                client.close();
-            }
+            rawInputStream.close();
         }
     }
 
@@ -472,168 +656,5 @@ public final class Medias {
         return "https://%s%s".formatted(DEFAULT_HOST, directPath);
     }
 
-    public static Optional<String> getMimeType(String name) {
-        return getExtension(name)
-                .map(extension -> Path.of("bogus%s".formatted(extension)))
-                .flatMap(Medias::getMimeType);
-    }
-
-    private static Optional<String> getExtension(String name) {
-        if (name == null) {
-            return Optional.empty();
-        }
-        var index = name.lastIndexOf(".");
-        if (index == -1) {
-            return Optional.empty();
-        }
-        return Optional.of(name.substring(index));
-    }
-
-    public static Optional<String> getMimeType(Path path) {
-        try {
-            return Optional.ofNullable(Files.probeContentType(path));
-        } catch (Throwable exception) {
-            return Optional.empty();
-        }
-    }
-
-    public static Optional<String> getMimeType(byte[] file) {
-        try (var inputStream = Streams.newInputStream(file)) {
-            return Optional.ofNullable(URLConnection.guessContentTypeFromStream(inputStream));
-        } catch (Throwable exception) {
-            return Optional.empty();
-        }
-    }
-
-    public static int getPagesCount(byte[] file) {
-        try (var inputStream = Streams.newInputStream(file)) {
-            var document = new Document(inputStream);
-            return Math.max(document.getPageCount(), 1);
-        } catch (Throwable ignored) {
-            return 1;
-        }
-    }
-
-    public static int getDuration(byte[] file) {
-        try (var inputStream = Streams.newInputStream(file)) {
-            var result = FFprobe.atPath()
-                    .setShowEntries("format=duration")
-                    .setSelectStreams(StreamType.VIDEO)
-                    .setInput(inputStream)
-                    .execute();
-            return Math.round(result.getFormat().getDuration());
-        } catch (Throwable throwable) {
-            return 0;
-        }
-    }
-
-    public static MediaDimensions getDimensions(byte[] file, boolean video) {
-        try (var inputStream = Streams.newInputStream(file)) {
-            if (!video) {
-                var originalImage = ImageIO.read(inputStream);
-                return new MediaDimensions(originalImage.getWidth(), originalImage.getHeight());
-            }
-
-            var result = FFprobe.atPath()
-                    .setShowEntries("stream=width,height")
-                    .setSelectStreams(StreamType.VIDEO)
-                    .setInput(inputStream)
-                    .execute();
-            return result.getStreams()
-                    .stream()
-                    .filter(entry -> entry.getCodecType() == StreamType.VIDEO)
-                    .findFirst()
-                    .map(stream -> new MediaDimensions(stream.getWidth(), stream.getHeight()))
-                    .orElseGet(MediaDimensions::defaultDimensions);
-        } catch (Throwable throwable) {
-            return MediaDimensions.defaultDimensions();
-        }
-    }
-
-    public static byte[] getDocumentThumbnail(byte[] file) {
-        try (
-                var inputStream = Streams.newInputStream(file);
-                var outputStream = Streams.newByteArrayOutputStream()
-        ) {
-            var document = new Document(inputStream);
-            var options = new ImageSaveOptions(SaveFormat.JPEG);
-            document.save(outputStream, options);
-            return outputStream.toByteArray();
-        } catch (Throwable throwable) {
-            return null;
-        }
-    }
-
-    public static byte[] getImageThumbnail(byte[] file, boolean jpg) {
-        try (
-                var inputStream = Streams.newInputStream(file);
-                var outputStream = Streams.newByteArrayOutputStream()
-        ) {
-            var image = ImageIO.read(inputStream);
-            if (image == null) {
-                return null;
-            }
-
-            var type = image.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : image.getType();
-            var resizedImage = new BufferedImage(THUMBNAIL_SIZE, THUMBNAIL_SIZE, type);
-            var graphics = resizedImage.createGraphics();
-            graphics.drawImage(image, 0, 0, THUMBNAIL_SIZE, THUMBNAIL_SIZE, null);
-            graphics.dispose();
-            graphics.setComposite(AlphaComposite.Src);
-            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            ImageIO.write(resizedImage, jpg ? "jpg" : "png", outputStream);
-            return outputStream.toByteArray();
-        } catch (Throwable throwable) {
-            return null;
-        }
-    }
-
-    public static byte[] getVideoThumbnail(byte[] file) {
-        try (
-                var inputStream = Streams.newInputStream(file);
-                var outputStream = Streams.newByteArrayOutputStream()
-        ) {
-            FFmpeg.atPath()
-                    .addInput(PipeInput.pumpFrom(inputStream))
-                    .setFilter(StreamType.VIDEO, "scale=%s:-1".formatted(THUMBNAIL_SIZE))
-                    .addOutput(PipeOutput.pumpTo(outputStream)
-                            .setFrameCount(StreamType.VIDEO, 1L)
-                            .setFormat("image2")
-                            .disableStream(StreamType.AUDIO)
-                            .disableStream(StreamType.SUBTITLE))
-                    .execute();
-            return outputStream.toByteArray();
-        } catch (Throwable throwable) {
-            return null;
-        }
-    }
-
-    public static byte[] getAudioWaveForm(byte[] audioData) {
-        var rawDataBuffer = ByteBuffer.wrap(audioData)
-                .asFloatBuffer();
-        var rawSampleCount = rawDataBuffer.remaining();
-        var blockSize = rawSampleCount / WAVEFORM_SAMPLES;
-        var averagedAmplitudes = new float[WAVEFORM_SAMPLES];
-        var maxAmplitude = 0f;
-        for (var i = 0; i < WAVEFORM_SAMPLES; i++) {
-            var blockStart = i * blockSize;
-            var blockSum = 0.0;
-            for (int j = 0; j < blockSize; j++) {
-                blockSum += Math.abs(rawDataBuffer.get(blockStart + j));
-            }
-            averagedAmplitudes[i] = (float) (blockSum / blockSize);
-            if (averagedAmplitudes[i] > maxAmplitude) {
-                maxAmplitude = averagedAmplitudes[i];
-            }
-        }
-
-        var waveform = new byte[WAVEFORM_SAMPLES];
-        var multiplier = (maxAmplitude > 0f) ? 1.0f / maxAmplitude : 0f;
-        for (var i = 0; i < WAVEFORM_SAMPLES; i++) {
-            waveform[i] = (byte) (averagedAmplitudes[i] * multiplier * 100);
-        }
-        return waveform;
-    }
+    // TODO: Implement a stream that guesses the mime type and based on that computes metadata
 }
