@@ -1,6 +1,6 @@
-package com.github.auties00.cobalt.media.download;
+package com.github.auties00.cobalt.io.media.download;
 
-import com.github.auties00.cobalt.media.MediaInputStream;
+import com.github.auties00.cobalt.io.media.MediaInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;

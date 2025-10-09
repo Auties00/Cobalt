@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.media;
+package com.github.auties00.cobalt.io.media;
 
 import javax.crypto.KDF;
 import javax.crypto.spec.HKDFParameterSpec;

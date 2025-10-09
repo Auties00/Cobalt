@@ -1,6 +1,6 @@
-package com.github.auties00.cobalt.media.upload;
+package com.github.auties00.cobalt.io.media.upload;
 
-import com.github.auties00.cobalt.media.MediaInputStream;
+import com.github.auties00.cobalt.io.media.MediaInputStream;
 
 import java.io.InputStream;
 import java.util.Optional;

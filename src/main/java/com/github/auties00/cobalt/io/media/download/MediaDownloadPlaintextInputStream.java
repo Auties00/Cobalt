@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.media.download;
+package com.github.auties00.cobalt.io.media.download;
 
 import com.github.auties00.cobalt.exception.MediaDownloadException;
 import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;

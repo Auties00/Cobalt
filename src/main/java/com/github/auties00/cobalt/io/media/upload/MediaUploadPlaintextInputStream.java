@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.media.upload;
+package com.github.auties00.cobalt.io.media.upload;
 
 import java.io.IOException;
 import java.io.InputStream;

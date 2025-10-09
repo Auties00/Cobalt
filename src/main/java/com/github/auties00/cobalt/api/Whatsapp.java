@@ -9,7 +9,7 @@ import com.github.auties00.cobalt.io.node.Node;
 import com.github.auties00.cobalt.io.node.NodeAttribute;
 import com.github.auties00.cobalt.io.node.NodeBuilder;
 import com.github.auties00.cobalt.io.node.NodeDecoder;
-import com.github.auties00.cobalt.media.MediaProfilePictureInputStream;
+import com.github.auties00.cobalt.io.media.MediaProfilePictureInputStream;
 import com.github.auties00.cobalt.model.action.*;
 import com.github.auties00.cobalt.model.business.*;
 import com.github.auties00.cobalt.model.call.Call;
