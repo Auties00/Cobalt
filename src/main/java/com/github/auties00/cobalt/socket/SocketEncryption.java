@@ -3,6 +3,7 @@ package com.github.auties00.cobalt.socket;
 import com.github.auties00.cobalt.api.WhatsappClientType;
 import com.github.auties00.cobalt.api.WhatsappStore;
 import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
+import com.github.auties00.cobalt.client.WhatsappClientInfo;
 import com.github.auties00.cobalt.io.node.Node;
 import com.github.auties00.cobalt.io.node.NodeEncoder;
 import com.github.auties00.cobalt.io.node.NodeTokens;
@@ -218,10 +219,11 @@ public final class SocketEncryption {
     }
 
     private UserAgent createUserAgent() {
+        var clientInfo = WhatsappClientInfo.of(store.device().platform());
         var mobile = store.clientType() == WhatsappClientType.MOBILE;
         return new UserAgentBuilder()
                 .platform(store.device().platform())
-                .appVersion(store.version())
+                .appVersion(clientInfo.version())
                 .mcc("000")
                 .mnc("000")
                 .osVersion(mobile ? store.device().osVersion().toString() : null)
@@ -284,8 +286,9 @@ public final class SocketEncryption {
     }
 
     private CompanionRegistrationData createRegisterData() {
+        var clientInfo = WhatsappClientInfo.of(store.device().platform());
         var companion = new CompanionRegistrationDataBuilder()
-                .buildHash(store.version().toHash())
+                .buildHash(clientInfo.version().toHash())
                 .eRegid(Scalar.intToBytes(store.registrationId(), 4))
                 .eKeytype(Scalar.intToBytes(SignalIdentityPublicKey.type(), 1))
                 .eIdent(store.identityKeyPair().publicKey().toEncodedPoint())

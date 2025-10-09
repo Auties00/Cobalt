@@ -2,12 +2,11 @@ package com.github.auties00.cobalt.test;
 
 import com.github.auties00.cobalt.model.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.auth.Version;
-import com.github.auties00.cobalt.util.AppMetadata;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-public class AppMetadataTests {
+public class WhatsappClientsTests {
     private static final Long PHONE_NUMBER_MOCK = 3934751869223L;
     @Test
     public void testWebVersion() {
@@ -56,14 +55,14 @@ public class AppMetadataTests {
     }
 
     private static Version getVersion(PlatformType platformType) {
-        return AppMetadata.getVersion(platformType);
+        return WhatsappClients.getVersion(platformType);
     }
 
     private static String getToken(PlatformType platformType) {
-        return AppMetadata.getToken(
+        return WhatsappClients.getToken(
                 PHONE_NUMBER_MOCK,
                 platformType,
-                AppMetadata.getVersion(platformType)
+                WhatsappClients.getVersion(platformType)
         );
     }
 }

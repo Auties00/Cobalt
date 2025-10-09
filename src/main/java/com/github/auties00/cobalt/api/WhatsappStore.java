@@ -28,7 +28,6 @@ import com.github.auties00.cobalt.model.sync.AppStateSyncHash;
 import com.github.auties00.cobalt.model.sync.AppStateSyncKey;
 import com.github.auties00.cobalt.model.sync.HistorySyncMessage;
 import com.github.auties00.cobalt.model.sync.PatchType;
-import com.github.auties00.cobalt.util.AppMetadata;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.libsignal.SignalProtocolAddress;
@@ -1410,15 +1409,6 @@ public final class WhatsappStore implements SignalProtocolStore {
     public WhatsappStore setProxy(URI proxy) {
         this.proxy = proxy;
         return this;
-    }
-
-    /**
-     * Returns the WhatsApp protocol version.
-     *
-     * @return the version, cannot be null
-     */
-    public synchronized Version version() {
-        return AppMetadata.getVersion(device.platform());
     }
 
     /**

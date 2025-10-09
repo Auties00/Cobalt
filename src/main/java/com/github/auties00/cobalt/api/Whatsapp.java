@@ -9,6 +9,7 @@ import com.github.auties00.cobalt.io.node.Node;
 import com.github.auties00.cobalt.io.node.NodeAttribute;
 import com.github.auties00.cobalt.io.node.NodeBuilder;
 import com.github.auties00.cobalt.io.node.NodeDecoder;
+import com.github.auties00.cobalt.media.MediaProfilePictureInputStream;
 import com.github.auties00.cobalt.model.action.*;
 import com.github.auties00.cobalt.model.business.*;
 import com.github.auties00.cobalt.model.call.Call;
@@ -21,6 +22,7 @@ import com.github.auties00.cobalt.model.info.*;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.model.jid.JidServer;
+import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
 import com.github.auties00.cobalt.model.message.model.*;
 import com.github.auties00.cobalt.model.message.server.ProtocolMessage;
 import com.github.auties00.cobalt.model.message.server.ProtocolMessageBuilder;
@@ -41,7 +43,6 @@ import com.github.auties00.cobalt.socket.appState.WebAppStatePushRequest;
 import com.github.auties00.cobalt.socket.message.MessageRequest;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Clock;
-import com.github.auties00.cobalt.util.Medias;
 
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
@@ -792,11 +793,12 @@ public final class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      */
     public void changeProfilePicture(InputStream image) {
-        var data = image != null ? Medias.getProfilePic(image) : null;
+        var data = image != null ? new MediaProfilePictureInputStream(image) : null;
+        var dataLength = data != null ? data.available() : 0;
         var body = new NodeBuilder()
                 .description("picture")
                 .attribute("type", "image")
-                .content(data)
+                .content(data, dataLength)
                 .build();
         switch (store.clientType()) {
             case WEB -> {
@@ -1627,68 +1629,13 @@ public final class Whatsapp {
     //<editor-fold desc="Message utilities">
 
     /**
-     * Downloads a media from Whatsapp's servers.
-     * If the media was already downloaded, the cached version will be returned.
-     * If the download fails because the media is too old/invalid, a reupload request will be sent to Whatsapp.
-     * If the latter fails as well, an empty optional will be returned.
-     *
-     * @param info the non-null message info wrapping the media
-     * @return a CompletableFuture
-     */
-    public InputStream downloadMedia(ChatMessageInfo info) {
-        if (!(info.message().content() instanceof MediaMessage mediaMessage)) {
-            throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
-        }
-
-        try {
-            return downloadMedia(mediaMessage);
-        } catch (Exception ignored) {
-            requireMediaReupload(info);
-            return downloadMedia(mediaMessage);
-        }
-    }
-
-    /**
-     * Downloads a media from Whatsapp's servers.
-     * If the media was already downloaded, the cached version will be returned.
-     * If the download fails because the media is too old/invalid, an empty optional will be returned.
-     *
-     * @param info the non-null message info wrapping the media
-     * @return a CompletableFuture
-     */
-    public InputStream downloadMedia(NewsletterMessageInfo info) {
-        if (!(info.message().content() instanceof MediaMessage mediaMessage)) {
-            throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
-        }
-
-        try {
-            return downloadMedia(mediaMessage);
-        } catch (Exception ignored) {
-            requireMediaReupload(info);
-            return downloadMedia(mediaMessage);
-        }
-    }
-
-    /**
-     * Downloads a media from Whatsapp's servers.
-     * If the media was already downloaded, the cached version will be returned.
-     * If the download fails because the media is too old/invalid, an empty optional will be returned.
-     *
-     * @param mediaMessage the non-null media
-     * @return a CompletableFuture
-     */
-    public InputStream downloadMedia(MediaMessage mediaMessage) {
-        return Medias.download(mediaMessage);
-    }
-
-    /**
      * Asks Whatsapp for a media reupload for a specific media
      *
      * @param info the non-null message info wrapping the media
      */
-    public void requireMediaReupload(MessageInfo info) {
+    public void requireReupload(MessageInfo info) {
         try {
-            if (!(info.message().content() instanceof MediaMessage mediaMessage)) {
+            if (!(info.message().content() instanceof MutableAttachmentProvider attachmentProvider)) {
                 throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
             }
 
@@ -1698,7 +1645,7 @@ public final class Whatsapp {
                 return;
             }
 
-            var mediaKey = mediaMessage.mediaKey()
+            var mediaKey = attachmentProvider.mediaKey()
                     .orElseThrow(() -> new NoSuchElementException("Missing media key"));
             var hkdf = KDF.getInstance("HKDF-SHA256");
             var params = HKDFParameterSpec.ofExtract()
@@ -1766,8 +1713,8 @@ public final class Whatsapp {
             var mediaRetryNotification = MediaRetryNotificationSpec.decode(mediaRetryNotificationData);
             var directPath = mediaRetryNotification.directPath()
                     .orElseThrow(() -> new RuntimeException("Media reupload failed"));
-            mediaMessage.setMediaUrl(Medias.createMediaUrl(directPath));
-            mediaMessage.setMediaDirectPath(directPath);
+            attachmentProvider.setMediaUrl(null);
+            attachmentProvider.setMediaDirectPath(directPath);
         } catch (GeneralSecurityException exception) {
             throw new RuntimeException("Cannot reupload media", exception);
         }
@@ -2853,11 +2800,12 @@ public final class Whatsapp {
         if (!group.toJid().hasServer(JidServer.groupOrCommunity())) {
             throw new IllegalArgumentException("Expected a group/community");
         }
-        var profilePic = image != null ? Medias.getProfilePic(image) : null;
+        var data = image != null ? new MediaProfilePictureInputStream(image) : null;
+        var dataLength = data != null ? data.available() : 0;
         var body = new NodeBuilder()
                 .description("picture")
                 .attribute("type", "image")
-                .content(profilePic)
+                .content(data, dataLength)
                 .build();
         var iqNode = new NodeBuilder()
                 .description("iq")

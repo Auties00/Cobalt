@@ -27,7 +27,6 @@ import java.util.Objects;
  * @see LinkPreview
  */
 public interface WhatsappMessagePreviewHandler {
-
     /**
      * Creates an enabled preview handler that processes messages to generate link previews.
      * <p>
@@ -111,7 +110,7 @@ public interface WhatsappMessagePreviewHandler {
      *
      * @return a non-null preview handler that performs no operations
      */
-    static WhatsappMessagePreviewHandler disable() {
+    static WhatsappMessagePreviewHandler disabled() {
         return _ -> {};
     }
 

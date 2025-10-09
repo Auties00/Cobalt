@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.api;
 
+import com.github.auties00.cobalt.client.mobile.WhatsappMobileClientRegistration;
 import com.github.auties00.cobalt.model.business.BusinessCategory;
 import com.github.auties00.cobalt.model.jid.JidDevice;
-import com.github.auties00.cobalt.util.MobileRegistration;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 
 import java.net.URI;
@@ -94,52 +94,68 @@ public sealed class WhatsappBuilder {
          *
          * @return a non-null options selector
          */
-        public abstract Options newConnection();
+        public abstract Options createConnection();
 
         /**
-         * Creates a new connection from the first connection that was serialized
-         * If no connection is available, a new one will be created
-         *
-         * @return a non-null options selector
-         */
-        public abstract Options firstConnection();
-
-        /**
-         * Creates a new connection from the last connection that was serialized
-         * If no connection is available, a new one will be created
-         *
-         * @return a non-null options selector
-         */
-        public abstract Options lastConnection();
-
-        /**
-         * Creates a new connection using a unique identifier
-         * If a session with the given id already exists, it will be retrieved.
-         * Otherwise, a new one will be created.
-         *
-         * @param uuid the UUID to use to create the connection, can be null (will generate a random UUID)
-         * @return a non-null options selector
-         */
-        public abstract Options newConnection(UUID uuid);
-
-        /**
-         * Creates a new connection using a phone value
-         * If a session with the given phone value already exists, it will be retrieved.
-         * Otherwise, a new one will be created.
-         *
-         * @param phoneNumber the phone value to use to create the connection, can be null (will generate a random UUID)
-         * @return a non-null options selector
-         */
-        public abstract Options newConnection(Long phoneNumber);
-
-        /**
-         * Creates a new connection using a six parts key representation
+         * Loads a connection from the six parts key representation
          *
          * @param sixParts the six parts keys to use to create the connection, must not be null
          * @return a non-null options selector
          * @throws NullPointerException if sixParts is null
          */
-        public abstract Options newConnection(WhatsappSixPartsKeys sixParts);
+        public abstract Options loadConnection(WhatsappSixPartsKeys sixParts);
+
+        /**
+         * Loads the last serialized connection.
+         * If no connection is available, an empty {@link Optional} will be returned.
+         *
+         * @return an {@link Optional} containing the last serialized connection, empty otherwise
+         */
+        public abstract Optional<Options> loadLastConnection();
+
+        /**
+         * Loads the last serialized connection.
+         * If no connection is available, a new one will be created.
+         *
+         * @return a non-null options selector
+         */
+        public abstract Options loadLastOrCreateConnection();
+
+        /**
+         * Loads the connection whose id matches {@code uuid}.
+         * If {@code uuid} is null, or if no connection has an id that matches {@code uuid}, an empty {@link Optional} will be returned.
+         *
+         * @param uuid the id to use for the connection; can be null
+         * @return an {@link Optional} containing the connection whose id matches {@code uuid}, empty otherwise
+         */
+        public abstract Optional<Options> loadConnection(UUID uuid);
+
+        /**
+         * Loads the connection whose id matches {@code uuid}.
+         * If {@code uuid} is null, or if no connection has an id that matches {@code uuid}, a new connection will be created.
+         *
+         * @param uuid the id to use for the connection; can be null
+         * @return a non-null options selector
+         */
+        public abstract Options loadOrCreateConnection(UUID uuid);
+
+        /**
+         * Loads the connection whose phone number matches the given UUID.
+         * If the UUID is null, or if no connection matches the given UUID, a new connection will be created.
+         *
+         * @param phoneNumber the phone value to use to create the connection, can be null (will generate a random UUID)
+         * @return a non-null options selector
+         */
+        public abstract Optional<Options> loadConnection(Long phoneNumber);
+
+        /**
+         * Loads the connection whose id matches {@code phoneNumber}.
+         * If {@code phoneNumber} is null, or if no connection matches {@code phoneNumber}, a new connection will be created.
+         *
+         * @param phoneNumber the id to use for the connection, can be null
+         * @return a non-null options selector
+         */
+        public abstract Options loadOrCreateConnection(Long phoneNumber);
 
         private static WhatsappStore newStore(UUID id, Long phoneNumber, WhatsappClientType clientType, SignalIdentityKeyPair identityKeyPair, SignalIdentityKeyPair noiseKeyPair, boolean registered, byte[] identityId) {
             var device = switch (clientType) {
@@ -169,24 +185,8 @@ public sealed class WhatsappBuilder {
              * @return a non-null options selector
              */
             @Override
-            public Options.Web newConnection() {
-                return newConnection(UUID.randomUUID());
-            }
-
-            /**
-             * Creates a new connection from the first connection that was serialized
-             * If no connection is available, a new one will be created
-             *
-             * @return a non-null options selector
-             */
-            @Override
-            public Options.Web firstConnection() {
-                var uuids = serializer.listIds(WhatsappClientType.WEB);
-                if(uuids.isEmpty()) {
-                    return newConnection();
-                }else {
-                    return newConnection(uuids.getFirst());
-                }
+            public Options.Web createConnection() {
+                return loadOrCreateConnection(UUID.randomUUID());
             }
 
             /**
@@ -196,13 +196,23 @@ public sealed class WhatsappBuilder {
              * @return a non-null options selector
              */
             @Override
-            public Options.Web lastConnection() {
+            public Options.Web loadLastOrCreateConnection() {
                 var uuids = serializer.listIds(WhatsappClientType.WEB);
                 if(uuids.isEmpty()) {
-                    return newConnection();
+                    return createConnection();
                 }else {
-                    return newConnection(uuids.getLast());
+                    return loadOrCreateConnection(uuids.getLast());
                 }
+            }
+
+            @Override
+            public Optional<Options> loadConnection(UUID uuid) {
+                if (uuid == null) {
+                    return Optional.empty();
+                }
+
+                return serializer.startDeserialize(WhatsappClientType.WEB, uuid, null)
+                        .map(Options.Web::new);
             }
 
             /**
@@ -214,11 +224,21 @@ public sealed class WhatsappBuilder {
              * @return a non-null options selector
              */
             @Override
-            public Options.Web newConnection(UUID uuid) {
+            public Options.Web loadOrCreateConnection(UUID uuid) {
                 var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
                 var store = serializer.startDeserialize(WhatsappClientType.WEB, sessionUuid, null)
                         .orElseGet(() -> newStore(sessionUuid, null, WhatsappClientType.WEB, null, null, false, null));
                 return new Options.Web(store);
+            }
+
+            @Override
+            public Optional<Options> loadConnection(Long phoneNumber) {
+                if (phoneNumber == null) {
+                    return Optional.empty();
+                }
+
+                return serializer.startDeserialize(WhatsappClientType.WEB, null, phoneNumber)
+                        .map(Options.Web::new);
             }
 
             /**
@@ -230,7 +250,7 @@ public sealed class WhatsappBuilder {
              * @return a non-null options selector
              */
             @Override
-            public Options.Web newConnection(Long phoneNumber) {
+            public Options.Web loadOrCreateConnection(Long phoneNumber) {
                 var store = serializer.startDeserialize(WhatsappClientType.WEB, null, phoneNumber)
                         .orElseGet(() -> newStore(null, phoneNumber, WhatsappClientType.WEB, null, null, false, null));
                 return new Options.Web(store);
@@ -244,7 +264,7 @@ public sealed class WhatsappBuilder {
              * @throws NullPointerException if sixParts is null
              */
             @Override
-            public Options.Web newConnection(WhatsappSixPartsKeys sixParts) {
+            public Options.Web loadConnection(WhatsappSixPartsKeys sixParts) {
                 Objects.requireNonNull(sixParts, "sixParts must not be null");
 
                 var serialized = serializer.startDeserialize(WhatsappClientType.WEB, null, sixParts.phoneNumber());
@@ -254,6 +274,16 @@ public sealed class WhatsappBuilder {
 
                 var store = newStore(null, sixParts.phoneNumber(), WhatsappClientType.WEB, sixParts.identityKeyPair(), sixParts.noiseKeyPair(), true, sixParts.identityId());
                 return new Options.Web(store);
+            }
+
+            @Override
+            public Optional<Options> loadLastConnection() {
+                var uuids = serializer.listIds(WhatsappClientType.WEB);
+                if(uuids.isEmpty()) {
+                    return Optional.empty();
+                }else {
+                    return loadConnection(uuids.getLast());
+                }
             }
         }
 
@@ -268,24 +298,8 @@ public sealed class WhatsappBuilder {
              * @return a non-null options selector
              */
             @Override
-            public Options.Mobile newConnection() {
-                return newConnection(UUID.randomUUID());
-            }
-
-            /**
-             * Creates a new connection from the first connection that was serialized
-             * If no connection is available, a new one will be created
-             *
-             * @return a non-null options selector
-             */
-            @Override
-            public Options.Mobile firstConnection() {
-                var uuids = serializer.listIds(WhatsappClientType.MOBILE);
-                if(uuids.isEmpty()) {
-                    return newConnection();
-                }else {
-                    return newConnection(uuids.getFirst());
-                }
+            public Options.Mobile createConnection() {
+                return loadOrCreateConnection(UUID.randomUUID());
             }
 
             /**
@@ -295,13 +309,23 @@ public sealed class WhatsappBuilder {
              * @return a non-null options selector
              */
             @Override
-            public Options.Mobile lastConnection() {
+            public Options.Mobile loadLastOrCreateConnection() {
                 var uuids = serializer.listIds(WhatsappClientType.MOBILE);
                 if(uuids.isEmpty()) {
-                    return newConnection();
+                    return createConnection();
                 }else {
-                    return newConnection(uuids.getLast());
+                    return loadOrCreateConnection(uuids.getLast());
                 }
+            }
+
+            @Override
+            public Optional<Options> loadConnection(UUID uuid) {
+                if(uuid == null) {
+                    return Optional.empty();
+                }
+
+                return serializer.startDeserialize(WhatsappClientType.MOBILE, uuid, null)
+                        .map(Options.Mobile::new);
             }
 
             /**
@@ -313,11 +337,21 @@ public sealed class WhatsappBuilder {
              * @return a non-null options selector
              */
             @Override
-            public Options.Mobile newConnection(UUID uuid) {
+            public Options.Mobile loadOrCreateConnection(UUID uuid) {
                 var sessionUuid = Objects.requireNonNullElseGet(uuid, UUID::randomUUID);
                 var store = serializer.startDeserialize(WhatsappClientType.MOBILE, sessionUuid, null)
                         .orElseGet(() -> newStore(sessionUuid, null, WhatsappClientType.MOBILE, null, null, false, null));
                 return new Options.Mobile(store);
+            }
+
+            @Override
+            public Optional<Options> loadConnection(Long phoneNumber) {
+                if(phoneNumber == null) {
+                    return Optional.empty();
+                }
+
+                return serializer.startDeserialize(WhatsappClientType.MOBILE, null, phoneNumber)
+                        .map(Options.Mobile::new);
             }
 
             /**
@@ -329,7 +363,7 @@ public sealed class WhatsappBuilder {
              * @return a non-null options selector
              */
             @Override
-            public Options.Mobile newConnection(Long phoneNumber) {
+            public Options.Mobile loadOrCreateConnection(Long phoneNumber) {
                 var store = serializer.startDeserialize(WhatsappClientType.MOBILE, null, phoneNumber)
                         .orElseGet(() -> newStore(null, phoneNumber, WhatsappClientType.MOBILE, null, null, false, null));
                 return new Options.Mobile(store);
@@ -343,7 +377,7 @@ public sealed class WhatsappBuilder {
              * @throws NullPointerException if sixParts is null
              */
             @Override
-            public Options.Mobile newConnection(WhatsappSixPartsKeys sixParts) {
+            public Options.Mobile loadConnection(WhatsappSixPartsKeys sixParts) {
                 Objects.requireNonNull(sixParts, "sixParts must not be null");
 
                 var serialized = serializer.startDeserialize(WhatsappClientType.MOBILE, null, sixParts.phoneNumber());
@@ -353,6 +387,16 @@ public sealed class WhatsappBuilder {
 
                 var store = newStore(null, sixParts.phoneNumber(), WhatsappClientType.MOBILE, sixParts.identityKeyPair(), sixParts.noiseKeyPair(), true, sixParts.identityId());
                 return new Options.Mobile(store);
+            }
+
+            @Override
+            public Optional<Options> loadLastConnection() {
+                var uuids = serializer.listIds(WhatsappClientType.MOBILE);
+                if(uuids.isEmpty()) {
+                    return Optional.empty();
+                }else {
+                    return loadConnection(uuids.getLast());
+                }
             }
         }
     }
@@ -719,14 +763,21 @@ public sealed class WhatsappBuilder {
              * @param verification the verification handler to use, must not be null
              * @return a non-null WhatsApp instance
              * @throws NullPointerException if verification is null
+             * @throws IllegalArgumentException if the store already has a phone number set, and the phone number is different from the one being registered
              */
             public Whatsapp register(long phoneNumber, WhatsappVerificationHandler.Mobile verification) {
                 Objects.requireNonNull(verification, "verification must not be null");
 
-                if (!store.registered()) {
+                var oldPhoneNumber = store.phoneNumber();
+                if(oldPhoneNumber.isPresent() && oldPhoneNumber.getAsLong() != phoneNumber) {
+                    throw new IllegalArgumentException("The phone number(" + phoneNumber + ") must match the existing phone number(" + oldPhoneNumber.getAsLong() + ")");
+                }else {
                     store.setPhoneNumber(phoneNumber);
-                    try(var registration = new MobileRegistration(store, verification)) {
-                        registration.register();
+                }
+
+                if (!store.registered()) {
+                    try(var activator = new WhatsappMobileClientRegistration(store, verification)) {
+                        activator.register();
                     }
                 }
 
@@ -736,6 +787,10 @@ public sealed class WhatsappBuilder {
     }
 
     public static final class Custom extends WhatsappBuilder {
+        private static final WhatsappVerificationHandler.Web DEFAULT_WEB_VERIFICATION_HANDLER = WhatsappVerificationHandler.Web.QrCode.toTerminal();
+        private static final WhatsappMessagePreviewHandler DEFAULT_MESSAGE_PREVIEW_HANDLER = WhatsappMessagePreviewHandler.enabled(true);
+        private static final WhatsappErrorHandler DEFAULT_ERROR_HANDLER = WhatsappErrorHandler.toTerminal();
+
         private WhatsappStore store;
         private WhatsappMessagePreviewHandler messagePreviewHandler;
         private WhatsappErrorHandler errorHandler;
@@ -797,16 +852,14 @@ public sealed class WhatsappBuilder {
          * @throws IllegalArgumentException if there is a UUID mismatch between store and keys
          */
         public Whatsapp build() {
-            Objects.requireNonNull(store, "Expected a valid store");
-            return new Whatsapp(
-                    store,
-                    switch (store.clientType()) {
-                        case WEB -> Objects.requireNonNullElse(webVerificationHandler, WhatsappVerificationHandler.Web.QrCode.toTerminal());
-                        case MOBILE -> null;
-                    },
-                    messagePreviewHandler,
-                    Objects.requireNonNullElse(errorHandler, WhatsappErrorHandler.toTerminal()));
+            var store = Objects.requireNonNull(this.store, "Expected a valid store");
+            var webVerificationHandler = switch (store.clientType()) {
+                case WEB -> Objects.requireNonNullElse(this.webVerificationHandler, DEFAULT_WEB_VERIFICATION_HANDLER);
+                case MOBILE -> null;
+            };
+            var messagePreviewHandler = Objects.requireNonNullElse(this.messagePreviewHandler, DEFAULT_MESSAGE_PREVIEW_HANDLER);
+            var errorHandler = Objects.requireNonNullElse(this.errorHandler, DEFAULT_ERROR_HANDLER);
+            return new Whatsapp(store, webVerificationHandler, messagePreviewHandler, errorHandler);
         }
-
     }
 }

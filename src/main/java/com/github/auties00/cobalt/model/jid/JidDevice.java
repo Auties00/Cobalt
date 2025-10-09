@@ -1,6 +1,7 @@
 package com.github.auties00.cobalt.model.jid;
 
 import com.github.auties00.cobalt.api.WhatsappClientType;
+import com.github.auties00.cobalt.client.WhatsappClientInfo;
 import com.github.auties00.cobalt.model.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.auth.Version;
 import it.auties.protobuf.annotation.ProtobufMessage;
@@ -9,7 +10,6 @@ import it.auties.protobuf.model.ProtobufType;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 @ProtobufMessage
@@ -347,34 +347,31 @@ public final class JidDevice {
         return Objects.requireNonNullElse(osBuildNumber, osVersion.toString());
     }
 
-    public Optional<String> toUserAgent(Version appVersion) {
-        var platformName = switch (platform()) {
-            case ANDROID -> "Android";
-            case ANDROID_BUSINESS -> "SMBA";
-            case IOS -> "iOS";
-            case IOS_BUSINESS -> "SMB iOS";
-            default -> null;
-        };
-        if(platformName == null) {
-            return Optional.empty();
+    public String toUserAgent() {
+        if(platform == PlatformType.WINDOWS || platform == PlatformType.MACOS) {
+            return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
+        }else {
+            var clientInfo = WhatsappClientInfo.of(platform);
+            var platformName = switch (platform) {
+                case ANDROID -> "Android";
+                case ANDROID_BUSINESS -> "SMBA";
+                case IOS -> "iOS";
+                case IOS_BUSINESS -> "SMB iOS";
+                case MACOS, WINDOWS -> throw new InternalError();
+            };
+            var deviceName = switch (platform()) {
+                case ANDROID, ANDROID_BUSINESS -> manufacturer + "-" + model;
+                case IOS, IOS_BUSINESS -> model;
+                case MACOS, WINDOWS -> throw new InternalError();
+            };
+            var deviceVersion = osVersion.toString();
+            return "WhatsApp/%s %s/%s Device/%s".formatted(
+                    clientInfo.version(),
+                    platformName,
+                    deviceVersion,
+                    deviceName
+            );
         }
-
-        var deviceName = switch (platform()) {
-            case ANDROID, ANDROID_BUSINESS -> manufacturer + "-" + model;
-            case IOS, IOS_BUSINESS -> model;
-            default -> null;
-        };
-        if(deviceName == null) {
-            return Optional.empty();
-        }
-
-        var deviceVersion = osVersion.toString();
-        return Optional.of("WhatsApp/%s %s/%s Device/%s".formatted(
-                appVersion,
-                platformName,
-                deviceVersion,
-                deviceName
-        ));
     }
 
     public JidDevice toPersonal() {

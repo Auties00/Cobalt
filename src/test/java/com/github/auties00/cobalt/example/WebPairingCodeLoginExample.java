@@ -13,7 +13,7 @@ public class WebPairingCodeLoginExample {
         var phoneNumber = new Scanner(System.in).nextLong();
         Whatsapp.builder()
                 .webClient()
-                .newConnection()
+                .createConnection()
                 .historySetting(WhatsappWebHistoryPolicy.standard(true))
                 .unregistered(phoneNumber, WhatsappVerificationHandler.Web.PairingCode.toTerminal())
                 .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))

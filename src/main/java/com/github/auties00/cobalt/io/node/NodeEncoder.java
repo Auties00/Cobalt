@@ -1,7 +1,6 @@
 package com.github.auties00.cobalt.io.node;
 
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.util.Scalar;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -160,7 +159,7 @@ public final class NodeEncoder {
             return 2;
         }
 
-        var length = Scalar.sizeOf(input);
+        var length = calculateUtf8Length(input);
         return calculateLength(length);
     }
 
@@ -202,7 +201,7 @@ public final class NodeEncoder {
      */
     private static int attributeLength(NodeAttribute attribute){
         return switch (attribute) {
-            case NodeAttribute.BytesAttribute(var buffer) -> calculateLength(buffer.remaining());
+            case NodeAttribute.BytesAttribute(var bytes) -> bytesLength(bytes);
             case NodeAttribute.TextAttribute(var literal) -> stringLength(literal);
             case NodeAttribute.JidAttribute(var jid) -> jidLength(jid);
         };
@@ -230,7 +229,7 @@ public final class NodeEncoder {
      */
     private static int contentLength(Node node){
         return switch (node) {
-            case Node.BytesContent(var _, var _, var buffer) -> bytesLength(buffer);
+            case Node.BytesContent(var _, var _, var bytes) -> bytesLength(bytes);
             case Node.ContainerNode(var _, var _, var children) -> childrenLength(children);
             case Node.EmptyNode _ -> 0;
             case Node.JidNode(var _, var _, var jid) -> jidLength(jid);
@@ -240,13 +239,13 @@ public final class NodeEncoder {
     }
 
     /**
-     * Calculates the number of bytes required to encode a byte buffer.
+     * Calculates the number of bytes required to encode an array of bytes.
      *
-     * @param bytes the buffer to encode
+     * @param bytes the array of bytes to encode
      * @return the number of bytes required (length prefix + data)
      */
-    private static int bytesLength(ByteBuffer bytes){
-        return calculateLength(bytes.remaining());
+    private static int bytesLength(byte[] bytes){
+        return calculateLength(bytes.length);
     }
 
     /**
@@ -277,6 +276,35 @@ public final class NodeEncoder {
      */
     private static int calculateLength(int length) {
         return binaryLength(length) + length;
+    }
+
+    /**
+     * Calculates the total number of bytes required to encode a UTF-8 string.
+     *
+     * @param input the UTF-8 string to calculate the length for
+     * @return the number of bytes required
+     */
+    private static int calculateUtf8Length(String input) {
+        var length = 0;
+        if(input == null) {
+            return length;
+        }
+
+        var len = input.length();
+        for (var i = 0; i < len; i++) {
+            var ch = input.charAt(i);
+            if (ch <= 0x7F) {
+                length++;
+            } else if (ch <= 0x7FF) {
+                length += 2;
+            } else if (Character.isHighSurrogate(ch)) {
+                length += 4;
+                i++;
+            } else {
+                length += 3;
+            }
+        }
+        return length;
     }
 
     /**
@@ -453,7 +481,7 @@ public final class NodeEncoder {
             return offset;
         }
 
-        var length = Scalar.sizeOf(input);
+        var length = calculateUtf8Length(input);
         offset = writeBinary(length, output, offset);
         var encoder = StandardCharsets.UTF_8.newEncoder();
         var inputBuffer = CharBuffer.wrap(input);

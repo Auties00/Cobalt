@@ -2,6 +2,7 @@ package com.github.auties00.cobalt.socket.state;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
+import com.github.auties00.cobalt.client.WhatsappClientInfo;
 import com.github.auties00.cobalt.io.node.Node;
 import com.github.auties00.cobalt.io.node.NodeAttribute;
 import com.github.auties00.cobalt.io.node.NodeBuilder;
@@ -253,7 +254,8 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
         var wamData = new String(HexFormat.of().parseHex(wamBinary))
                 .replace("iPhone 7", whatsapp.store().device().model().replaceAll("_", " "))
                 .replace("15.7.3", whatsapp.store().device().osVersion().toString())
-                .replace("2.24.17.78", whatsapp.store().version().toString())
+                .replace("2.24.17.78", WhatsappClientInfo.of(whatsapp.store().device().platform())
+                        .version().toString())
                 .getBytes();
         var addNode = Node.of("add", Map.of("t", Clock.nowSeconds()), wamData);
         whatsapp.sendQuery("set", "w:stats", addNode);
@@ -264,7 +266,8 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
         var wamData = new String(HexFormat.of().parseHex(wamBinary))
                 .replace("iPhone 7", whatsapp.store().device().model().replaceAll("_", " "))
                 .replace("15.7.3", whatsapp.store().device().osVersion().toString())
-                .replace("2.24.17.78", whatsapp.store().version().toString())
+                .replace("2.24.17.78", WhatsappClientInfo.of(whatsapp.store().device().platform())
+                        .version().toString())
                 .getBytes();
         var addNode = Node.of("add", Map.of("t", Clock.nowSeconds()), wamData);
         whatsapp.sendQuery("set", "w:stats", addNode);

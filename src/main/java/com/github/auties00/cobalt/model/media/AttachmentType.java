@@ -52,8 +52,4 @@ public enum AttachmentType {
     public boolean inflatable() {
         return this.inflatable;
     }
-
-    public boolean cipherable() {
-        return keyName != null;
-    }
 }

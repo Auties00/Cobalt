@@ -28,7 +28,6 @@ import com.github.auties00.cobalt.model.message.standard.ReactionMessage;
 import com.github.auties00.cobalt.model.message.standard.TextMessage;
 import com.github.auties00.cobalt.model.poll.*;
 import com.github.auties00.cobalt.util.Bytes;
-import com.github.auties00.cobalt.util.Medias;
 import com.github.auties00.cobalt.util.Scalar;
 import com.github.auties00.libsignal.SignalSessionCipher;
 import com.github.auties00.libsignal.groups.SignalGroupCipher;

@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.util;
+package com.github.auties00.cobalt.client.mobile;
 
 import com.alibaba.fastjson2.JSON;
 import com.github.auties00.cobalt.api.WhatsappStore;
@@ -9,6 +9,8 @@ import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificate
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameDetailsBuilder;
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameDetailsSpec;
 import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.Scalar;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
@@ -29,7 +31,7 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.*;
 
-public final class MobileRegistration implements AutoCloseable {
+public final class WhatsappMobileClientRegistration implements AutoCloseable {
     public static final String MOBILE_REGISTRATION_ENDPOINT = "https://v.whatsapp.net/v2";
     private static final byte[] REGISTRATION_PUBLIC_KEY = HexFormat.of().parseHex("8e8c0f74c3ebc5d7a6865c6c3c843856b06121cce8ea774d22fb6f122512302d");
     private static final String SIGNAL_PUBLIC_KEY_TYPE = Base64.getUrlEncoder().encodeToString(new byte[]{SignalIdentityPublicKey.type()});
@@ -38,7 +40,9 @@ public final class MobileRegistration implements AutoCloseable {
     private final WhatsappStore store;
     private final WhatsappVerificationHandler.Mobile verification;
 
-    public MobileRegistration(WhatsappStore store, WhatsappVerificationHandler.Mobile verification) {
+    public WhatsappMobileClientRegistration(WhatsappStore store, WhatsappVerificationHandler.Mobile verification) {
+        Objects.requireNonNull(store, "store cannot be null");
+        Objects.requireNonNull(verification, "verification cannot be null");
         this.store = store;
         this.verification = verification;
         this.httpClient = HttpClient.newBuilder()
@@ -127,9 +131,9 @@ public final class MobileRegistration implements AutoCloseable {
 
     private boolean isTooRecent(String reason) {
         return reason.equalsIgnoreCase("too_recent")
-                || reason.equalsIgnoreCase("too_many")
-                || reason.equalsIgnoreCase("too_many_guesses")
-                || reason.equalsIgnoreCase("too_many_all_methods");
+               || reason.equalsIgnoreCase("too_many")
+               || reason.equalsIgnoreCase("too_many_guesses")
+               || reason.equalsIgnoreCase("too_many_all_methods");
     }
 
     private boolean isRegistrationBlocked(String reason) {
@@ -197,7 +201,7 @@ public final class MobileRegistration implements AutoCloseable {
         store.setRegistered(registered);
         if (registered) {
             var phoneNumber = store.phoneNumber()
-                    .orElseThrow(() -> new InternalError("Phone number wasn't set"));
+                    .orElseThrow(() -> new MobileRegistrationException("Phone number wasn't set"));
             var jid = Jid.of(phoneNumber);
             store.setJid(jid);
         }
@@ -211,8 +215,8 @@ public final class MobileRegistration implements AutoCloseable {
 
     private boolean isSuccessful(String status) {
         return status.equalsIgnoreCase("ok")
-                || status.equalsIgnoreCase("sent")
-                || status.equalsIgnoreCase("verified");
+               || status.equalsIgnoreCase("sent")
+               || status.equalsIgnoreCase("verified");
     }
 
     private byte[] sendRequest(String path, String params) throws IOException, InterruptedException {
@@ -227,9 +231,7 @@ public final class MobileRegistration implements AutoCloseable {
             );
             var result = cipher.doFinal(params.getBytes(StandardCharsets.UTF_8));
             var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey().toEncodedPoint(), result));
-            var userAgent = store.device()
-                    .toUserAgent(store.version())
-                    .orElseThrow(() -> new NoSuchElementException("Missing user agent for registration"));
+            var userAgent = store.device().toUserAgent();
             var requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create("%s%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path)))
                     .POST(HttpRequest.BodyPublishers.ofString("ENC=" + cipheredParameters))
@@ -252,7 +254,7 @@ public final class MobileRegistration implements AutoCloseable {
 
     private String getRegistrationOptions(boolean useToken, String... attributes) {
         var phoneNumber = getPhoneNumber(store);
-        var token = useToken ? AppMetadata.getToken(phoneNumber.getNationalNumber(), store.device().platform(), store.version()) : null;
+        var token = getToken(phoneNumber, useToken);
         var certificate = generateBusinessCertificate();
         var fdid = generateFdid();
         var registrationParams = toFormParams(
@@ -284,6 +286,15 @@ public final class MobileRegistration implements AutoCloseable {
         }
     }
 
+    private String getToken(PhoneNumber phoneNumber, boolean useToken) {
+        if (!useToken) {
+            return null;
+        }
+
+        var info = WhatsappMobileClientInfo.of(store.device().platform());
+        return info.computeRegistrationToken(phoneNumber.getNationalNumber());
+    }
+
     private String generateFdid() {
         var fdid = store.fdid().toString();
         return switch (store.device().platform()) {
@@ -313,7 +324,7 @@ public final class MobileRegistration implements AutoCloseable {
 
     private static PhoneNumber getPhoneNumber(WhatsappStore store) {
         var phoneNumber = store.phoneNumber()
-                .orElseThrow(() -> new NoSuchElementException("Missing phone value"));
+                .orElseThrow(() -> new MobileRegistrationException("Phone number wasn't set"));
         try {
             return PhoneNumberUtil.getInstance()
                     .parse("+" + phoneNumber, null);
