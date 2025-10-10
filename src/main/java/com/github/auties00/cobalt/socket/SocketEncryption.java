@@ -4,13 +4,12 @@ import com.github.auties00.cobalt.api.WhatsappClientType;
 import com.github.auties00.cobalt.api.WhatsappStore;
 import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
 import com.github.auties00.cobalt.client.WhatsappClientInfo;
-import com.github.auties00.cobalt.io.node.Node;
-import com.github.auties00.cobalt.io.node.NodeEncoder;
-import com.github.auties00.cobalt.io.node.NodeTokens;
+import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.io.core.node.NodeEncoder;
+import com.github.auties00.cobalt.io.core.node.NodeTokens;
 import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.sync.HistorySyncConfigBuilder;
 import com.github.auties00.cobalt.util.Bytes;
-import com.github.auties00.cobalt.util.Scalar;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
@@ -289,10 +288,10 @@ public final class SocketEncryption {
         var clientInfo = WhatsappClientInfo.of(store.device().platform());
         var companion = new CompanionRegistrationDataBuilder()
                 .buildHash(clientInfo.version().toHash())
-                .eRegid(Scalar.intToBytes(store.registrationId(), 4))
-                .eKeytype(Scalar.intToBytes(SignalIdentityPublicKey.type(), 1))
+                .eRegid(Bytes.intToBytes(store.registrationId(), 4))
+                .eKeytype(Bytes.intToBytes(SignalIdentityPublicKey.type(), 1))
                 .eIdent(store.identityKeyPair().publicKey().toEncodedPoint())
-                .eSkeyId(Scalar.intToBytes(store.signedKeyPair().id(), 3))
+                .eSkeyId(Bytes.intToBytes(store.signedKeyPair().id(), 3))
                 .eSkeyVal(store.signedKeyPair().publicKey().toEncodedPoint())
                 .eSkeySig(store.signedKeyPair().signature());
         if (store.clientType() == WhatsappClientType.WEB) {

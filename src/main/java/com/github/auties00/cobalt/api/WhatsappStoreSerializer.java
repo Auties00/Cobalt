@@ -9,7 +9,6 @@ import com.github.auties00.cobalt.model.message.model.ContextualMessage;
 import com.github.auties00.cobalt.model.newsletter.Newsletter;
 import com.github.auties00.cobalt.model.newsletter.NewsletterSpec;
 import com.github.auties00.cobalt.model.sync.HistorySyncMessage;
-import com.github.auties00.cobalt.util.ImmutableLinkedList;
 import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
 
@@ -233,12 +232,12 @@ public abstract class WhatsappStoreSerializer {
 
         @Override
         public SequencedCollection<UUID> listIds(WhatsappClientType type) {
-            return ImmutableLinkedList.empty();
+            return List.of();
         }
 
         @Override
         public SequencedCollection<Long> listPhoneNumbers(WhatsappClientType type) {
-            return ImmutableLinkedList.empty();
+            return List.of();
         }
 
         @Override
@@ -329,7 +328,7 @@ public abstract class WhatsappStoreSerializer {
 
             var directory = getHome(type);
             if (Files.notExists(directory)) {
-                return ImmutableLinkedList.empty();
+                return List.of();
             }
 
             try (var walker = Files.walk(directory, 1)
@@ -338,7 +337,7 @@ public abstract class WhatsappStoreSerializer {
                         .flatMap(Optional::stream)
                         .collect(Collectors.toCollection(LinkedList::new));
             } catch (IOException exception) {
-                return ImmutableLinkedList.empty();
+                return List.of();
             }
         }
 

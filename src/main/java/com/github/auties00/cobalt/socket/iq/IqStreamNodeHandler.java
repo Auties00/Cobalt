@@ -4,7 +4,7 @@ import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
 import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
 import com.github.auties00.cobalt.exception.HmacValidationException;
-import com.github.auties00.cobalt.io.node.Node;
+import com.github.auties00.cobalt.io.core.node.Node;
 import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;

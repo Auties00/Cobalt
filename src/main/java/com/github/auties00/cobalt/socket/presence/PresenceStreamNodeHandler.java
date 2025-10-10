@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.socket.presence;
 
 import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.io.node.Node;
-import com.github.auties00.cobalt.io.node.NodeAttribute;
+import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.io.core.node.NodeAttribute;
 import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.socket.SocketStream;
 

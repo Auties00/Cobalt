@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.socket.message;
 
 import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.io.node.Node;
+import com.github.auties00.cobalt.io.core.node.Node;
 import com.github.auties00.cobalt.model.action.ContactActionBuilder;
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificateSpec;
 import com.github.auties00.cobalt.model.chat.Chat;

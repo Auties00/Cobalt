@@ -1,22 +1,22 @@
 package com.github.auties00.cobalt.model.newsletter;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.github.auties00.cobalt.model.info.MessageInfoContainer;
 import com.github.auties00.cobalt.model.info.MessageInfoParent;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.jid.JidProvider;
-import com.github.auties00.cobalt.util.ConcurrentLinkedSet;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SequencedCollection;
 
+// TODO: Add unreadMessagesCount and timestamp
 @ProtobufMessage
-public final class Newsletter implements JidProvider, MessageInfoParent {
+public final class Newsletter implements MessageInfoParent {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
 
@@ -30,14 +30,14 @@ public final class Newsletter implements JidProvider, MessageInfoParent {
     final NewsletterViewerMetadata viewerMetadata;
 
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    final ConcurrentLinkedSet<NewsletterMessageInfo> messages;
+    final MessageInfoContainer<NewsletterMessageInfo> messages;
 
-    Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, ConcurrentLinkedSet<NewsletterMessageInfo> messages) {
+    Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, MessageInfoContainer<NewsletterMessageInfo> messages) {
         this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = Objects.requireNonNullElseGet(messages, ConcurrentLinkedSet::new);
+        this.messages = Objects.requireNonNullElseGet(messages, MessageInfoContainer::new);
     }
 
     public static Optional<Newsletter> ofJson(JSONObject newsletter) {
@@ -61,40 +61,48 @@ public final class Newsletter implements JidProvider, MessageInfoParent {
         var viewerMetadata = NewsletterViewerMetadata.ofJson(viewerMetadataJsonObject)
                 .orElse(null);
         var messagesJsonObjects = newsletter.getJSONArray("messages");
-        var messages = new ConcurrentLinkedSet<NewsletterMessageInfo>();
+        var messages = new MessageInfoContainer<NewsletterMessageInfo>();
         if(messagesJsonObjects != null) {
             for (var i = 0; i < messagesJsonObjects.size(); i++) {
                 var messageJsonObject = messagesJsonObjects.getJSONObject(i);
-                NewsletterMessageInfo.ofJson(messageJsonObject)
-                        .ifPresent(messages::add);
+                var message = NewsletterMessageInfo.ofJson(messageJsonObject);
+                message.ifPresent(newsletterMessageInfo -> messages.put(newsletterMessageInfo.id(), newsletterMessageInfo));
             }
         }
         var result = new Newsletter(jid, state, metadata, viewerMetadata, messages);
         return Optional.of(result);
     }
 
-    public void addMessage(NewsletterMessageInfo message) {
-        this.messages.add(message);
+    public void addMessage(NewsletterMessageInfo info) {
+        Objects.requireNonNull(info, "info cannot be null");
+        messages.put(info.id(), info);
     }
 
-    public boolean removeMessage(NewsletterMessageInfo message) {
-        return this.messages.remove(message);
+    @Override
+    public boolean removeMessage(String messageId) {
+        return messages.remove(messageId) != null;
     }
 
-    public void addMessages(Collection<NewsletterMessageInfo> messages) {
-        this.messages.addAll(messages);
+    @Override
+    public void removeMessages() {
+        messages.clear();
     }
 
-    public Collection<NewsletterMessageInfo> messages() {
-        return Collections.unmodifiableCollection(messages);
+    @Override
+    public SequencedCollection<NewsletterMessageInfo> messages() {
+        return messages.sequencedValues();
     }
 
+    @Override
     public Optional<NewsletterMessageInfo> oldestMessage() {
-        return Optional.ofNullable(messages.peekFirst());
+        return Optional.ofNullable(messages.pollFirstEntry())
+                .map(Map.Entry::getValue);
     }
 
+    @Override
     public Optional<NewsletterMessageInfo> newestMessage() {
-        return Optional.ofNullable(messages.peekLast());
+        return Optional.ofNullable(messages.pollLastEntry())
+                .map(Map.Entry::getValue);
     }
 
     @Override

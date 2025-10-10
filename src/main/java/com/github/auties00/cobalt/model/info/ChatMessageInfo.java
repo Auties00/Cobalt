@@ -69,7 +69,7 @@ public final class ChatMessageInfo implements MessageInfo { // TODO: Check me
     final boolean urlNumber;
 
     @ProtobufProperty(index = 24, type = ProtobufType.ENUM)
-    final ChatMessageStubType stubType;
+    final MessageInfoStubType stubType;
 
     @ProtobufProperty(index = 25, type = ProtobufType.BOOL)
     final boolean clearMedia;
@@ -159,7 +159,7 @@ public final class ChatMessageInfo implements MessageInfo { // TODO: Check me
 
     private Contact sender;
 
-    ChatMessageInfo(ChatMessageKey key, MessageContainer message, long timestampSeconds, MessageStatus status, Jid senderJid, long messageC2STimestamp, boolean ignore, boolean starred, boolean broadcast, String pushName, byte[] mediaCiphertextSha256, boolean multicast, boolean urlText, boolean urlNumber, ChatMessageStubType stubType, boolean clearMedia, List<String> stubParameters, int duration, List<String> labels, PaymentInfo paymentInfo, LiveLocationMessage finalLiveLocation, PaymentInfo quotedPaymentInfo, long ephemeralStartTimestamp, int ephemeralDuration, boolean enableEphemeral, boolean ephemeralOutOfSync, BusinessPrivacyStatus businessPrivacyStatus, String businessVerifiedName, MediaData mediaData, PhotoChange photoChange, MessageReceipt receipt, List<ReactionMessage> reactions, MediaData quotedStickerData, byte[] futureProofData, PublicServiceAnnouncementStatus psaStatus, List<PollUpdate> pollUpdates, PollAdditionalMetadata pollAdditionalMetadata, String agentId, boolean statusAlreadyViewed, byte[] messageSecret, KeepInChat keepInChat, Jid originalSender, long revokeTimestampSeconds) {
+    ChatMessageInfo(ChatMessageKey key, MessageContainer message, long timestampSeconds, MessageStatus status, Jid senderJid, long messageC2STimestamp, boolean ignore, boolean starred, boolean broadcast, String pushName, byte[] mediaCiphertextSha256, boolean multicast, boolean urlText, boolean urlNumber, MessageInfoStubType stubType, boolean clearMedia, List<String> stubParameters, int duration, List<String> labels, PaymentInfo paymentInfo, LiveLocationMessage finalLiveLocation, PaymentInfo quotedPaymentInfo, long ephemeralStartTimestamp, int ephemeralDuration, boolean enableEphemeral, boolean ephemeralOutOfSync, BusinessPrivacyStatus businessPrivacyStatus, String businessVerifiedName, MediaData mediaData, PhotoChange photoChange, MessageReceipt receipt, List<ReactionMessage> reactions, MediaData quotedStickerData, byte[] futureProofData, PublicServiceAnnouncementStatus psaStatus, List<PollUpdate> pollUpdates, PollAdditionalMetadata pollAdditionalMetadata, String agentId, boolean statusAlreadyViewed, byte[] messageSecret, KeepInChat keepInChat, Jid originalSender, long revokeTimestampSeconds) {
         this.key = key;
         this.message = Objects.requireNonNullElseGet(message, MessageContainer::empty);
         this.timestampSeconds = timestampSeconds;
@@ -402,7 +402,7 @@ public final class ChatMessageInfo implements MessageInfo { // TODO: Check me
         return urlNumber;
     }
 
-    public Optional<ChatMessageStubType> stubType() {
+    public Optional<MessageInfoStubType> stubType() {
         return Optional.ofNullable(stubType);
     }
 

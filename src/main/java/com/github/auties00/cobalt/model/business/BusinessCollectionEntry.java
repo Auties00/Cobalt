@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.business;
 
-import com.github.auties00.cobalt.io.node.Node;
+import com.github.auties00.cobalt.io.core.node.Node;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;

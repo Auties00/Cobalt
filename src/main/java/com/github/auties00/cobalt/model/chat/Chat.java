@@ -2,15 +2,13 @@ package com.github.auties00.cobalt.model.chat;
 
 import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
+import com.github.auties00.cobalt.model.info.MessageInfoContainer;
 import com.github.auties00.cobalt.model.info.MessageInfoParent;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.media.MediaVisibility;
-import com.github.auties00.cobalt.model.message.model.Message;
-import com.github.auties00.cobalt.model.sync.HistorySyncMessage;
 import com.github.auties00.cobalt.util.Clock;
-import com.github.auties00.cobalt.util.ConcurrentLinkedSet;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
@@ -21,8 +19,6 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 /**
  * A model class that represents a Chat. A chat can be of two types: a conversation with a contact
@@ -31,12 +27,12 @@ import java.util.function.Predicate;
  */
 @ProtobufMessage(name = "Conversation")
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public final class Chat implements JidProvider, MessageInfoParent {
+public final class Chat implements MessageInfoParent {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     final Jid jid;
 
     @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    final ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages;
+    final MessageInfoContainer<ChatMessageInfo> historySyncMessages;
 
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     Jid newJid;
@@ -116,7 +112,7 @@ public final class Chat implements JidProvider, MessageInfoParent {
     @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.ENUM)
     final ConcurrentHashMap<Jid, ContactStatus> presences;
 
-    Chat(Jid jid, ConcurrentLinkedSet<HistorySyncMessage> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, boolean suspended, boolean terminated, boolean support, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean phoneDuplicateLidThread, Jid lid, ConcurrentHashMap<Jid, ContactStatus> presences) {
+    Chat(Jid jid, MessageInfoContainer<ChatMessageInfo> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, boolean suspended, boolean terminated, boolean support, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean phoneDuplicateLidThread, Jid lid, ConcurrentHashMap<Jid, ContactStatus> presences) {
         this.jid = jid;
         this.historySyncMessages = historySyncMessages;
         this.newJid = newJid;
@@ -154,10 +150,6 @@ public final class Chat implements JidProvider, MessageInfoParent {
      */
     public Jid jid() {
         return jid;
-    }
-
-    public Collection<HistorySyncMessage> historySyncMessages() {
-        return historySyncMessages;
     }
 
     public Optional<Jid> newJid() {
@@ -410,9 +402,10 @@ public final class Chat implements JidProvider, MessageInfoParent {
             return List.of();
         }
 
-        return historySyncMessages.stream()
+        return historySyncMessages
+                .sequencedValues()
+                .stream()
                 .limit(unreadMessagesCount())
-                .map(HistorySyncMessage::messageInfo)
                 .toList();
     }
 
@@ -459,9 +452,10 @@ public final class Chat implements JidProvider, MessageInfoParent {
      *
      * @return an optional
      */
+    @Override
     public Optional<ChatMessageInfo> newestMessage() {
-        return Optional.ofNullable(historySyncMessages.peekLast())
-                .map(HistorySyncMessage::messageInfo);
+        return Optional.ofNullable(historySyncMessages.lastEntry())
+                .map(Map.Entry::getValue);
     }
 
     /**
@@ -469,93 +463,10 @@ public final class Chat implements JidProvider, MessageInfoParent {
      *
      * @return an optional
      */
+    @Override
     public Optional<ChatMessageInfo> oldestMessage() {
-        return Optional.ofNullable(historySyncMessages.peekFirst())
-                .map(HistorySyncMessage::messageInfo);
-    }
-
-    /**
-     * Returns an optional value containing the latest message in chronological terms for this chat
-     * with type that isn't server
-     *
-     * @return an optional
-     */
-    public Optional<ChatMessageInfo> newestStandardMessage() {
-        return findMessageBy(this::isStandardMessage, true);
-    }
-
-    /**
-     * Returns an optional value containing the first message in chronological terms for this chat
-     * with type that isn't server
-     *
-     * @return an optional
-     */
-    public Optional<ChatMessageInfo> oldestStandardMessage() {
-        return findMessageBy(this::isStandardMessage, false);
-    }
-
-    private boolean isStandardMessage(ChatMessageInfo info) {
-        return !info.message().hasCategory(Message.Category.SERVER) && info.stubType().isEmpty();
-    }
-
-    /**
-     * Returns an optional value containing the latest message in chronological terms for this chat
-     * sent from you
-     *
-     * @return an optional
-     */
-    public Optional<ChatMessageInfo> newestMessageFromMe() {
-        return findMessageBy(this::isMessageFromMe, true);
-    }
-
-    /**
-     * Returns an optional value containing the first message in chronological terms for this chat
-     * sent from you
-     *
-     * @return an optional
-     */
-    public Optional<ChatMessageInfo> oldestMessageFromMe() {
-        return findMessageBy(this::isMessageFromMe, false);
-    }
-
-    private boolean isMessageFromMe(ChatMessageInfo info) {
-        return !info.message().hasCategory(Message.Category.SERVER) && info.stubType().isEmpty() && info.fromMe();
-    }
-
-    /**
-     * Returns an optional value containing the latest message in chronological terms for this chat
-     * with type server
-     *
-     * @return an optional
-     */
-    public Optional<ChatMessageInfo> newestServerMessage() {
-        return findMessageBy(this::isServerMessage, true);
-    }
-
-    /**
-     * Returns an optional value containing the first message in chronological terms for this chat
-     * with type server
-     *
-     * @return an optional
-     */
-    public Optional<ChatMessageInfo> oldestServerMessage() {
-        return findMessageBy(this::isServerMessage, false);
-    }
-
-    private boolean isServerMessage(ChatMessageInfo info) {
-        return info.message().hasCategory(Message.Category.SERVER) || info.stubType().isPresent();
-    }
-
-    private Optional<ChatMessageInfo> findMessageBy(Function<ChatMessageInfo, Boolean> filter, boolean newest) {
-        var descendingIterator = newest ? historySyncMessages.descendingIterator() : historySyncMessages.iterator();
-        while (descendingIterator.hasNext()) {
-            var info = descendingIterator.next().messageInfo();
-            if (filter.apply(info)) {
-                return Optional.of(info);
-            }
-        }
-
-        return Optional.empty();
+        return Optional.ofNullable(historySyncMessages.firstEntry())
+                .map(Map.Entry::getValue);
     }
 
     /**
@@ -563,56 +474,23 @@ public final class Chat implements JidProvider, MessageInfoParent {
      *
      * @return a non-null list of messages
      */
-    public Collection<ChatMessageInfo> starredMessages() {
-        return historySyncMessages.stream()
-                .map(HistorySyncMessage::messageInfo)
+    public SequencedCollection<ChatMessageInfo> starredMessages() {
+        return historySyncMessages
+                .sequencedValues()
+                .stream()
                 .filter(ChatMessageInfo::starred)
                 .toList();
-    }
-
-    /**
-     * Adds a new unspecified amount of messages to this chat and sorts them accordingly
-     *
-     * @param newMessages the non-null messages to add
-     */
-    public void addMessages(Collection<HistorySyncMessage> newMessages) {
-        historySyncMessages.addAll(newMessages);
-    }
-
-    /**
-     * Adds a new unspecified amount of messages to this chat and sorts them accordingly
-     *
-     * @param oldMessages the non-null messages to add
-     */
-    public void addOldMessages(Collection<HistorySyncMessage> oldMessages) {
-        oldMessages.forEach(historySyncMessages::addFirst);
     }
 
     /**
      * Adds a message to the chat in the most recent slot available
      *
      * @param info the message to add to the chat
-     * @return whether the message was added
      */
-    public boolean addNewMessage(ChatMessageInfo info) {
-        var sync = new HistorySyncMessage(info, historySyncMessages.size());
-        if (historySyncMessages.contains(sync)) {
-            return false;
-        }
-        historySyncMessages.add(sync);
+    public void addMessage(ChatMessageInfo info) {
+        Objects.requireNonNull(info, "info cannot be null");
+        historySyncMessages.put(info.id(), info);
         updateChatTimestamp(info);
-        return true;
-    }
-
-    /**
-     * Adds a message to the chat in the oldest slot available
-     *
-     * @param info the message to add to the chat
-     * @return whether the message was added
-     */
-    public boolean addOldMessage(HistorySyncMessage info) {
-        historySyncMessages.addFirst(info);
-        return true;
     }
 
     /**
@@ -621,31 +499,23 @@ public final class Chat implements JidProvider, MessageInfoParent {
      * @param info the message to remove
      * @return whether the message was removed
      */
-    public boolean removeMessage(ChatMessageInfo info) {
-        var result = historySyncMessages.removeIf(entry -> Objects.equals(entry.messageInfo().id(), info.id()));
-        refreshChatTimestamp();
-        return result;
-    }
+    @Override
+    public boolean removeMessage(String info) {
+        if(historySyncMessages.remove(info) == null) {
+            return false;
+        }
 
-    /**
-     * Remove a message from the chat
-     *
-     * @param predicate the predicate that determines if a message should be removed
-     * @return whether the message was removed
-     */
-    public boolean removeMessage(Predicate<? super ChatMessageInfo> predicate) {
-        var result = historySyncMessages.removeIf(entry -> predicate.test(entry.messageInfo()));
         refreshChatTimestamp();
-        return result;
+        return true;
     }
 
     private void refreshChatTimestamp() {
         var message = newestMessage();
         if (message.isEmpty()) {
-            return;
+            this.timestampSeconds = 0L;
+        }else {
+            updateChatTimestamp(message.get());
         }
-
-        updateChatTimestamp(message.get());
     }
 
     private void updateChatTimestamp(ChatMessageInfo info) {
@@ -668,6 +538,7 @@ public final class Chat implements JidProvider, MessageInfoParent {
     /**
      * Removes all messages from the chat
      */
+    @Override
     public void removeMessages() {
         historySyncMessages.clear();
     }
@@ -678,8 +549,8 @@ public final class Chat implements JidProvider, MessageInfoParent {
      *
      * @return a non-null collection
      */
-    public Collection<HistorySyncMessage> messages() {
-        return Collections.unmodifiableCollection(historySyncMessages);
+    public SequencedCollection<ChatMessageInfo> messages() {
+        return historySyncMessages.sequencedValues();
     }
 
     /**

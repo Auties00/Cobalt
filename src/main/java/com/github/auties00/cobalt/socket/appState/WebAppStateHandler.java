@@ -2,8 +2,8 @@ package com.github.auties00.cobalt.socket.appState;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.exception.WebAppStatePushException;
-import com.github.auties00.cobalt.io.node.NodeBuilder;
-import com.github.auties00.cobalt.io.state.WebAppStateEncoder;
+import com.github.auties00.cobalt.io.core.node.NodeBuilder;
+import com.github.auties00.cobalt.io.sync.WebAppStateEncoder;
 import com.github.auties00.cobalt.model.sync.AppStateSyncHash;
 import com.github.auties00.cobalt.model.sync.PatchType;
 

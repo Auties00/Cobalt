@@ -166,7 +166,7 @@ public final class QuotedMessageInfo implements MessageInfo {
     }
 
     @Override
-    public MessageContainer messageContainer() {
+    public MessageContainer message() {
         return message;
     }
 
@@ -178,5 +178,10 @@ public final class QuotedMessageInfo implements MessageInfo {
     @Override
     public OptionalLong timestampSeconds() {
         return OptionalLong.empty();
+    }
+
+    @Override
+    public Optional<MessageInfoStubType> stubType() {
+        return Optional.empty();
     }
 }

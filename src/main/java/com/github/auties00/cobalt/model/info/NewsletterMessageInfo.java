@@ -15,7 +15,7 @@ import it.auties.protobuf.model.ProtobufType;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-// TODO: Add receipts and unreadMessagesCount to this message
+// TODO: Add receipts
 @ProtobufMessage
 public final class NewsletterMessageInfo implements MessageInfo {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
@@ -166,6 +166,11 @@ public final class NewsletterMessageInfo implements MessageInfo {
     @Override
     public void setStatus(MessageStatus status) {
         this.status = status;
+    }
+
+    @Override
+    public Optional<MessageInfoStubType> stubType() {
+        return Optional.empty();
     }
 
     public Collection<NewsletterReaction> reactions() {

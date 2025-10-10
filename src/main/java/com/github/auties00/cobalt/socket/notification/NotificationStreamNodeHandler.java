@@ -1,15 +1,15 @@
 package com.github.auties00.cobalt.socket.notification;
 
 import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.io.json.response.NewsletterLeaveResponse;
-import com.github.auties00.cobalt.io.json.response.NewsletterMuteResponse;
-import com.github.auties00.cobalt.io.json.response.NewsletterResponse;
-import com.github.auties00.cobalt.io.json.response.NewsletterStateResponse;
-import com.github.auties00.cobalt.io.node.Node;
+import com.github.auties00.cobalt.io.core.json.response.NewsletterLeaveResponse;
+import com.github.auties00.cobalt.io.core.json.response.NewsletterMuteResponse;
+import com.github.auties00.cobalt.io.core.json.response.NewsletterResponse;
+import com.github.auties00.cobalt.io.core.json.response.NewsletterStateResponse;
+import com.github.auties00.cobalt.io.core.node.Node;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.chat.ChatEphemeralTimer;
 import com.github.auties00.cobalt.model.info.ChatMessageInfoBuilder;
-import com.github.auties00.cobalt.model.info.ChatMessageStubType;
+import com.github.auties00.cobalt.model.info.MessageInfoStubType;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
@@ -28,7 +28,6 @@ import com.github.auties00.cobalt.model.sync.PatchType;
 import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.PhonePairingCode;
-import com.github.auties00.cobalt.util.Scalar;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
@@ -335,7 +334,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             var participantJid = node.attributes()
                     .getOptionalJid("participant")
                     .orElse(null);
-            addMessageForGroupStubType(timestamp, fromChat, participantJid, ChatMessageStubType.GROUP_CHANGE_ICON, node);
+            addMessageForGroupStubType(timestamp, fromChat, participantJid, MessageInfoStubType.GROUP_CHANGE_ICON, node);
             return;
         }
         var fromContact = whatsapp.store().findContactByJid(fromJid).orElseGet(() -> {
@@ -366,11 +365,11 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         var child = node.findChild();
         var bodyType = child.map(Node::description)
                 .orElse(null);
-        var stubType = ChatMessageStubType.getStubType(notificationType, bodyType);
+        var stubType = MessageInfoStubType.getStubType(notificationType, bodyType);
         addMessageForGroupStubType(timestamp, fromChat, participantJid, stubType, node);
     }
 
-    private void addMessageForGroupStubType(long timestamp, Chat chat, Jid sender, ChatMessageStubType stubType, Node metadata) {
+    private void addMessageForGroupStubType(long timestamp, Chat chat, Jid sender, MessageInfoStubType stubType, Node metadata) {
         var key = new ChatMessageKeyBuilder()
                 .id(ChatMessageKey.randomId(whatsapp.store().clientType()))
                 .chatJid(chat.jid())
@@ -409,7 +408,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 .peek(keys::addPreKey)
                 .map(keyPair -> Node.of(
                         "key",
-                        Node.of("id", Scalar.intToBytes(keyPair.id(), 3)),
+                        Node.of("id", Bytes.intToBytes(keyPair.id(), 3)),
                         Node.of("value", keyPair.publicKey()))
                 )
                 .toList();
@@ -422,7 +421,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 Node.of("identity", keys.identityKeyPair().publicKey()),
                 Node.of("list", preKeys),
                 Node.of("skey",
-                        Node.of("id", Scalar.intToBytes(keyPair.id(), 3)),
+                        Node.of("id", Bytes.intToBytes(keyPair.id(), 3)),
                         Node.of("value", keyPair.publicKey()),
                         Node.of("signature", keyPair.signature())
                 )

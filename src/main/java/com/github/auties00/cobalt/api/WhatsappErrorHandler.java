@@ -4,9 +4,14 @@ import com.github.auties00.cobalt.exception.MalformedNodeException;
 import com.github.auties00.cobalt.exception.SessionBadMacException;
 import com.github.auties00.cobalt.exception.SessionConflictException;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.util.Exceptions;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.function.BiConsumer;
 
 import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.*;
@@ -65,7 +70,7 @@ public interface WhatsappErrorHandler {
      * @return a new error handler that persists exceptions to files
      */
     static WhatsappErrorHandler toFile() {
-        return defaultErrorHandler((api, error) -> Exceptions.save(error));
+        return toFile(Path.of(System.getProperty("user.home"), ".cobalt", "errors"));
     }
 
     /**
@@ -78,7 +83,16 @@ public interface WhatsappErrorHandler {
      * @return a new error handler that persists exceptions to the specified directory
      */
     static WhatsappErrorHandler toFile(Path directory) {
-        return defaultErrorHandler((api, error) -> Exceptions.save(directory, error));
+        return defaultErrorHandler((api, throwable) -> Thread.startVirtualThread(() -> {
+            var stackTraceWriter = new StringWriter();
+            try(var stackTracePrinter = new PrintWriter(stackTraceWriter)) {
+                var path = directory.resolve(System.currentTimeMillis() + ".txt");
+                throwable.printStackTrace(stackTracePrinter);
+                Files.writeString(path, stackTraceWriter.toString(), StandardOpenOption.CREATE);
+            } catch (IOException exception) {
+                throw new UncheckedIOException("Cannot serialize exception", exception);
+            }
+        }));
     }
 
     private static WhatsappErrorHandler defaultErrorHandler(BiConsumer<Whatsapp, Throwable> printer) {

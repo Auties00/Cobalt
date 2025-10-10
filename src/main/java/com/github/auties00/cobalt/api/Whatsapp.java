@@ -1,14 +1,14 @@
 package com.github.auties00.cobalt.api;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.io.json.request.CommunityRequests;
-import com.github.auties00.cobalt.io.json.request.NewsletterRequests;
-import com.github.auties00.cobalt.io.json.request.UserRequests;
-import com.github.auties00.cobalt.io.json.response.*;
-import com.github.auties00.cobalt.io.node.Node;
-import com.github.auties00.cobalt.io.node.NodeAttribute;
-import com.github.auties00.cobalt.io.node.NodeBuilder;
-import com.github.auties00.cobalt.io.node.NodeDecoder;
+import com.github.auties00.cobalt.io.core.json.request.CommunityRequests;
+import com.github.auties00.cobalt.io.core.json.request.NewsletterRequests;
+import com.github.auties00.cobalt.io.core.json.request.UserRequests;
+import com.github.auties00.cobalt.io.core.json.response.*;
+import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.io.core.node.NodeAttribute;
+import com.github.auties00.cobalt.io.core.node.NodeBuilder;
+import com.github.auties00.cobalt.io.core.node.NodeDecoder;
 import com.github.auties00.cobalt.io.media.MediaProfilePictureInputStream;
 import com.github.auties00.cobalt.model.action.*;
 import com.github.auties00.cobalt.model.business.*;

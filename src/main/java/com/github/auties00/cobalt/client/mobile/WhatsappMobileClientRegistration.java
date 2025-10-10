@@ -10,7 +10,6 @@ import com.github.auties00.cobalt.model.business.BusinessVerifiedNameDetailsBuil
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameDetailsSpec;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.util.Bytes;
-import com.github.auties00.cobalt.util.Scalar;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
@@ -265,10 +264,10 @@ public final class WhatsappMobileClientRegistration implements AutoCloseable {
                 "lc", "US",
                 "authkey", Base64.getUrlEncoder().encodeToString(store.noiseKeyPair().publicKey().toEncodedPoint()),
                 "vname", certificate,
-                "e_regid", Base64.getUrlEncoder().encodeToString(Scalar.intToBytes(store.registrationId(), 4)),
+                "e_regid", Base64.getUrlEncoder().encodeToString(Bytes.intToBytes(store.registrationId(), 4)),
                 "e_keytype", SIGNAL_PUBLIC_KEY_TYPE,
                 "e_ident", Base64.getUrlEncoder().encodeToString(store.identityKeyPair().publicKey().toEncodedPoint()),
-                "e_skey_id", Base64.getUrlEncoder().encodeToString(Scalar.intToBytes(store.signedKeyPair().id(), 3)),
+                "e_skey_id", Base64.getUrlEncoder().encodeToString(Bytes.intToBytes(store.signedKeyPair().id(), 3)),
                 "e_skey_val", Base64.getUrlEncoder().encodeToString(store.signedKeyPair().publicKey().toEncodedPoint()),
                 "e_skey_sig", Base64.getUrlEncoder().encodeToString(store.signedKeyPair().signature()),
                 "fdid", fdid,

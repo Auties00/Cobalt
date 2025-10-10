@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.socket.ib;
 
 import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.io.node.Node;
-import com.github.auties00.cobalt.io.node.NodeBuilder;
+import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.io.core.node.NodeBuilder;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 public final class IbStreamNodeHandler extends SocketStream.Handler {

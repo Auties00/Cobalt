@@ -30,6 +30,8 @@ public sealed interface MessageInfo
     MessageContainer message();
     void setMessage(MessageContainer message);
 
+    Optional<MessageInfoStubType> stubType();
+
     default Optional<QuotedMessageInfo> quotedMessage() {
         var message = message();
         if(message == null) {

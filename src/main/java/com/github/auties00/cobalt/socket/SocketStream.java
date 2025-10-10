@@ -2,7 +2,7 @@ package com.github.auties00.cobalt.socket;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
-import com.github.auties00.cobalt.io.node.Node;
+import com.github.auties00.cobalt.io.core.node.Node;
 import com.github.auties00.cobalt.socket.ack.AckStreamNodeHandler;
 import com.github.auties00.cobalt.socket.call.CalStreamNodeHandler;
 import com.github.auties00.cobalt.socket.error.ErrorStreamNodeHandler;

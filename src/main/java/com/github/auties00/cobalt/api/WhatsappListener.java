@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.api;
 
-import com.github.auties00.cobalt.io.node.Node;
+import com.github.auties00.cobalt.io.core.node.Node;
 import com.github.auties00.cobalt.model.action.Action;
 import com.github.auties00.cobalt.model.call.Call;
 import com.github.auties00.cobalt.model.chat.Chat;

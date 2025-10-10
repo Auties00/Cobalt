@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.socket.message;
 
 import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.io.node.Node;
+import com.github.auties00.cobalt.io.core.node.Node;
 import com.github.auties00.cobalt.model.auth.SignedDeviceIdentitySpec;
 import com.github.auties00.cobalt.model.button.template.highlyStructured.HighlyStructuredFourRowTemplate;
 import com.github.auties00.cobalt.model.button.template.hydrated.HydratedFourRowTemplate;
@@ -28,7 +28,6 @@ import com.github.auties00.cobalt.model.message.standard.ReactionMessage;
 import com.github.auties00.cobalt.model.message.standard.TextMessage;
 import com.github.auties00.cobalt.model.poll.*;
 import com.github.auties00.cobalt.util.Bytes;
-import com.github.auties00.cobalt.util.Scalar;
 import com.github.auties00.libsignal.SignalSessionCipher;
 import com.github.auties00.libsignal.groups.SignalGroupCipher;
 import com.github.auties00.libsignal.groups.SignalSenderKeyName;
@@ -318,7 +317,7 @@ public final class MessageSerializerHandler extends MessageHandler {
         return switch (message.content()) {
             case ReactionMessage reactionMessage -> Node.of("reaction", Map.of("code", reactionMessage.content()));
             case TextMessage textMessage when textMessage.thumbnail().isEmpty() -> {
-                var textLength = Scalar.sizeOf(textMessage.text());
+                var textLength = Int.sizeOf(textMessage.text());
                 var encodedTextLength = ProtobufOutputStream.getVarIntSize(textLength);
                 var encodedText = new byte[1 + textLength + encodedTextLength];
                 encodedText[0] = 10;
