@@ -187,6 +187,7 @@
         <plist.version>1.27</plist.version>
         <sl4j.version>2.0.13</sl4j.version>
         <apk.parser.version>2.6.10</apk.parser.version>
+        <collections.version>1.0.0</collections.version>
     </properties>
 
     <build>
@@ -289,6 +290,13 @@
             <groupId>com.googlecode.ez-vcard</groupId>
             <artifactId>ez-vcard</artifactId>
             <version>${vcard.version}</version>
+        </dependency>
+
+        <!-- Store messages in memory -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>collections</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
         <!-- Testing framework -->

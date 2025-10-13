@@ -2,13 +2,13 @@ package com.github.auties00.cobalt.model.chat;
 
 import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
-import com.github.auties00.cobalt.model.info.MessageInfoContainer;
 import com.github.auties00.cobalt.model.info.MessageInfoParent;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.media.MediaVisibility;
 import com.github.auties00.cobalt.util.Clock;
+import com.github.auties00.collections.ConcurrentLinkedHashMap;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
@@ -32,7 +32,7 @@ public final class Chat implements MessageInfoParent {
     final Jid jid;
 
     @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    final MessageInfoContainer<ChatMessageInfo> historySyncMessages;
+    final ConcurrentLinkedHashMap<String, ChatMessageInfo> historySyncMessages;
 
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     Jid newJid;
@@ -112,9 +112,9 @@ public final class Chat implements MessageInfoParent {
     @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.ENUM)
     final ConcurrentHashMap<Jid, ContactStatus> presences;
 
-    Chat(Jid jid, MessageInfoContainer<ChatMessageInfo> historySyncMessages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, boolean suspended, boolean terminated, boolean support, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean phoneDuplicateLidThread, Jid lid, ConcurrentHashMap<Jid, ContactStatus> presences) {
+    Chat(Jid jid, ConcurrentLinkedHashMap<String, ChatMessageInfo> messages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, boolean suspended, boolean terminated, boolean support, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean phoneDuplicateLidThread, Jid lid, ConcurrentHashMap<Jid, ContactStatus> presences) {
         this.jid = jid;
-        this.historySyncMessages = historySyncMessages;
+        this.historySyncMessages = messages;
         this.newJid = newJid;
         this.oldJid = oldJid;
         this.unreadMessagesCount = unreadMessagesCount;

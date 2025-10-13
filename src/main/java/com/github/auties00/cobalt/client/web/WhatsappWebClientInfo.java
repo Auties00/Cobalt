@@ -9,8 +9,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-public final class WhatsappWebInfo implements WhatsappClientInfo {
-    private static volatile WhatsappWebInfo webInfo;
+public final class WhatsappWebClientInfo implements WhatsappClientInfo {
+    private static volatile WhatsappWebClientInfo webInfo;
     private static final Object webInfoLock = new Object();
 
     private static final String WEB_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
@@ -19,11 +19,11 @@ public final class WhatsappWebInfo implements WhatsappClientInfo {
 
     private final Version version;
 
-    private WhatsappWebInfo(Version version) {
+    private WhatsappWebClientInfo(Version version) {
         this.version = version;
     }
 
-    public static WhatsappWebInfo of() {
+    public static WhatsappWebClientInfo of() {
         if (webInfo == null) {
             synchronized (webInfoLock) {
                 if(webInfo == null) {
@@ -34,7 +34,7 @@ public final class WhatsappWebInfo implements WhatsappClientInfo {
         return webInfo;
     }
 
-    private static WhatsappWebInfo queryWebInfo() {
+    private static WhatsappWebClientInfo queryWebInfo() {
         try(var httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build()) {
@@ -65,7 +65,7 @@ public final class WhatsappWebInfo implements WhatsappClientInfo {
                                 clientVersion += value - '0';
                             }
                             var version = new Version(2, 3000, clientVersion);
-                            return new WhatsappWebInfo(version);
+                            return new WhatsappWebClientInfo(version);
                         }
                     } else {
                         patternIndex = 0;

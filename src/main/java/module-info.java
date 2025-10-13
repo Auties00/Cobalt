@@ -20,6 +20,9 @@ module com.github.auties00.cobalt {
     requires it.auties.linkpreview;
     requires com.googlecode.ezvcard;
 
+    // Message store
+    requires com.github.auties00.collections;
+
     // Mobile api
     requires net.dongliu.apkparser;
     requires com.google.i18n.phonenumbers.libphonenumber;

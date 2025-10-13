@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.model.newsletter;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.github.auties00.cobalt.model.info.MessageInfoContainer;
 import com.github.auties00.cobalt.model.info.MessageInfoParent;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.collections.ConcurrentLinkedHashMap;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -30,14 +30,14 @@ public final class Newsletter implements MessageInfoParent {
     final NewsletterViewerMetadata viewerMetadata;
 
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    final MessageInfoContainer<NewsletterMessageInfo> messages;
+    final ConcurrentLinkedHashMap<String, NewsletterMessageInfo> messages;
 
-    Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, MessageInfoContainer<NewsletterMessageInfo> messages) {
+    Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, ConcurrentLinkedHashMap<String, NewsletterMessageInfo> messages) {
         this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = Objects.requireNonNullElseGet(messages, MessageInfoContainer::new);
+        this.messages = Objects.requireNonNullElseGet(messages, ConcurrentLinkedHashMap::new);
     }
 
     public static Optional<Newsletter> ofJson(JSONObject newsletter) {
@@ -61,7 +61,7 @@ public final class Newsletter implements MessageInfoParent {
         var viewerMetadata = NewsletterViewerMetadata.ofJson(viewerMetadataJsonObject)
                 .orElse(null);
         var messagesJsonObjects = newsletter.getJSONArray("messages");
-        var messages = new MessageInfoContainer<NewsletterMessageInfo>();
+        var messages = new ConcurrentLinkedHashMap<String, NewsletterMessageInfo>();
         if(messagesJsonObjects != null) {
             for (var i = 0; i < messagesJsonObjects.size(); i++) {
                 var messageJsonObject = messagesJsonObjects.getJSONObject(i);

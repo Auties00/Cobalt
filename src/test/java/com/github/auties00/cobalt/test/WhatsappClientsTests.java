@@ -1,68 +1,57 @@
 package com.github.auties00.cobalt.test;
 
-import com.github.auties00.cobalt.model.auth.UserAgent.PlatformType;
-import com.github.auties00.cobalt.model.auth.Version;
+import com.github.auties00.cobalt.client.mobile.android.WhatsappAndroidClientInfo;
+import com.github.auties00.cobalt.client.mobile.ios.WhatsappIosClientInfo;
+import com.github.auties00.cobalt.client.web.WhatsappWebClientInfo;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class WhatsappClientsTests {
-    private static final Long PHONE_NUMBER_MOCK = 3934751869223L;
+    private static final Long PHONE_NUMBER_MOCK = 34751869223L;
+
     @Test
     public void testWebVersion() {
-        assertDoesNotThrow(() -> getVersion(PlatformType.WINDOWS));
-        assertDoesNotThrow(() -> getVersion(PlatformType.MACOS));
+        assertDoesNotThrow(() -> WhatsappWebClientInfo.of().version());
     }
     
     @Test
     public void testPersonalIosVersion() {
-        assertDoesNotThrow(() -> getVersion(PlatformType.IOS));
+        assertDoesNotThrow(() -> WhatsappIosClientInfo.ofPersonal().version());
     }
     
     @Test
     public void testBusinessIosVersion() {
-        assertDoesNotThrow(() -> getVersion(PlatformType.IOS_BUSINESS));
+        assertDoesNotThrow(() -> WhatsappIosClientInfo.ofBusiness().version());
     }
     
     @Test
     public void testPersonalAndroidVersion() {
-        assertDoesNotThrow(() -> getVersion(PlatformType.ANDROID));
+        assertDoesNotThrow(() -> WhatsappAndroidClientInfo.ofPersonal().version());
     }
     
     @Test
     public void testBusinessAndroidVersion() {
-        assertDoesNotThrow(() -> getVersion(PlatformType.ANDROID_BUSINESS));
+        assertDoesNotThrow(() -> WhatsappAndroidClientInfo.ofBusiness().version());
     }
 
     @Test
     public void testPersonalIosToken() {
-        assertDoesNotThrow(() -> getToken(PlatformType.IOS));
+        assertDoesNotThrow(() -> WhatsappIosClientInfo.ofPersonal().computeRegistrationToken(PHONE_NUMBER_MOCK));
     }
 
     @Test
     public void testBusinessIosToken() {
-        assertDoesNotThrow(() -> getToken(PlatformType.IOS_BUSINESS));
+        assertDoesNotThrow(() -> WhatsappIosClientInfo.ofBusiness().computeRegistrationToken(PHONE_NUMBER_MOCK));
     }
 
     @Test
     public void testPersonalAndroidToken() {
-        assertDoesNotThrow(() -> getToken(PlatformType.ANDROID));
+        assertDoesNotThrow(() -> WhatsappAndroidClientInfo.ofPersonal().computeRegistrationToken(PHONE_NUMBER_MOCK));
     }
 
     @Test
     public void testBusinessAndroidToken() {
-        assertDoesNotThrow(() -> getToken(PlatformType.ANDROID_BUSINESS));
-    }
-
-    private static Version getVersion(PlatformType platformType) {
-        return WhatsappClients.getVersion(platformType);
-    }
-
-    private static String getToken(PlatformType platformType) {
-        return WhatsappClients.getToken(
-                PHONE_NUMBER_MOCK,
-                platformType,
-                WhatsappClients.getVersion(platformType)
-        );
+        assertDoesNotThrow(() -> WhatsappAndroidClientInfo.ofBusiness().computeRegistrationToken(PHONE_NUMBER_MOCK));
     }
 }
