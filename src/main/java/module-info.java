@@ -56,4 +56,5 @@ module com.github.auties00.cobalt {
     exports com.github.auties00.cobalt.model.newsletter;
     exports com.github.auties00.cobalt.exception;
     exports com.github.auties00.cobalt.io.core.node;
+    exports com.github.auties00.cobalt.store;
 }

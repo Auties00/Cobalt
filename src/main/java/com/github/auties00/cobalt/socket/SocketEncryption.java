@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.socket;
 
 import com.github.auties00.cobalt.api.WhatsappClientType;
-import com.github.auties00.cobalt.api.WhatsappStore;
+import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
 import com.github.auties00.cobalt.client.WhatsappClientInfo;
 import com.github.auties00.cobalt.io.core.node.Node;

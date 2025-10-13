@@ -1,6 +1,10 @@
 
-package com.github.auties00.cobalt.api;
+package com.github.auties00.cobalt.store;
 
+import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.api.WhatsappClientType;
+import com.github.auties00.cobalt.api.WhatsappListener;
+import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
 import com.github.auties00.cobalt.model.auth.SignedDeviceIdentity;
 import com.github.auties00.cobalt.model.auth.UserAgent.ReleaseChannel;
 import com.github.auties00.cobalt.model.auth.Version;
@@ -26,7 +30,6 @@ import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.sync.AppStateSyncHash;
 import com.github.auties00.cobalt.model.sync.AppStateSyncKey;
-import com.github.auties00.cobalt.model.sync.HistorySyncMessage;
 import com.github.auties00.cobalt.model.sync.PatchType;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Clock;
@@ -1180,7 +1183,6 @@ public final class WhatsappStore implements SignalProtocolStore {
     public Optional<ChatMessageInfo> findMessageById(Chat chat, String id) {
         return chat == null || id == null ? Optional.empty() : chat.messages()
                 .parallelStream()
-                .map(HistorySyncMessage::messageInfo)
                 .filter(message -> Objects.equals(message.key().id(), id))
                 .findAny();
     }

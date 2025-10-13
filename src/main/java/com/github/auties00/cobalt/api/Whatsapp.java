@@ -41,6 +41,7 @@ import com.github.auties00.cobalt.socket.*;
 import com.github.auties00.cobalt.socket.appState.WebAppStatePatch;
 import com.github.auties00.cobalt.socket.appState.WebAppStatePushRequest;
 import com.github.auties00.cobalt.socket.message.MessageRequest;
+import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Clock;
 

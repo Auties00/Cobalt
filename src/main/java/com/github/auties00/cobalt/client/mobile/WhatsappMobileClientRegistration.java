@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.client.mobile;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.api.WhatsappStore;
+import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
 import com.github.auties00.cobalt.exception.MobileRegistrationException;
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificateBuilder;
