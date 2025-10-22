@@ -5,8 +5,8 @@ import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
 import com.github.auties00.cobalt.io.core.node.Node;
 import com.github.auties00.cobalt.socket.SocketStream;
 
-public final class StreamEndStreamNodeHandler extends SocketStream.Handler {
-    public StreamEndStreamNodeHandler(Whatsapp whatsapp) {
+public final class EndStreamNodeHandler extends SocketStream.Handler {
+    public EndStreamNodeHandler(Whatsapp whatsapp) {
         super(whatsapp, "xmlstreamend");
     }
 

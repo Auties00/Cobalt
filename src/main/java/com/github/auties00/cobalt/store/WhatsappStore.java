@@ -2483,7 +2483,6 @@ public final class WhatsappStore implements SignalProtocolStore {
                && Objects.equals(proxy, that.proxy)
                && Objects.equals(device, that.device)
                && releaseChannel == that.releaseChannel
-               && Objects.equals(deviceHash, that.deviceHash)
                && Objects.equals(locale, that.locale)
                && Objects.equals(name, that.name)
                && Objects.equals(verifiedName, that.verifiedName)
@@ -2531,7 +2530,7 @@ public final class WhatsappStore implements SignalProtocolStore {
     public int hashCode() {
         return Objects.hash(uuid, phoneNumber, clientType, serializer, serializable,
                 initializationTimeStamp, proxy, device, releaseChannel,
-                deviceHash, online, locale, name, verifiedName, profilePicture,
+                online, locale, name, verifiedName, profilePicture,
                 about, jid, lid, businessAddress, businessLongitude, businessLatitude,
                 businessDescription, businessWebsite, businessEmail, businessCategory,
                 chats, newsletters, status, contacts, calls, privacySettings, properties,

@@ -28,9 +28,6 @@ import java.util.stream.Collectors;
 import static java.util.Objects.requireNonNullElseGet;
 import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 
-/**
- * Private implementation for a serializer that stores data on file using Protobuf
- */
 final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     private static final String CHAT_PREFIX = "chat_";
     private static final String NEWSLETTER_PREFIX = "newsletter_";

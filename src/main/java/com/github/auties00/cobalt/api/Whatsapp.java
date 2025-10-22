@@ -182,7 +182,6 @@ public final class Whatsapp {
             onShutdown();
         }
         for (var listener : store.listeners()) {
-            listener.onDisconnected(reason);
             listener.onDisconnected(this, reason);
         }
         if (reason == WhatsappDisconnectReason.RECONNECTING) {
@@ -224,7 +223,6 @@ public final class Whatsapp {
             while (decoder.hasData()) {
                 var node = decoder.decode();
                 for (var listener : store.listeners()) {
-                    Thread.startVirtualThread(() -> listener.onNodeReceived(node));
                     Thread.startVirtualThread(() -> listener.onNodeReceived(this, node));
                 }
                 resolvePendingRequest(node);
@@ -255,7 +253,6 @@ public final class Whatsapp {
         }
 
         for (var listener : store.listeners()) {
-            Thread.startVirtualThread(() -> listener.onNodeSent(node));
             Thread.startVirtualThread(() -> listener.onNodeSent(this, node));
         }
     }
@@ -277,7 +274,6 @@ public final class Whatsapp {
         }
 
         for (var listener : store.listeners()) {
-            Thread.startVirtualThread(() -> listener.onNodeSent(outgoing));
             Thread.startVirtualThread(() -> listener.onNodeSent(this, outgoing));
         }
 
@@ -353,7 +349,7 @@ public final class Whatsapp {
         }
 
         var future = new CompletableFuture<Void>();
-        addDisconnectedListener((reason) -> {
+        addDisconnectedListener((_, reason) -> {
             if (reason != WhatsappDisconnectReason.RECONNECTING) {
                 future.complete(null);
             }
@@ -698,10 +694,7 @@ public final class Whatsapp {
                 .orElse(null);
         store.addPrivacySetting(newEntry);
         for (var listener : store.listeners()) {
-            Thread.startVirtualThread(() -> {
-                listener.onPrivacySettingChanged(this, oldEntry, newEntry);
-                listener.onPrivacySettingChanged(oldEntry, newEntry);
-            });
+            Thread.startVirtualThread(() -> listener.onPrivacySettingChanged(this, newEntry));
         }
     }
 
@@ -742,10 +735,7 @@ public final class Whatsapp {
                     updateBusinessCertificate(newName);
                     store.setName(newName);
                     for (var listener : store.listeners()) {
-                        Thread.startVirtualThread(() -> {
-                            listener.onNameChanged(this, oldName, newName);
-                            listener.onNameChanged(oldName, newName);
-                        });
+                        Thread.startVirtualThread(() -> listener.onNameChanged(this, oldName, newName));
                     }
                 }
             }
@@ -759,10 +749,7 @@ public final class Whatsapp {
             sendNodeWithNoResponse(presenceNode);
             store.setName(newName);
             for (var listener : store.listeners()) {
-                Thread.startVirtualThread(() -> {
-                    listener.onNameChanged(this, oldName, newName);
-                    listener.onNameChanged(oldName, newName);
-                });
+                Thread.startVirtualThread(() -> listener.onNameChanged(this, oldName, newName));
             }
         }
     }
@@ -3891,10 +3878,7 @@ public final class Whatsapp {
                 .build();
         store.addCall(call);
         for (var listener : store.listeners()) {
-            Thread.startVirtualThread(() -> {
-                listener.onCall(this, call);
-                listener.onCall(call);
-            });
+            Thread.startVirtualThread(() -> listener.onCall(this, call));
         }
         return call;
     }
@@ -3982,34 +3966,12 @@ public final class Whatsapp {
     }
 
     // Start of generated code from it.auties.whatsapp.routine.GenerateListenersLambda
-    public Whatsapp addContactsListener(WhatsappFunctionalListener.Unary<Collection<Contact>> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onContacts(Collection<Contact> arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
     public Whatsapp addContactsListener(WhatsappFunctionalListener.Binary<Whatsapp, Collection<Contact>> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
             public void onContacts(Whatsapp arg0, Collection<Contact> arg1) {
                 consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addChatsListener(WhatsappFunctionalListener.Unary<Collection<Chat>> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onChats(Collection<Chat> arg0) {
-                consumer.accept(arg0);
             }
         });
         return this;
@@ -4037,34 +3999,12 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNodeSentListener(WhatsappFunctionalListener.Unary<Node> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onNodeSent(Node arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
     public Whatsapp addLoggedInListener(WhatsappFunctionalListener.Unary<Whatsapp> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
             public void onLoggedIn(Whatsapp arg0) {
                 consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addLoggedInListener(WhatsappFunctionalListener.Empty consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onLoggedIn() {
-                consumer.accept();
             }
         });
         return this;
@@ -4081,56 +4021,12 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewMessageListener(WhatsappFunctionalListener.Unary<MessageInfo> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onNewMessage(MessageInfo arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addLinkedDevicesListener(WhatsappFunctionalListener.Binary<Whatsapp, Collection<Jid>> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onLinkedDevices(Whatsapp arg0, Collection<Jid> arg1) {
-                consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addLinkedDevicesListener(WhatsappFunctionalListener.Unary<Collection<Jid>> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onLinkedDevices(Collection<Jid> arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
     public Whatsapp addMessageReplyListener(WhatsappFunctionalListener.Ternary<Whatsapp, MessageInfo, QuotedMessageInfo> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
             public void onMessageReply(Whatsapp arg0, MessageInfo arg1, QuotedMessageInfo arg2) {
                 consumer.accept(arg0, arg1, arg2);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addMessageReplyListener(WhatsappFunctionalListener.Binary<MessageInfo, QuotedMessageInfo> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onMessageReply(MessageInfo arg0, QuotedMessageInfo arg1) {
-                consumer.accept(arg0, arg1);
             }
         });
         return this;
@@ -4147,17 +4043,6 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addWebHistorySyncMessagesListener(WhatsappFunctionalListener.Binary<Chat, Boolean> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onWebHistorySyncMessages(Chat arg0, boolean arg1) {
-                consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
     public Whatsapp addMessageStatusListener(WhatsappFunctionalListener.Binary<Whatsapp, MessageInfo> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
@@ -4169,45 +4054,12 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addMessageStatusListener(WhatsappFunctionalListener.Unary<MessageInfo> consumer) {
+    public Whatsapp addContactPresenceListener(WhatsappFunctionalListener.Ternary<Whatsapp, Jid, Jid> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
-            public void onMessageStatus(MessageInfo arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addContactPresenceListener(WhatsappFunctionalListener.Ternary<Whatsapp, JidProvider, JidProvider> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onContactPresence(Whatsapp arg0, JidProvider arg1, JidProvider arg2) {
+            public void onContactPresence(Whatsapp arg0, Jid arg1, Jid arg2) {
                 consumer.accept(arg0, arg1, arg2);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addContactPresenceListener(WhatsappFunctionalListener.Binary<JidProvider, JidProvider> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onContactPresence(JidProvider arg0, JidProvider arg1) {
-                consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addNewslettersListener(WhatsappFunctionalListener.Unary<Collection<Newsletter>> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onNewsletters(Collection<Newsletter> arg0) {
-                consumer.accept(arg0);
             }
         });
         return this;
@@ -4224,33 +4076,11 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addProfilePictureChangedListener(WhatsappFunctionalListener.Binary<Whatsapp, JidProvider> consumer) {
+    public Whatsapp addProfilePictureChangedListener(WhatsappFunctionalListener.Binary<Whatsapp, Jid> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
-            public void onProfilePictureChanged(Whatsapp arg0, JidProvider arg1) {
-                consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addProfilePictureChangedListener(WhatsappFunctionalListener.Unary<JidProvider> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onProfilePictureChanged(JidProvider arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addLocaleChangedListener(WhatsappFunctionalListener.Binary<String, String> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onLocaleChanged(String arg0, String arg1) {
+            public void onProfilePictureChanged(Whatsapp arg0, Jid arg1) {
                 consumer.accept(arg0, arg1);
             }
         });
@@ -4279,28 +4109,6 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNewContactListener(WhatsappFunctionalListener.Unary<Contact> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onNewContact(Contact arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addWebHistorySyncProgressListener(WhatsappFunctionalListener.Binary<Integer, Boolean> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onWebHistorySyncProgress(int arg0, boolean arg1) {
-                consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
     public Whatsapp addWebHistorySyncProgressListener(WhatsappFunctionalListener.Ternary<Whatsapp, Integer, Boolean> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
@@ -4318,28 +4126,6 @@ public final class Whatsapp {
             @Override
             public void onNewStatus(Whatsapp arg0, ChatMessageInfo arg1) {
                 consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addNewStatusListener(WhatsappFunctionalListener.Unary<ChatMessageInfo> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onNewStatus(ChatMessageInfo arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addRegistrationCodeListener(WhatsappFunctionalListener.Unary<Long> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onRegistrationCode(long arg0) {
-                consumer.accept(arg0);
             }
         });
         return this;
@@ -4367,44 +4153,11 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addNameChangedListener(WhatsappFunctionalListener.Binary<String, String> consumer) {
+    public Whatsapp addContactBlockedListener(WhatsappFunctionalListener.Binary<Whatsapp, Jid> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
-            public void onNameChanged(String arg0, String arg1) {
-                consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addContactBlockedListener(WhatsappFunctionalListener.Binary<Whatsapp, Contact> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onContactBlocked(Whatsapp arg0, Contact arg1) {
-                consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addContactBlockedListener(WhatsappFunctionalListener.Unary<Contact> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onContactBlocked(Contact arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addAboutChangedListener(WhatsappFunctionalListener.Binary<String, String> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onAboutChanged(String arg0, String arg1) {
+            public void onContactBlocked(Whatsapp arg0, Jid arg1) {
                 consumer.accept(arg0, arg1);
             }
         });
@@ -4422,22 +4175,11 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addPrivacySettingChangedListener(WhatsappFunctionalListener.Ternary<Whatsapp, PrivacySettingEntry, PrivacySettingEntry> consumer) {
+    public Whatsapp addPrivacySettingChangedListener(WhatsappFunctionalListener.Binary<Whatsapp, PrivacySettingEntry> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
-            public void onPrivacySettingChanged(Whatsapp arg0, PrivacySettingEntry arg1, PrivacySettingEntry arg2) {
-                consumer.accept(arg0, arg1, arg2);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addPrivacySettingChangedListener(WhatsappFunctionalListener.Binary<PrivacySettingEntry, PrivacySettingEntry> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onPrivacySettingChanged(PrivacySettingEntry arg0, PrivacySettingEntry arg1) {
+            public void onPrivacySettingChanged(Whatsapp arg0, PrivacySettingEntry arg1) {
                 consumer.accept(arg0, arg1);
             }
         });
@@ -4455,45 +4197,12 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addWebAppPrimaryFeaturesListener(WhatsappFunctionalListener.Unary<Collection<String>> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onWebAppPrimaryFeatures(Collection<String> arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
     public Whatsapp addMessageDeletedListener(WhatsappFunctionalListener.Ternary<Whatsapp, MessageInfo, Boolean> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
             public void onMessageDeleted(Whatsapp arg0, MessageInfo arg1, boolean arg2) {
                 consumer.accept(arg0, arg1, arg2);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addMessageDeletedListener(WhatsappFunctionalListener.Binary<MessageInfo, Boolean> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onMessageDeleted(MessageInfo arg0, boolean arg1) {
-                consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addStatusListener(WhatsappFunctionalListener.Unary<Collection<ChatMessageInfo>> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onStatus(Collection<ChatMessageInfo> arg0) {
-                consumer.accept(arg0);
             }
         });
         return this;
@@ -4510,17 +4219,6 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addCallListener(WhatsappFunctionalListener.Unary<Call> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onCall(Call arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
     public Whatsapp addCallListener(WhatsappFunctionalListener.Binary<Whatsapp, Call> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
@@ -4532,34 +4230,12 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addWebAppStateSettingListener(WhatsappFunctionalListener.Unary<Setting> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onWebAppStateSetting(Setting arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
     public Whatsapp addWebAppStateSettingListener(WhatsappFunctionalListener.Binary<Whatsapp, Setting> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
             public void onWebAppStateSetting(Whatsapp arg0, Setting arg1) {
                 consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addNodeReceivedListener(WhatsappFunctionalListener.Unary<Node> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onNodeReceived(Node arg0) {
-                consumer.accept(arg0);
             }
         });
         return this;
@@ -4587,45 +4263,12 @@ public final class Whatsapp {
         return this;
     }
 
-    public Whatsapp addDisconnectedListener(WhatsappFunctionalListener.Unary<WhatsappDisconnectReason> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onDisconnected(WhatsappDisconnectReason arg0) {
-                consumer.accept(arg0);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addWebAppStateActionListener(WhatsappFunctionalListener.Binary<Action, MessageIndexInfo> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onWebAppStateAction(Action arg0, MessageIndexInfo arg1) {
-                consumer.accept(arg0, arg1);
-            }
-        });
-        return this;
-    }
-
     public Whatsapp addWebAppStateActionListener(WhatsappFunctionalListener.Ternary<Whatsapp, Action, MessageIndexInfo> consumer) {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         addListener(new WhatsappListener() {
             @Override
             public void onWebAppStateAction(Whatsapp arg0, Action arg1, MessageIndexInfo arg2) {
                 consumer.accept(arg0, arg1, arg2);
-            }
-        });
-        return this;
-    }
-
-    public Whatsapp addWebHistorySyncPastParticipantsListener(WhatsappFunctionalListener.Binary<Jid, Collection<ChatPastParticipant>> consumer) {
-        Objects.requireNonNull(consumer, "consumer cannot be null");
-        addListener(new WhatsappListener() {
-            @Override
-            public void onWebHistorySyncPastParticipants(Jid arg0, Collection<ChatPastParticipant> arg1) {
-                consumer.accept(arg0, arg1);
             }
         });
         return this;
@@ -4656,7 +4299,7 @@ public final class Whatsapp {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(MessageInfo info) {
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
                 var quotedMessageId = info.quotedMessage()
                         .map(QuotedMessageInfo::id)
                         .orElse(null);
@@ -4687,7 +4330,7 @@ public final class Whatsapp {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(MessageInfo info) {
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
                 if (info instanceof ChatMessageInfo chatMessageInfo) {
                     consumer.accept(chatMessageInfo);
                 }
@@ -4711,7 +4354,7 @@ public final class Whatsapp {
         Objects.requireNonNull(consumer, "consumer cannot be null");
         return addListener(new WhatsappListener() {
             @Override
-            public void onNewMessage(MessageInfo info) {
+            public void onNewMessage(Whatsapp whatsapp, MessageInfo info) {
                 if (info instanceof NewsletterMessageInfo newsletterMessageInfo) {
                     consumer.accept(newsletterMessageInfo);
                 }
@@ -4735,23 +4378,23 @@ public final class Whatsapp {
     // TODO: Stuff to fix
 
     private void pushPatch(WebAppStatePushRequest request) {
-        socketStream.pushPatch(request);
+
     }
 
     private void sendMessage(MessageRequest request) {
-        socketStream.sendMessage(request);
+
     }
 
     private void updateBusinessCertificate(String newName) {
-        socketStream.updateBusinessCertificate(newName);
+
     }
 
     private void querySessions(List<Jid> jids) {
-        socketStream.querySessions(jids);
+
     }
 
     private Node createCall(JidProvider jid) {
-        return socketStream.createCall(jid);
+        return Node.empty();
     }
 
     public void sendAck(Node node) {
@@ -4764,5 +4407,17 @@ public final class Whatsapp {
 
     public void sendAck(String messageId, Node node) {
 
+    }
+
+    public SequencedCollection<Newsletter> queryNewsletters() {
+        return List.of();
+    }
+
+    public void sendPreKeys(int preKeysUploadChunk) {
+
+    }
+
+    public SequencedCollection<Chat> queryGroups() {
+        return List.of();
     }
 }

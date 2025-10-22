@@ -45,7 +45,6 @@ public final class CallStreamNodeHandler extends SocketStream.Handler {
                 .build();
         whatsapp.store().addCall(call);
         for(var listener : whatsapp.store().listeners()) {
-            Thread.startVirtualThread(() -> listener.onCall(call));
             Thread.startVirtualThread(() -> listener.onCall(whatsapp, call));
         }
     }

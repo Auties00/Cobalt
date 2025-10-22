@@ -7,9 +7,6 @@ import java.util.Optional;
 import java.util.SequencedCollection;
 import java.util.UUID;
 
-/**
- * Private implementation for a serializer that discards all data.
- */
 final class DiscardingStoreSerializer implements WhatsappStoreSerializer {
     static final DiscardingStoreSerializer INSTANCE = new DiscardingStoreSerializer();
 

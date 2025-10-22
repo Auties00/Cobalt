@@ -76,7 +76,6 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
                 }
             }
             for(var listener : whatsapp.store().listeners()) {
-                Thread.startVirtualThread(() -> listener.onMessageStatus(message));
                 Thread.startVirtualThread(() -> listener.onMessageStatus(whatsapp, message));
             }
         });
@@ -92,7 +91,6 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
                 .orElse(MessageStatus.DELIVERED);
         message.setStatus(status);
         for (var listener : whatsapp.store().listeners()) {
-            Thread.startVirtualThread(() -> listener.onMessageStatus(message));
             Thread.startVirtualThread(() -> listener.onMessageStatus(whatsapp, message));
         }
         if(node.hasAttribute("type", "retry")) {

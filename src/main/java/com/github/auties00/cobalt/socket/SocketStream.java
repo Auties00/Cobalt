@@ -13,7 +13,7 @@ import com.github.auties00.cobalt.socket.message.MessageStreamNodeHandler;
 import com.github.auties00.cobalt.socket.notification.NotificationStreamNodeHandler;
 import com.github.auties00.cobalt.socket.presence.PresenceStreamNodeHandler;
 import com.github.auties00.cobalt.socket.receipt.ReceiptStreamNodeHandler;
-import com.github.auties00.cobalt.socket.state.StreamEndStreamNodeHandler;
+import com.github.auties00.cobalt.socket.state.EndStreamNodeHandler;
 import com.github.auties00.cobalt.socket.state.SuccessStreamNodeHandler;
 import com.github.auties00.cobalt.util.PhonePairingCode;
 
@@ -37,7 +37,7 @@ public final class SocketStream {
                 new NotificationStreamNodeHandler(whatsapp, pairingCode),
                 new ReceiptStreamNodeHandler(whatsapp),
                 new PresenceStreamNodeHandler(whatsapp),
-                new StreamEndStreamNodeHandler(whatsapp),
+                new EndStreamNodeHandler(whatsapp),
                 new SuccessStreamNodeHandler(whatsapp)
         );
     }
@@ -63,7 +63,10 @@ public final class SocketStream {
     }
 
     public void dispose() {
-        handlers.forEach((_, handler) -> handler.dispose());
+        for (var entry : handlers.entrySet()) {
+            var handler = entry.getValue();
+            handler.dispose();
+        }
     }
 
     public abstract static class Handler {

@@ -335,6 +335,10 @@ public sealed interface Node {
      */
     SequencedCollection<Node> children();
 
+    default Stream<Node> streamChildren() {
+        return children().stream();
+    }
+
     /**
      * Retrieves the first child Node in this container, if present.
      *

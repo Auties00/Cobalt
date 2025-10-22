@@ -25,7 +25,6 @@ public final class PresenceStreamNodeHandler extends SocketStream.Handler {
                         contact.setLastSeen(ZonedDateTime.now());
                     });
             for(var listener : whatsapp.store().listeners()) {
-                Thread.startVirtualThread(() -> listener.onContactPresence(chatJid, chatJid));
                 Thread.startVirtualThread(() -> listener.onContactPresence(whatsapp, chatJid, chatJid));
             }
         } else {
@@ -39,7 +38,6 @@ public final class PresenceStreamNodeHandler extends SocketStream.Handler {
                     .findChatByJid(chatJid)
                     .ifPresent(chat -> chat.addPresence(participantJid.get(), status));
             for(var listener : whatsapp.store().listeners()) {
-                Thread.startVirtualThread(() -> listener.onContactPresence(chatJid, participantJid.get()));
                 Thread.startVirtualThread(() -> listener.onContactPresence(whatsapp, chatJid, participantJid.get()));
             }
         }

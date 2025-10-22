@@ -318,7 +318,6 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         }
 
         for (var listener : whatsapp.store().listeners()) {
-            Thread.startVirtualThread(() -> listener.onRegistrationCode(code.getAsLong()));
             Thread.startVirtualThread(() -> listener.onRegistrationCode(whatsapp, code.getAsLong()));
         }
     }
@@ -337,12 +336,10 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         if(!whatsapp.store().hasContact(fromJid)) {
             var contact = whatsapp.store().addNewContact(fromJid);
             for (var listener : whatsapp.store().listeners()) {
-                Thread.startVirtualThread(() -> listener.onNewContact(contact));
                 Thread.startVirtualThread(() -> listener.onNewContact(whatsapp, contact));
             }
         }
         for (var listener : whatsapp.store().listeners()) {
-            Thread.startVirtualThread(() -> listener.onProfilePictureChanged(fromJid));
             Thread.startVirtualThread(() -> listener.onProfilePictureChanged(whatsapp, fromJid));
         }
     }
@@ -379,7 +376,6 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 .build();
         chat.addMessage(message);
         for (var listener : whatsapp.store().listeners()) {
-            Thread.startVirtualThread(() -> listener.onNewMessage(message));
             Thread.startVirtualThread(() -> listener.onNewMessage(whatsapp, message));
         }
     }
@@ -462,7 +458,6 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         whatsapp.store()
                 .setProfilePicture(result.orElse(null));
         for (var listener : whatsapp.store().listeners()) {
-            Thread.startVirtualThread(() -> listener.onProfilePictureChanged(user.withoutData()));
             Thread.startVirtualThread(() -> listener.onProfilePictureChanged(whatsapp, user.withoutData()));
         }
     }
@@ -489,7 +484,6 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         whatsapp.store()
                 .setAbout(newAbout);
         for (var listener : whatsapp.store().listeners()) {
-            Thread.startVirtualThread(() -> listener.onAboutChanged(oldAbout, newAbout));
             Thread.startVirtualThread(() -> listener.onAboutChanged(whatsapp, oldAbout, newAbout));
         }
     }
@@ -505,7 +499,6 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                     .findContactByJid(value.get())
                     .ifPresent(contact -> contact.setBlocked(entry.hasAttribute("action", "block")));
             for (var listener : whatsapp.store().listeners()) {
-                Thread.startVirtualThread(() -> listener.onContactBlocked(value.get()));
                 Thread.startVirtualThread(() -> listener.onContactBlocked(whatsapp, value.get()));
             }
         });
@@ -536,7 +529,6 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             whatsapp.store()
                     .addPrivacySetting(newEntry);
             for(var listener : whatsapp.store().listeners()) {
-                Thread.startVirtualThread(() -> listener.onPrivacySettingChanged(newEntry));
                 Thread.startVirtualThread(() -> listener.onPrivacySettingChanged(whatsapp, newEntry));
             }
         });
