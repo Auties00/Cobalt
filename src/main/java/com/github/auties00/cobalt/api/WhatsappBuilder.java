@@ -541,7 +541,7 @@ public sealed class WhatsappBuilder {
              */
             public Web historySetting(WhatsappWebHistoryPolicy historyLength) {
                 Objects.requireNonNull(historyLength, "historyLength must not be null");
-                store.setHistoryLength(historyLength);
+                store.setWebHistoryPolicy(historyLength);
                 return this;
             }
 

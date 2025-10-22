@@ -11,7 +11,6 @@ import com.github.auties00.cobalt.model.info.MessageIndexInfo;
 import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.info.QuotedMessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.model.newsletter.Newsletter;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
 import com.github.auties00.cobalt.model.setting.Setting;
@@ -198,7 +197,7 @@ public interface WhatsappListener {
      * @param conversation the chat related to this presence update
      * @param participant  the contact whose presence status changed
      */
-    default void onContactPresence(Whatsapp whatsapp, JidProvider conversation, JidProvider participant) {
+    default void onContactPresence(Whatsapp whatsapp, Jid conversation, Jid participant) {
     }
 
     /**
@@ -207,7 +206,7 @@ public interface WhatsappListener {
      * @param conversation the conversation related to this presence update
      * @param participant  the participant whose presence status changed
      */
-    default void onContactPresence(JidProvider conversation, JidProvider participant) {
+    default void onContactPresence(Jid conversation, Jid participant) {
     }
 
     /**
@@ -430,7 +429,7 @@ public interface WhatsappListener {
      *
      * @param jid the contact whose profile picture changed
      */
-    default void onProfilePictureChanged(JidProvider jid) {
+    default void onProfilePictureChanged(Jid jid) {
     }
 
     /**
@@ -439,7 +438,7 @@ public interface WhatsappListener {
      * @param whatsapp an instance of the calling API
      * @param jid      the contact whose profile picture changed
      */
-    default void onProfilePictureChanged(Whatsapp whatsapp, JidProvider jid) {
+    default void onProfilePictureChanged(Whatsapp whatsapp, Jid jid) {
     }
 
     /**
@@ -504,7 +503,7 @@ public interface WhatsappListener {
      *
      * @param contact the non-null contact that was blocked or unblocked
      */
-    default void onContactBlocked(Contact contact) {
+    default void onContactBlocked(Jid contact) {
     }
 
     /**
@@ -513,7 +512,7 @@ public interface WhatsappListener {
      * @param whatsapp an instance of the calling API
      * @param contact  the non-null contact that was blocked or unblocked
      */
-    default void onContactBlocked(Whatsapp whatsapp, Contact contact) {
+    default void onContactBlocked(Whatsapp whatsapp, Jid contact) {
     }
 
     /**
@@ -537,36 +536,17 @@ public interface WhatsappListener {
      * Called when a privacy setting is changed.
      *
      * @param whatsapp        an instance of the calling API
-     * @param oldPrivacyEntry the previous privacy setting
      * @param newPrivacyEntry the new privacy setting
      */
-    default void onPrivacySettingChanged(Whatsapp whatsapp, PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
+    default void onPrivacySettingChanged(Whatsapp whatsapp, PrivacySettingEntry newPrivacyEntry) {
     }
 
     /**
      * Called when a privacy setting is changed.
      *
-     * @param oldPrivacyEntry the previous privacy setting
      * @param newPrivacyEntry the new privacy setting
      */
-    default void onPrivacySettingChanged(PrivacySettingEntry oldPrivacyEntry, PrivacySettingEntry newPrivacyEntry) {
-    }
-
-    /**
-     * Called when the list of linked devices is updated.
-     *
-     * @param whatsapp an instance of the calling API
-     * @param devices  the non-null collection of linked device JIDs
-     */
-    default void onLinkedDevices(Whatsapp whatsapp, Collection<Jid> devices) {
-    }
-
-    /**
-     * Called when the list of linked devices is updated.
-     *
-     * @param devices the non-null collection of linked device JIDs
-     */
-    default void onLinkedDevices(Collection<Jid> devices) {
+    default void onPrivacySettingChanged(PrivacySettingEntry newPrivacyEntry) {
     }
 
     /**

@@ -9,7 +9,6 @@ import com.github.auties00.cobalt.io.core.node.Node;
 import com.github.auties00.cobalt.io.core.node.NodeAttribute;
 import com.github.auties00.cobalt.io.core.node.NodeBuilder;
 import com.github.auties00.cobalt.io.core.node.NodeDecoder;
-import com.github.auties00.cobalt.io.media.MediaProfilePictureInputStream;
 import com.github.auties00.cobalt.model.action.*;
 import com.github.auties00.cobalt.model.business.*;
 import com.github.auties00.cobalt.model.call.Call;
@@ -236,7 +235,7 @@ public final class Whatsapp {
         }
     }
 
-    private void resolvePendingRequest(Node node) {
+    public void resolvePendingRequest(Node node) {
         var id = node.getAttribute("id")
                 .map(NodeAttribute::toString)
                 .orElse(null);
@@ -407,8 +406,8 @@ public final class Whatsapp {
                 .attribute("type", "get")
                 .content(businessProfileNode);
         var result = sendNode(iqNode);
-        return result.findChild("business_profile")
-                .flatMap(entry -> entry.findChild("profile"))
+        return result.getChild("business_profile")
+                .flatMap(entry -> entry.getChild("profile"))
                 .map(BusinessProfile::of);
     }
 
@@ -509,7 +508,7 @@ public final class Whatsapp {
     }
 
     private boolean hasWhatsapp(Node node) {
-        return node.findChild("contact")
+        return node.getChild("contact")
                 .orElseThrow(() -> new NoSuchElementException("Missing contact"))
                 .getRequiredAttribute("type")
                 .toString()
@@ -561,7 +560,7 @@ public final class Whatsapp {
                             .attribute("type", "get")
                             .content(queryNode);
                     return sendNode(iqNode)
-                            .findChild("result")
+                            .getChild("result")
                             .flatMap(Node::toContentBytes)
                             .flatMap(UserChosenNameResponse::ofJson)
                             .flatMap(UserChosenNameResponse::name);
@@ -641,7 +640,7 @@ public final class Whatsapp {
                 .attribute("type", "get")
                 .content(pictureNode);
         return sendNode(iqNode)
-                .findChild("picture")
+                .getChild("picture")
                 .flatMap(picture -> picture.getAttribute("url"))
                 .map(attribute -> URI.create(attribute.toString()));
     }
@@ -856,7 +855,7 @@ public final class Whatsapp {
     }
 
     private void checkBusinessAttributeConflict(String key, String value, Node result) {
-        var keyNode = result.findChild("profile").flatMap(entry -> entry.findChild(key));
+        var keyNode = result.getChild("profile").flatMap(entry -> entry.getChild(key));
         if (keyNode.isEmpty()) {
             return;
         }
@@ -870,7 +869,7 @@ public final class Whatsapp {
 
     private String findErrorNode(Node result) {
         return Optional.ofNullable(result)
-                .flatMap(node -> node.findChild("error"))
+                .flatMap(node -> node.getChild("error"))
                 .map(Node::toString)
                 .orElseGet(() -> Objects.toString(result));
     }
@@ -1142,7 +1141,7 @@ public final class Whatsapp {
     }
 
     private Optional<BusinessVerifiedNameCertificate> parseCertificate(Node result) {
-        return result.findChild("verified_name")
+        return result.getChild("verified_name")
                 .flatMap(Node::toContentBytes)
                 .map(BusinessVerifiedNameCertificateSpec::decode);
     }
@@ -1689,18 +1688,18 @@ public final class Whatsapp {
                     .attribute("type", "server-error")
                     .content(encryptNode, rmrBuilder.build());
             var result = sendNode(node, resultNode -> resultNode.hasDescription("notification"));
-            if (result.findChild("error").isPresent()) {
+            if (result.getChild("error").isPresent()) {
                 var code = result.getAttribute("code")
                         .map(NodeAttribute::toString)
                         .orElse("unknown");
                 throw new IllegalArgumentException("Erroneous response from media reupload: " + code);
             }
-            var resultEncryptNode = result.findChild("encrypt")
+            var resultEncryptNode = result.getChild("encrypt")
                     .orElseThrow(() -> new NoSuchElementException("Missing encrypt node in media reupload"));
-            var resultMediaNode = resultEncryptNode.findChild("enc_p")
+            var resultMediaNode = resultEncryptNode.getChild("enc_p")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new NoSuchElementException("Missing encrypted payload node in media reupload"));
-            var resultMediaIv = resultEncryptNode.findChild("enc_iv")
+            var resultMediaIv = resultEncryptNode.getChild("enc_iv")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new NoSuchElementException("Missing encrypted iv node in media reupload"));
             var decryptCipher = Cipher.getInstance("AES/GCM/NoPadding");
@@ -1898,7 +1897,7 @@ public final class Whatsapp {
                 var request = new WebAppStatePushRequest(PatchType.REGULAR_HIGH, List.of(entry));
                 pushPatch(request);
             }
-            case MOBILE -> messageInfo.chat().ifPresent(chat -> chat.removeMessage(messageInfo));
+            case MOBILE -> messageInfo.chat().ifPresent(chat -> chat.removeMessage(messageInfo.id()));
         }
     }
 
@@ -2312,7 +2311,7 @@ public final class Whatsapp {
     private GroupOrCommunityMetadata handleGroupMetadata(Node response) {
         var metadataNode = Optional.of(response)
                 .filter(entry -> entry.hasDescription("group"))
-                .or(() -> response.findChild("group"))
+                .or(() -> response.getChild("group"))
                 .orElseThrow(() -> new NoSuchElementException("Erroneous response: %s".formatted(response)));
         var metadata = parseGroupMetadata(metadataNode);
         var chat = store.findChatByJid(metadata.jid())
@@ -2329,28 +2328,28 @@ public final class Whatsapp {
         var subjectTimestampSeconds = node.getAttributeAsLong("s_t", 0);
         var foundationTimestampSeconds = node.getAttributeAsLong("creation", 0);
         var founder = node.getAttributeAsJid("creator", null);
-        var description = node.findChild("description")
-                .flatMap(parent -> parent.findChild("body"))
+        var description = node.getChild("description")
+                .flatMap(parent -> parent.getChild("body"))
                 .flatMap(Node::toContentString)
                 .orElse(null);
-        var descriptionId = node.findChild("description")
+        var descriptionId = node.getChild("description")
                 .flatMap(descriptionNode -> descriptionNode.getAttributeAsString("id"))
                 .orElse(null);
-        long ephemeral = node.findChild("ephemeral")
+        long ephemeral = node.getChild("ephemeral")
                 .map(ephemeralNode -> ephemeralNode.getAttributeAsLong("expiration", 0))
                 .orElse(0L);
-        var communityNode = node.findChild("parent")
+        var communityNode = node.getChild("parent")
                 .orElse(null);
         var policies = new HashMap<Integer, ChatSettingPolicy>();
         if (communityNode == null) {
             policies.put(GroupSetting.EDIT_GROUP_INFO.index(), ChatSettingPolicy.of(node.hasChild("announce")));
             policies.put(GroupSetting.SEND_MESSAGES.index(), ChatSettingPolicy.of(node.hasChild("restrict")));
-            var addParticipantsMode = node.findChild("member_add_mode")
+            var addParticipantsMode = node.getChild("member_add_mode")
                     .flatMap(Node::toContentString)
                     .orElse(null);
             policies.put(GroupSetting.ADD_PARTICIPANTS.index(), ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
-            var groupJoin = node.findChild("membership_approval_mode")
-                    .flatMap(entry -> entry.findChild("group_join"))
+            var groupJoin = node.getChild("membership_approval_mode")
+                    .flatMap(entry -> entry.getChild("group_join"))
                     .map(entry -> entry.hasAttribute("state", "on"))
                     .orElse(false);
             policies.put(GroupSetting.APPROVE_PARTICIPANTS.index(), ChatSettingPolicy.of(groupJoin));
@@ -2379,7 +2378,7 @@ public final class Whatsapp {
                     .build();
         } else {
             policies.put(CommunitySetting.MODIFY_GROUPS.index(), ChatSettingPolicy.of(communityNode.hasChild("allow_non_admin_sub_group_creation")));
-            var addParticipantsMode = node.findChild("member_add_mode")
+            var addParticipantsMode = node.getChild("member_add_mode")
                     .flatMap(Node::toContentString)
                     .orElse(null);
             policies.put(CommunitySetting.ADD_PARTICIPANTS.index(), ChatSettingPolicy.of(Objects.equals(addParticipantsMode, "admin_add")));
@@ -2412,7 +2411,7 @@ public final class Whatsapp {
                     .attribute("type", "get")
                     .content(communityGroupsQuery);
             var communityGroupsResponse = sendNode(communityGroupsRequest);
-            var communityLinkedGroups = communityGroupsResponse.findChild("result")
+            var communityLinkedGroups = communityGroupsResponse.getChild("result")
                     .flatMap(Node::toContentBytes)
                     .flatMap(CommunityLinkedGroupsResponse::ofJson)
                     .map(CommunityLinkedGroupsResponse::linkedGroups)
@@ -2477,7 +2476,7 @@ public final class Whatsapp {
                 .attribute("type", "get")
                 .content(inviteNode);
         var result = sendNode(iqNode);
-        return result.findChild("invite")
+        return result.getChild("invite")
                 .orElseThrow(() -> new NoSuchElementException("Missing invite code in invite newsletters"))
                 .getRequiredAttribute("code")
                 .toString();
@@ -2591,7 +2590,7 @@ public final class Whatsapp {
                 .attribute("type", "set")
                 .content(inviteNode);
         var result = sendNode(iqNode);
-        return result.findChild("group")
+        return result.getChild("group")
                 .flatMap(group -> group.getAttributeAsJid("value"))
                 .map(attribute -> store.findChatByJid(attribute).orElseGet(() -> store.addNewChat(attribute)));
     }
@@ -2922,7 +2921,7 @@ public final class Whatsapp {
                 .attribute("type", "set")
                 .content(body);
         var future = sendNode(iqNode);
-        return future.findChild("group")
+        return future.getChild("group")
                 .map(this::handleGroupMetadata);
     }
 
@@ -3066,7 +3065,7 @@ public final class Whatsapp {
     }
 
     private Optional<GroupOrCommunityMetadata> parseGroupResult(Node node) {
-        return node.findChild("group")
+        return node.getChild("group")
                 .map(this::handleGroupMetadata);
     }
 
@@ -3158,7 +3157,7 @@ public final class Whatsapp {
                                 .attribute("type", "get")
                                 .content(body);
                         var result = sendNode(iqNode);
-                        var resultJsonSource = result.findChild("result")
+                        var resultJsonSource = result.getChild("result")
                                 .flatMap(Node::toContentString)
                                 .orElse(null);
                         if (resultJsonSource == null) {
@@ -3182,7 +3181,7 @@ public final class Whatsapp {
                                 .attribute("type", "set")
                                 .content(body);
                         var result = sendNode(iqNode);
-                        if (result.findChild("error").isPresent()) {
+                        if (result.getChild("error").isPresent()) {
                             throw new IllegalArgumentException("Cannot change community setting: " + result);
                         }
                     }
@@ -3257,9 +3256,9 @@ public final class Whatsapp {
                 .attribute("type", "set")
                 .content(unlinkNode);
         var result = sendNode(iqNode);
-        return result.findChild("unlink")
+        return result.getChild("unlink")
                 .filter(entry -> entry.hasAttribute("unlink_type", "sub_group"))
-                .flatMap(entry -> entry.findChild("group"))
+                .flatMap(entry -> entry.getChild("group"))
                 .map(entry -> entry.hasAttribute("value", group.toJid()))
                 .isPresent();
     }
@@ -3299,7 +3298,7 @@ public final class Whatsapp {
                 .attribute("type", "get")
                 .content(queryNode);
         return sendNode(iqNode)
-                .findChild("result")
+                .getChild("result")
                 .flatMap(Node::toContentBytes)
                 .flatMap(RecommendedNewslettersResponse::of)
                 .map(RecommendedNewslettersResponse::newsletters)
@@ -3390,7 +3389,7 @@ public final class Whatsapp {
                 .attribute("type", "get")
                 .content(queryNode);
         var result = sendNode(iqNode)
-                .findChild("result")
+                .getChild("result")
                 .flatMap(Node::toContentBytes)
                 .flatMap(NewsletterResponse::ofJson)
                 .map(NewsletterResponse::newsletter);
@@ -3487,7 +3486,7 @@ public final class Whatsapp {
                 .attribute("type", "get")
                 .content(queryNode);
         return sendNode(iqNode)
-                .findChild("result")
+                .getChild("result")
                 .flatMap(Node::toContentBytes)
                 .flatMap(NewsletterSubscribersResponse::ofJson)
                 .flatMap(NewsletterSubscribersResponse::subscribersCount);
@@ -3524,7 +3523,7 @@ public final class Whatsapp {
                 .attribute("type", "get")
                 .content(queryNode);
         var expirationTimestamp = sendNode(iqNode)
-                .findChild("result")
+                .getChild("result")
                 .flatMap(Node::toContentBytes)
                 .flatMap(CreateAdminInviteNewsletterResponse::ofJson)
                 .map(CreateAdminInviteNewsletterResponse::expirationTime)
@@ -3568,7 +3567,7 @@ public final class Whatsapp {
                 .attribute("type", "get")
                 .content(queryNode);
         return sendNode(iqNode)
-                .findChild("result")
+                .getChild("result")
                 .flatMap(Node::toContentBytes)
                 .flatMap(RevokeAdminInviteNewsletterResponse::ofJson)
                 .map(RevokeAdminInviteNewsletterResponse::jid)
@@ -3595,7 +3594,7 @@ public final class Whatsapp {
                 .attribute("type", "get")
                 .content(queryNode);
         var resultNode = sendNode(iqNode);
-        var result = resultNode.findChild("result");
+        var result = resultNode.getChild("result");
         if (result.isEmpty()) {
             return false;
         }
@@ -3640,7 +3639,7 @@ public final class Whatsapp {
                 .attribute("type", "get")
                 .content(queryNode);
         var response = sendNode(iqNode);
-        return response.findChild("result")
+        return response.getChild("result")
                 .flatMap(Node::toContentBytes)
                 .flatMap(NewsletterResponse::ofJson)
                 .map(NewsletterResponse::newsletter);
@@ -3739,7 +3738,7 @@ public final class Whatsapp {
     }
 
     private Optional<Jid> parseAddedContact(Node user) {
-        var contactNode = user.findChild("contact");
+        var contactNode = user.getChild("contact");
         if (contactNode.isPresent() && contactNode.get().hasAttribute("type", "in")) {
             return Optional.empty();
         }
@@ -3819,7 +3818,7 @@ public final class Whatsapp {
                 .attribute("type", "set")
                 .content(twoFaNode);
         var result = sendNode(iqNode);
-        return result.findChild("error").isEmpty();
+        return result.getChild("error").isEmpty();
     }
 
     /**
@@ -3939,7 +3938,7 @@ public final class Whatsapp {
                     .attribute("to", call.chatJid())
                     .content(rejectNode);
             var result = sendNode(body);
-            return result.findChild("error").isEmpty();
+            return result.getChild("error").isEmpty();
         }
 
         var rejectNode = new NodeBuilder()
@@ -3954,7 +3953,7 @@ public final class Whatsapp {
                 .attribute("to", call.callerJid())
                 .content(rejectNode);
         var result = sendNode(body);
-        return result.findChild("error").isEmpty();
+        return result.getChild("error").isEmpty();
     }
     //</editor-fold>  
 
@@ -4753,5 +4752,17 @@ public final class Whatsapp {
 
     private Node createCall(JidProvider jid) {
         return socketStream.createCall(jid);
+    }
+
+    public void sendAck(Node node) {
+
+    }
+
+    public void pullWebAppStatePatches(PatchType... patches) {
+
+    }
+
+    public void sendAck(String messageId, Node node) {
+
     }
 }

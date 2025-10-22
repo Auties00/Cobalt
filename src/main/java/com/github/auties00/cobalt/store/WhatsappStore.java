@@ -185,16 +185,6 @@ public final class WhatsappStore implements SignalProtocolStore {
     @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
     ReleaseChannel releaseChannel;
 
-    /**
-     * Unique hash identifier for this companion device in multi-device sessions.
-     * <p>
-     * Generated during initial device linking/pairing process. Used in WhatsApp's
-     * multi-device architecture to identify and validate specific device pairings.
-     * Null for primary devices or before pairing completes.
-     */
-    @ProtobufProperty(index = 8, type = ProtobufType.STRING)
-    String deviceHash;
-
     // =====================================================
     // SECTION: User Account & Profile
     // =====================================================
@@ -464,7 +454,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @see WhatsappWebHistoryPolicy
      */
     @ProtobufProperty(index = 31, type = ProtobufType.MESSAGE)
-    WhatsappWebHistoryPolicy historyLength;
+    WhatsappWebHistoryPolicy webHistoryPolicy;
 
     /**
      * Whether presence updates are automatically sent to WhatsApp servers.
@@ -840,7 +830,6 @@ public final class WhatsappStore implements SignalProtocolStore {
             Version version,
             JidDevice device,
             ReleaseChannel releaseChannel,
-            String deviceHash,
             boolean online,
             String locale,
             String name,
@@ -863,7 +852,7 @@ public final class WhatsappStore implements SignalProtocolStore {
             boolean unarchiveChats,
             boolean twentyFourHourFormat,
             ChatEphemeralTimer newChatsEphemeralTimer,
-            WhatsappWebHistoryPolicy historyLength,
+            WhatsappWebHistoryPolicy webHistoryPolicy,
             boolean automaticPresenceUpdates,
             boolean automaticMessageReceipts,
             boolean checkPatchMacs,
@@ -905,8 +894,7 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.businessDescription = businessDescription; 
         this.businessWebsite = businessWebsite; 
         this.businessEmail = businessEmail; 
-        this.businessCategory = businessCategory; 
-        this.deviceHash = deviceHash;
+        this.businessCategory = businessCategory;
         this.profilePicture = profilePicture; 
         this.about = about; 
         this.jid = jid;  
@@ -919,7 +907,7 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.twentyFourHourFormat = twentyFourHourFormat;
         this.initializationTimeStamp = initializationTimeStamp;
         this.newChatsEphemeralTimer = Objects.requireNonNullElse(newChatsEphemeralTimer, ChatEphemeralTimer.OFF);
-        this.historyLength = historyLength;
+        this.webHistoryPolicy = webHistoryPolicy;
         this.automaticPresenceUpdates = automaticPresenceUpdates;
         this.automaticMessageReceipts = automaticMessageReceipts;
         this.releaseChannel = Objects.requireNonNullElse(releaseChannel, ReleaseChannel.RELEASE);
@@ -1454,26 +1442,6 @@ public final class WhatsappStore implements SignalProtocolStore {
     }
 
     /**
-     * Returns the device hash.
-     *
-     * @return Optional containing the device hash, empty if not set
-     */
-    public Optional<String> deviceHash() {
-        return Optional.ofNullable(deviceHash);
-    }
-
-    /**
-     * Sets the device hash.
-     *
-     * @param deviceHash the device hash, may be null
-     * @return this store instance for method chaining
-     */
-    public WhatsappStore setDeviceHash(String deviceHash) {
-        this.deviceHash = deviceHash;
-        return this;
-    }
-
-    /**
      * Returns whether this account appears online.
      *
      * @return true if online, false otherwise
@@ -1883,18 +1851,18 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @return Optional containing the history policy, empty if not configured
      */
-    public Optional<WhatsappWebHistoryPolicy> historyLength() {
-        return Optional.ofNullable(historyLength);
+    public Optional<WhatsappWebHistoryPolicy> webHistoryPolicy() {
+        return Optional.ofNullable(webHistoryPolicy);
     }
 
     /**
      * Sets the history sync policy.
      *
-     * @param historyLength the history policy, may be null
+     * @param webHistoryPolicy the history policy, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setHistoryLength(WhatsappWebHistoryPolicy historyLength) {
-        this.historyLength = historyLength;
+    public WhatsappStore setWebHistoryPolicy(WhatsappWebHistoryPolicy webHistoryPolicy) {
+        this.webHistoryPolicy = webHistoryPolicy;
         return this;
     }
 
@@ -2538,7 +2506,7 @@ public final class WhatsappStore implements SignalProtocolStore {
                && Objects.equals(privacySettings, that.privacySettings)
                && Objects.equals(properties, that.properties)
                && newChatsEphemeralTimer == that.newChatsEphemeralTimer
-               && Objects.equals(historyLength, that.historyLength)
+               && Objects.equals(webHistoryPolicy, that.webHistoryPolicy)
                && Objects.equals(registrationId, that.registrationId)
                && Objects.equals(noiseKeyPair, that.noiseKeyPair)
                && Objects.equals(identityKeyPair, that.identityKeyPair)
@@ -2567,7 +2535,7 @@ public final class WhatsappStore implements SignalProtocolStore {
                 about, jid, lid, businessAddress, businessLongitude, businessLatitude,
                 businessDescription, businessWebsite, businessEmail, businessCategory,
                 chats, newsletters, status, contacts, calls, privacySettings, properties,
-                unarchiveChats, twentyFourHourFormat, newChatsEphemeralTimer, historyLength,
+                unarchiveChats, twentyFourHourFormat, newChatsEphemeralTimer, webHistoryPolicy,
                 automaticPresenceUpdates, automaticMessageReceipts, checkPatchMacs, syncedChats, 
                 syncedContacts, syncedNewsletters, syncedStatus, syncedWebAppState, syncedBusinessCertificate,
                 registrationId, noiseKeyPair, identityKeyPair, companionKeyPair, companionIdentity,

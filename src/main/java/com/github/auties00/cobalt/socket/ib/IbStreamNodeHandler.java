@@ -3,6 +3,7 @@ package com.github.auties00.cobalt.socket.ib;
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.io.core.node.Node;
 import com.github.auties00.cobalt.io.core.node.NodeBuilder;
+import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 public final class IbStreamNodeHandler extends SocketStream.Handler {
@@ -12,7 +13,7 @@ public final class IbStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        var child = node.findChild();
+        var child = node.getChild();
         if(child.isEmpty()) {
             return;
         }
@@ -24,13 +25,14 @@ public final class IbStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleIbDirty(Node dirty) {
-        var type = dirty.getRequiredAttribute("type")
-                .toString();
-        if (!type.equals("account_sync")) {
-            return;
+        var type = dirty.getRequiredAttributeAsString("type");
+        switch (type) {
+            case "account_sync" -> handleAccountSync(dirty, type);
         }
-        var timestamp = dirty.getRequiredAttribute("timestamp")
-                .toString();
+    }
+
+    private void handleAccountSync(Node dirty, String type) {
+        var timestamp = dirty.getRequiredAttributeAsLong("timestamp");
         var queryBody = new NodeBuilder()
                 .description("clean")
                 .attribute("type", type)
@@ -38,17 +40,15 @@ public final class IbStreamNodeHandler extends SocketStream.Handler {
                 .build();
         var queryRequest = new NodeBuilder()
                 .description("iq")
+                .attribute("to", JidServer.user())
                 .attribute("type", "set")
                 .attribute("xmlns", "urn:xmpp:whatsapp:dirty")
-                .content(queryBody)
-                .build();
+                .content(queryBody);
         whatsapp.sendNode(queryRequest);
     }
 
     private void handleIbOfflinePreview(Node offlinePreview) {
-        var count = offlinePreview.getAttribute("count")
-                .map(attribute -> Long.parseUnsignedLong(attribute.toString()))
-                .orElse(0L);
+        var count = offlinePreview.getAttributeAsLong("count", 0);
         var ibBody = new NodeBuilder()
                 .description("offline_batch")
                 .attribute("count", count)

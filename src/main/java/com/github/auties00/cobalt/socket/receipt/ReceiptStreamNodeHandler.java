@@ -2,7 +2,6 @@ package com.github.auties00.cobalt.socket.receipt;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.io.core.node.Node;
-import com.github.auties00.cobalt.io.core.node.NodeAttribute;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
@@ -25,8 +24,7 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        var senderJid = node.getRequiredAttribute("from")
-                .toJid();
+        var senderJid = node.getRequiredAttributeAsJid("from");
         getReceiptsMessageIds(node).forEachOrdered(messageId -> {
             whatsapp.sendAck(messageId, node);
             var message = whatsapp.store().findMessageById(senderJid, messageId);
@@ -43,28 +41,22 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
     }
 
     private Stream<String> getReceiptsMessageIds(Node node) {
-        var outerId = node.getAttribute("id")
-                .map(NodeAttribute::toString)
-                .stream();
-        var innerIds = node.findChild("list")
-                .stream()
+        var outerId = node.streamAttributeAsString("id");
+        var innerIds = node.streamChildren("list")
                 .flatMap(list -> list.streamChildren("item"))
-                .flatMap(item -> item.getAttribute("id").stream())
-                .map(NodeAttribute::toString);
+                .flatMap(item -> item.streamAttributeAsString("id"));
         return Stream.concat(outerId, innerIds);
     }
 
 
     private void updateChatReceipt(Node node, ChatMessageInfo message) {
-        var status = node.getAttribute("type")
-                .map(NodeAttribute::toString)
+        var status = node.getAttributeAsString("type")
                 .flatMap(MessageStatus::of)
                 .orElse(MessageStatus.DELIVERED);
         message.chat().ifPresent(chat -> {
             var newCount = chat.unreadMessagesCount() - 1;
             chat.setUnreadMessagesCount(newCount);
-            var participant = node.getAttribute("participant")
-                    .map(NodeAttribute::toJid)
+            var participant = node.getAttributeAsJid("participant")
                     .flatMap(whatsapp.store()::findContactByJid)
                     .orElse(null);
             var target = participant != null ? participant.jid() : message.senderJid();
@@ -88,18 +80,14 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
                 Thread.startVirtualThread(() -> listener.onMessageStatus(whatsapp, message));
             }
         });
-        var type = node.getAttribute("type")
-                .map(NodeAttribute::toString)
-                .orElse("");
-        if(type.equals("retry")) {
+        if(node.hasAttribute("type", "retry")) {
             acceptMessageRetry(message);
         }
         message.setStatus(status);
     }
 
     private void updateNewsletterReceipt(Node node, NewsletterMessageInfo message) {
-        var status = node.getAttribute("type")
-                .map(NodeAttribute::toString)
+        var status = node.getAttributeAsString("type")
                 .flatMap(MessageStatus::of)
                 .orElse(MessageStatus.DELIVERED);
         message.setStatus(status);
@@ -107,10 +95,7 @@ public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
             Thread.startVirtualThread(() -> listener.onMessageStatus(message));
             Thread.startVirtualThread(() -> listener.onMessageStatus(whatsapp, message));
         }
-        var type = node.getAttribute("type")
-                .map(NodeAttribute::toString)
-                .orElse("");
-        if(type.equals("retry")) {
+        if(node.hasAttribute("type", "retry")) {
             acceptMessageRetry(message);
         }
     }

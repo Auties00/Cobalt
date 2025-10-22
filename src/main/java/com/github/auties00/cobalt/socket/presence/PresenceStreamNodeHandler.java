@@ -2,7 +2,6 @@ package com.github.auties00.cobalt.socket.presence;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.io.core.node.Node;
-import com.github.auties00.cobalt.io.core.node.NodeAttribute;
 import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.socket.SocketStream;
 
@@ -16,10 +15,8 @@ public final class PresenceStreamNodeHandler extends SocketStream.Handler {
     @Override
     public void handle(Node node) {
         var status = getUpdateType(node);
-        var chatJid = node.getRequiredAttribute("from")
-                .toJid();
-        var participantJid = node.getAttribute("participant")
-                .map(NodeAttribute::toJid);
+        var chatJid = node.getRequiredAttributeAsJid("from");
+        var participantJid = node.getAttributeAsJid("participant");
         if(participantJid.isEmpty()) {
             whatsapp.store()
                     .findContactByJid(chatJid)
@@ -48,17 +45,15 @@ public final class PresenceStreamNodeHandler extends SocketStream.Handler {
         }
     }
     private ContactStatus getUpdateType(Node node) {
-        var media = node.findChild()
-                .flatMap(entry -> entry.getAttribute("media"))
-                .map(NodeAttribute::toString)
+        var media = node.getChild()
+                .flatMap(entry -> entry.getAttributeAsString("media"))
                 .orElse("");
         if (media.equals("audio")) {
             return ContactStatus.RECORDING;
         }
 
-        return node.getAttribute("type")
-                .map(NodeAttribute::toString)
-                .or(() -> node.findChild().map(Node::description))
+        return node.getAttributeAsString("type")
+                .or(() -> node.getChild().map(Node::description))
                 .flatMap(ContactStatus::of)
                 .orElse(ContactStatus.AVAILABLE);
     }

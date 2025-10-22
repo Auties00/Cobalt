@@ -341,7 +341,7 @@ public sealed interface Node {
      * @return an {@code Optional} containing the first child Node if it exists,
      *         otherwise an empty {@code Optional}.
      */
-    default Optional<Node> findChild() {
+    default Optional<Node> getChild() {
         var children = children();
         return children.isEmpty()
                 ? Optional.empty()
@@ -370,10 +370,26 @@ public sealed interface Node {
      *         with the specified description, otherwise an empty {@code Optional}
      * @throws NullPointerException if the given description is null
      */
-    default Optional<Node> findChild(String description) {
+    default Optional<Node> getChild(String description) {
         Objects.requireNonNull(description, "description cannot be null");
         return streamChildren(description)
                 .findFirst();
+    }
+
+    /**
+     * Finds a child node by its description within the current container node.
+     * If no child node with the specified description exists, an {@code IllegalArgumentException} is thrown.
+     *
+     * @param description the description of the child node to find; cannot be null
+     * @return the first child node with the specified description
+     * @throws NullPointerException if the given description is null
+     * @throws IllegalArgumentException if no child node with the specified description exists
+     */
+    default Node getRequiredChild(String description) {
+        Objects.requireNonNull(description, "description cannot be null");
+        return streamChildren(description)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No child node found with description: " + description));
     }
 
     /**
@@ -390,6 +406,22 @@ public sealed interface Node {
         return streamChildren(description)
                 .findFirst()
                 .stream();
+    }
+
+    /**
+     * Finds all children nodes by their descriptions within the current container node.
+     * If no child node with the specified description exists, an empty {@code SequencedCollection} is returned.
+     *
+     * @param description the description of the children nodes to find; cannot be null
+     * @return a {@code SequencedCollection} containing the children nodes
+     * @throws NullPointerException if the given description is null
+     */
+    default SequencedCollection<Node> getChildren(String description) {
+        Objects.requireNonNull(description, "description cannot be null");
+        return children()
+                .stream()
+                .filter(node -> node.hasDescription(description))
+                .toList();
     }
 
     /**

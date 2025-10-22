@@ -6,6 +6,7 @@ import com.github.auties00.cobalt.io.core.json.response.NewsletterMuteResponse;
 import com.github.auties00.cobalt.io.core.json.response.NewsletterResponse;
 import com.github.auties00.cobalt.io.core.json.response.NewsletterStateResponse;
 import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.io.core.node.NodeBuilder;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.chat.ChatEphemeralTimer;
 import com.github.auties00.cobalt.model.info.ChatMessageInfoBuilder;
@@ -16,7 +17,6 @@ import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.message.model.ChatMessageKeyBuilder;
 import com.github.auties00.cobalt.model.message.model.MessageStatus;
-import com.github.auties00.cobalt.model.mobile.PhoneNumber;
 import com.github.auties00.cobalt.model.newsletter.NewsletterMetadataBuilder;
 import com.github.auties00.cobalt.model.newsletter.NewsletterReaction;
 import com.github.auties00.cobalt.model.newsletter.NewsletterVerification;
@@ -41,9 +41,10 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.chrono.ChronoZonedDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
@@ -58,8 +59,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     @Override
     public void handle(Node node) {
         try {
-            var type = node.getRequiredAttribute("type")
-                    .toString();
+            var type = node.getRequiredAttributeAsString("type");
             switch (type) {
                 case "w:gp2" -> handleGroupNotification(node);
                 case "server_sync" -> handleServerSyncNotification(node);
@@ -77,8 +77,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleNewsletter(Node node) {
-        var newsletterJid = node.getRequiredAttribute("from")
-                .toJid();
+        var newsletterJid = node.getRequiredAttributeAsJid("from");
         var newsletter = whatsapp.store()
                 .findNewsletterByJid(newsletterJid)
                 .orElse(null);
@@ -86,14 +85,14 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             return;
         }
 
-        var liveUpdates = node.findChild("live_updates")
+        var liveUpdates = node.getChild("live_updates")
                 .orElse(null);
         if (liveUpdates == null) {
             return;
         }
 
 
-        var messages = liveUpdates.findChild("messages")
+        var messages = liveUpdates.getChild("messages")
                 .orElse(null);
         if (messages == null) {
             return;
@@ -109,7 +108,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 return;
             }
 
-            messageNode.findChild("reactions")
+            messageNode.getChild("reactions")
                     .stream()
                     .flatMap(reactions -> reactions.streamChildren("reaction"))
                     .forEachOrdered(reaction -> onNewsletterReaction(reaction, newsletterMessage));
@@ -128,7 +127,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleMexNamespace(Node node) {
-        var update = node.findChild("update")
+        var update = node.getChild("update")
                 .orElse(null);
         if (update == null) {
             return;
@@ -281,7 +280,8 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         NewsletterResponse.ofJson(joinPayload).ifPresent(response -> {
             var newsletter = response.newsletter();
             whatsapp.store().addNewsletter(newsletter);
-            if (!whatsapp.store().historyLength().isZero()) {
+            var historyPolicy = whatsapp.store().webHistoryPolicy();
+            if (historyPolicy.isPresent() && !historyPolicy.get().isZero() && historyPolicy.get().hasNewsletters()) {
                 whatsapp.queryNewsletterMessages(newsletter.jid(), DEFAULT_NEWSLETTER_MESSAGES);
             }
         });
@@ -307,12 +307,12 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleRegistrationNotification(Node node) {
-        var child = node.findChild("wa_old_registration");
+        var child = node.getChild("wa_old_registration");
         if (child.isEmpty()) {
             return;
         }
 
-        var code = child.get().attributes().getOptionalLong("code");
+        var code = child.get().getAttributeAsLong("code");
         if (code.isEmpty()) {
             return;
         }
@@ -324,45 +324,38 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handlePictureNotification(Node node) {
-        var fromJid = node.attributes()
-                .getRequiredJid("from");
+        var fromJid = node.getRequiredAttributeAsJid("from");
         if (fromJid.hasServer(JidServer.groupOrCommunity())) {
             var fromChat = whatsapp.store()
                     .findChatByJid(fromJid)
                     .orElseGet(() -> whatsapp.store().addNewChat(fromJid));
-            var timestamp = node.attributes().getLong("t");
-            var participantJid = node.attributes()
-                    .getOptionalJid("participant")
-                    .orElse(null);
+            var timestamp = node.getRequiredAttributeAsLong("t");
+            var participantJid = node.getAttributeAsJid("participant", null);
             addMessageForGroupStubType(timestamp, fromChat, participantJid, MessageInfoStubType.GROUP_CHANGE_ICON, node);
             return;
         }
-        var fromContact = whatsapp.store().findContactByJid(fromJid).orElseGet(() -> {
-            var contact = whatsapp.store().addContact(fromJid);
+        if(!whatsapp.store().hasContact(fromJid)) {
+            var contact = whatsapp.store().addNewContact(fromJid);
             for (var listener : whatsapp.store().listeners()) {
                 Thread.startVirtualThread(() -> listener.onNewContact(contact));
                 Thread.startVirtualThread(() -> listener.onNewContact(whatsapp, contact));
             }
-            return contact;
-        });
+        }
         for (var listener : whatsapp.store().listeners()) {
-            Thread.startVirtualThread(() -> listener.onProfilePictureChanged(fromContact));
-            Thread.startVirtualThread(() -> listener.onProfilePictureChanged(whatsapp, fromContact));
+            Thread.startVirtualThread(() -> listener.onProfilePictureChanged(fromJid));
+            Thread.startVirtualThread(() -> listener.onProfilePictureChanged(whatsapp, fromJid));
         }
     }
 
     private void handleGroupNotification(Node node) {
-        var timestamp = node.attributes().getLong("t");
-        var fromJid = node.attributes()
-                .getRequiredJid("from");
+        var timestamp = node.getRequiredAttributeAsLong("t");
+        var fromJid = node.getRequiredAttributeAsJid("from");
         var fromChat = whatsapp.store()
                 .findChatByJid(fromJid)
                 .orElseGet(() -> whatsapp.store().addNewChat(fromJid));
-        var participantJid = node.attributes()
-                .getOptionalJid("participant")
-                .orElse(null);
+        var participantJid = node.getAttributeAsJid("participant", null);
         var notificationType = node.description();
-        var child = node.findChild();
+        var child = node.getChild();
         var bodyType = child.map(Node::description)
                 .orElse(null);
         var stubType = MessageInfoStubType.getStubType(notificationType, bodyType);
@@ -384,7 +377,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 .stubParameters(stubType.getParameters(metadata))
                 .senderJid(sender)
                 .build();
-        chat.addNewMessage(message);
+        chat.addMessage(message);
         for (var listener : whatsapp.store().listeners()) {
             Thread.startVirtualThread(() -> listener.onNewMessage(message));
             Thread.startVirtualThread(() -> listener.onNewMessage(whatsapp, message));
@@ -392,49 +385,62 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleEncryptNotification(Node node) {
-        var chat = node.attributes()
-                .getRequiredJid("from");
+        var chat = node.getRequiredAttributeAsJid("from");
         if (!chat.isServerJid(JidServer.user())) {
             return;
         }
-        var keysSize = node.findChild("count")
-                .orElseThrow(() -> new NoSuchElementException("Missing count in notification"))
-                .attributes()
-                .getInt("value");
-        var keys = whatsapp.keys();
+        var keysCount = node.getRequiredChild("count")
+                .getRequiredAttributeAsLong("value");
+        var keys = whatsapp.store();
         var startId = keys.hasPreKeys() ? keys.preKeys().getLast().id() + 1 : 1;
-        var preKeys = IntStream.range(startId, startId + keysSize)
-                .mapToObj(SignalPreKeyPair::random)
-                .peek(keys::addPreKey)
-                .map(keyPair -> Node.of(
-                        "key",
-                        Node.of("id", Bytes.intToBytes(keyPair.id(), 3)),
-                        Node.of("value", keyPair.publicKey()))
-                )
-                .toList();
-        var keyPair = keys.signedKeyPair();
-        whatsapp.sendQuery(
-                "set",
-                "encrypt",
-                Node.of("registration", keys.encodedRegistrationId()),
-                Node.of("type", SIGNAL_KEY_TYPE),
-                Node.of("identity", keys.identityKeyPair().publicKey()),
-                Node.of("list", preKeys),
-                Node.of("skey",
-                        Node.of("id", Bytes.intToBytes(keyPair.id(), 3)),
-                        Node.of("value", keyPair.publicKey()),
-                        Node.of("signature", keyPair.signature())
-                )
-        );
+        var preKeys = new ArrayList<Node>();
+        while (keysCount-- > 0) {
+            var preKeyPair = SignalPreKeyPair.random(startId++);
+            keys.addPreKey(preKeyPair);
+            var preKayNode = new NodeBuilder()
+                    .description("key")
+                    .attribute("id", Bytes.intToBytes(preKeyPair.id(), 3))
+                    .attribute("value", preKeyPair.publicKey().toEncodedPoint())
+                    .build();
+            preKeys.add(preKayNode);
+        }
+        var registration = new NodeBuilder()
+                .description("registration")
+                .content(Bytes.intToBytes(keys.registrationId(), 4))
+                .build();
+        var type = new NodeBuilder()
+                .description("type")
+                .content(SIGNAL_KEY_TYPE)
+                .build();
+        var identity = new NodeBuilder()
+                .description("identity")
+                .content(keys.identityKeyPair().publicKey().toEncodedPoint())
+                .build();
+        var list = new NodeBuilder()
+                .description("list")
+                .content(preKeys)
+                .build();
+        var skey = new NodeBuilder()
+                .description("skey")
+                .attribute("id", Bytes.intToBytes(keys.signedKeyPair().id(), 3))
+                .attribute("value", keys.signedKeyPair().publicKey().toEncodedPoint())
+                .attribute("signature", keys.signedKeyPair().signature())
+                .build();
+        var queryRequest = new NodeBuilder()
+                .description("iq")
+                .attribute("to", JidServer.user())
+                .attribute("type", "set")
+                .attribute("xmlns", "encrypt")
+                .content(registration, type, identity, list, skey);
+        whatsapp.sendNode(queryRequest);
     }
 
     private void handleAccountSyncNotification(Node node) {
-        var child = node.findChild();
+        var child = node.getChild();
         if (child.isEmpty()) {
             return;
         }
         switch (child.get().description()) {
-            case "devices" -> handleDevices(child.get());
             case "privacy" -> changeUserPrivacySetting(child.get());
             case "disappearing_mode" -> updateUserDisappearingMode(child.get());
             case "status" -> updateUserAbout();
@@ -471,16 +477,14 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             return;
         }
 
-        var response = whatsapp.queryAbout(user.withoutData())
+        var newAbout = whatsapp.queryAbout(user.withoutData())
                 .orElse(null);
-        if(response == null) {
+        if(newAbout == null) {
             return;
         }
 
         var oldAbout = whatsapp.store()
                 .about()
-                .orElse(null);
-        var newAbout = response.about()
                 .orElse(null);
         whatsapp.store()
                 .setAbout(newAbout);
@@ -490,84 +494,52 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         }
     }
 
-    private void handleDevices(Node child) {
-        var deviceHash = child.attributes().getString("dhash");
-        whatsapp.store().setDeviceHash(deviceHash);
-        var devices = child.listChildren("device")
-                .stream()
-                .collect(Collectors.toMap(
-                        entry -> entry.attributes().getRequiredJid("value"),
-                        entry -> entry.attributes().getInt("key-index"),
-                        (first, second) -> second,
-                        LinkedHashMap::new
-                ));
-        var companionJid = whatsapp.store()
-                .jid()
-                .orElseThrow(() -> new IllegalStateException("The session isn't connected"))
-                .withoutData();
-        var companionDevice = devices.remove(companionJid);
-        devices.put(companionJid, companionDevice);
-        whatsapp.store().setLinkedDevicesKeys(devices);
-        for (var listener : whatsapp.store().listeners()) {
-            Thread.startVirtualThread(() -> listener.onLinkedDevices(devices.keySet()));
-            Thread.startVirtualThread(() -> listener.onLinkedDevices(whatsapp, devices.keySet()));
-        }
-        var keyIndexListNode = child.findChild("key-index-list")
-                .orElseThrow(() -> new NoSuchElementException("Missing index key node from device sync"));
-        var signedKeyIndexBytes = keyIndexListNode.toContentBytes()
-                .orElseThrow(() -> new NoSuchElementException("Missing index key from device sync"));
-        whatsapp.keys().setSignedKeyIndex(signedKeyIndexBytes);
-        var signedKeyIndexTimestamp = keyIndexListNode.attributes().getLong("ts");
-        whatsapp.keys().setSignedKeyIndexTimestamp(signedKeyIndexTimestamp);
-    }
-
     private void updateBlocklist(Node child) {
-        child.listChildren("item").forEach(this::updateBlocklistEntry);
-    }
+        child.streamChildren("item").forEachOrdered(entry -> {
+            var value = entry.getAttributeAsJid("value");
+            if(value.isEmpty()) {
+                return;
+            }
 
-    private void updateBlocklistEntry(Node entry) {
-        entry.attributes()
-                .getOptionalJid("value")
-                .flatMap(whatsapp.store()::findContactByJid)
-                .ifPresent(contact -> {
-                    contact.setBlocked(Objects.equals(entry.attributes().getString("action"), "block"));
-                    for (var listener : whatsapp.store().listeners()) {
-                        Thread.startVirtualThread(() -> listener.onContactBlocked(contact));
-                        Thread.startVirtualThread(() -> listener.onContactBlocked(whatsapp, contact));
-                    }
-                });
+            whatsapp.store()
+                    .findContactByJid(value.get())
+                    .ifPresent(contact -> contact.setBlocked(entry.hasAttribute("action", "block")));
+            for (var listener : whatsapp.store().listeners()) {
+                Thread.startVirtualThread(() -> listener.onContactBlocked(value.get()));
+                Thread.startVirtualThread(() -> listener.onContactBlocked(whatsapp, value.get()));
+            }
+        });
     }
 
     private void changeUserPrivacySetting(Node child) {
-        var category = child.listChildren("category");
-        for (Node entry : category) {
-            var privacySettingName = entry.attributes().getString("name");
-            var privacyType = PrivacySettingType.of(privacySettingName);
+        child.streamChildren("category").forEachOrdered(entry -> {
+            var privacyType = entry.getAttributeAsString("name")
+                    .flatMap(PrivacySettingType::of);
             if(privacyType.isEmpty()) {
-                continue;
+                return;
             }
 
-            var privacyValueName = entry.attributes().getString("value");
-            var privacyValue = PrivacySettingValue.of(privacyValueName);
+            var privacyValue = entry.getAttributeAsString("value")
+                    .flatMap(PrivacySettingValue::of);
             if(privacyValue.isEmpty()) {
-                continue;
+                return;
             }
 
             var privacySetting = whatsapp.store()
                     .findPrivacySetting(privacyType.get());
-            var excluded = getExcludedContacts(entry, privacySetting, privacyValue.get());
+            var excluded = getExcludedContacts(entry, privacySetting.orElse(null), privacyValue.get());
             var newEntry = new PrivacySettingEntryBuilder()
                     .type(privacyType.get())
                     .value(privacyValue.get())
                     .excluded(excluded)
                     .build();
             whatsapp.store()
-                    .addPrivacySetting(privacyType.get(), newEntry);
+                    .addPrivacySetting(newEntry);
             for(var listener : whatsapp.store().listeners()) {
-                Thread.startVirtualThread(() -> listener.onPrivacySettingChanged(privacySetting, newEntry));
-                Thread.startVirtualThread(() -> listener.onPrivacySettingChanged(whatsapp, privacySetting, newEntry));
+                Thread.startVirtualThread(() -> listener.onPrivacySettingChanged(newEntry));
+                Thread.startVirtualThread(() -> listener.onPrivacySettingChanged(whatsapp, newEntry));
             }
-        }
+        });
     }
 
     private List<Jid> getExcludedContacts(Node node, PrivacySettingEntry privacyEntry, PrivacySettingValue privacyValue) {
@@ -575,33 +547,36 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             return List.of();
         }
 
-        var newValues = new ArrayList<>(privacyEntry.excluded());
-        for (var entry : node.listChildren("user")) {
-            var jid = entry.attributes()
-                    .getRequiredJid("value");
-            if (entry.attributes().hasValue("action", "add")) {
-                newValues.add(jid);
-                continue;
-            }
-
-            newValues.remove(jid);
+        if(privacyEntry == null) {
+            return List.of();
         }
+
+        var newValues = new ArrayList<>(privacyEntry.excluded());
+        node.streamChildren("user").forEachOrdered(entry -> {
+            var jid = entry.getRequiredAttributeAsJid("value");
+            if (entry.hasAttribute("action", "add")) {
+                newValues.add(jid);
+            }else {
+                newValues.remove(jid);
+            }
+        });
         return newValues;
     }
 
 
     private void updateUserDisappearingMode(Node child) {
-        var timer = ChatEphemeralTimer.of(child.attributes().getInt("duration"));
+        var duration = Math.toIntExact(child.getRequiredAttributeAsLong("duration"));
+        var timer = ChatEphemeralTimer.of(duration);
         whatsapp.store().setNewChatsEphemeralTimer(timer);
     }
 
     private void handleServerSyncNotification(Node node) {
-        var patches = node.listChildren("collection")
-                .stream()
-                .map(entry -> entry.attributes().getRequiredString("name"))
+        var patches = node.streamChildren("collection")
+                .map(entry -> entry.getRequiredAttributeAsString("name"))
                 .map(PatchType::of)
+                .flatMap(Optional::stream)
                 .toArray(PatchType[]::new);
-        whatsapp.pullWebAppStatePatches(false, patches);
+        whatsapp.pullWebAppStatePatches(patches);
     }
 
 
@@ -609,26 +584,24 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         try {
             var phoneNumber = whatsapp.store()
                     .phoneNumber()
-                    .map(PhoneNumber::toJid)
                     .orElseThrow(() -> new IllegalArgumentException("Missing phone value"));
-            var linkCodeCompanionReg = node.findChild("link_code_companion_reg")
+            var linkCodeCompanionReg = node.getChild("link_code_companion_reg")
                     .orElseThrow(() -> new NoSuchElementException("Missing link_code_companion_reg: " + node));
-            var ref = linkCodeCompanionReg.findChild("link_code_pairing_ref")
+            var ref = linkCodeCompanionReg.getChild("link_code_pairing_ref")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_ref: " + node));
-            var primaryIdentityPublicKey = linkCodeCompanionReg.findChild("primary_identity_pub")
+            var primaryIdentityPublicKey = linkCodeCompanionReg.getChild("primary_identity_pub")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new IllegalArgumentException("Missing primary_identity_pub: " + node));
-            var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.findChild("link_code_pairing_wrapped_primary_ephemeral_pub")
+            var primaryEphemeralPublicKeyWrapped = linkCodeCompanionReg.getChild("link_code_pairing_wrapped_primary_ephemeral_pub")
                     .flatMap(Node::toContentBytes)
                     .orElseThrow(() -> new IllegalArgumentException("Missing link_code_pairing_wrapped_primary_ephemeral_pub: " + node));
             var codePairingPublicKey = pairingCode.decrypt(primaryEphemeralPublicKeyWrapped);
             var companionPrivateKey = whatsapp.store()
                     .companionKeyPair()
                     .orElseThrow(() -> new InternalError("No companion key pair was set"))
-                    .privateKey()
-                    .toEncodedPoint();
-            var companionSharedKey = Curve25519.sharedKey(companionPrivateKey, codePairingPublicKey);
+                    .privateKey();
+            var companionSharedKey = Curve25519.sharedKey(companionPrivateKey.toEncodedPoint(), codePairingPublicKey);
             var random = Bytes.random(32);
             var linkCodeSalt = Bytes.random(32);
             var secretKeyHkdf = KDF.getInstance("HKDF-SHA256");
@@ -643,7 +616,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                     secretKey,
                     new GCMParameterSpec(128, Bytes.random(12))
             );
-            cipher.update(whatsapp.keys().identityKeyPair().publicKey().toEncodedPoint());
+            cipher.update(whatsapp.store().identityKeyPair().publicKey().toEncodedPoint());
             cipher.update(primaryIdentityPublicKey);
             cipher.update(random);
             var encrypted = cipher.doFinal();
@@ -657,15 +630,32 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             var companionKey = companionKeyHkdf.deriveData(companionKeyHkdfParams);
             var companionPublicKey = SignalIdentityPublicKey.ofDirect(companionKey);
             var companionKeyPair = new SignalIdentityKeyPair(companionPublicKey, companionPrivateKey);
-            whatsapp.keys().setCompanionKeyPair(companionKeyPair);
-            var confirmation = Node.of(
-                    "link_code_companion_reg",
-                    Map.of("value", phoneNumber, "stage", "companion_finish"),
-                    Node.of("link_code_pairing_wrapped_key_bundle", encryptedPayload),
-                    Node.of("companion_identity_public", whatsapp.keys().identityKeyPair().publicKey()),
-                    Node.of("link_code_pairing_ref", ref)
-            );
-            whatsapp.sendQuery("set", "md", confirmation);
+            whatsapp.store().setCompanionKeyPair(companionKeyPair);
+            var linkCodePairingWrappedKeyBundle = new NodeBuilder()
+                    .description("link_code_pairing_wrapped_key_bundle")
+                    .content(encryptedPayload)
+                    .build();
+            var companionIdentityPublicKey = new NodeBuilder()
+                    .description("companion_identity_public")
+                    .content(whatsapp.store().identityKeyPair().publicKey().toEncodedPoint())
+                    .build();
+            var linkCodePairingRef = new NodeBuilder()
+                    .description("link_code_pairing_ref")
+                    .content(ref)
+                    .build();
+            var confirmationBody = new NodeBuilder()
+                    .description("link_code_companion_reg")
+                    .attribute("value", phoneNumber)
+                    .attribute("stage", "companion_finish")
+                    .content(linkCodePairingWrappedKeyBundle, companionIdentityPublicKey, linkCodePairingRef)
+                    .build();
+            var confirmationRequest = new NodeBuilder()
+                    .description("iq")
+                    .attribute("to", JidServer.user())
+                    .attribute("type", "set")
+                    .attribute("xmlns", "md")
+                    .content(confirmationBody);
+            whatsapp.sendNode(confirmationRequest);
         } catch (GeneralSecurityException exception) {
             throw new RuntimeException("Cannot encrypt companion registration", exception);
         }

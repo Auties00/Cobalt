@@ -30,10 +30,10 @@ public final class BusinessCollectionEntry {
     }
 
     public static BusinessCollectionEntry of(Node node) {
-        var id = node.findChild("id")
+        var id = node.getChild("id")
                 .flatMap(Node::toContentString)
                 .orElseThrow(() -> new NoSuchElementException("Missing id from business collections"));
-        var name = node.findChild("name")
+        var name = node.getChild("name")
                 .flatMap(Node::toContentString)
                 .orElseThrow(() -> new NoSuchElementException("Missing name from business collections"));
         var products = node.listChildren("product")

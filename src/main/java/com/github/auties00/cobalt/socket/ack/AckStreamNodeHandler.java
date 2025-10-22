@@ -2,13 +2,10 @@ package com.github.auties00.cobalt.socket.ack;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.io.core.node.Node;
-import com.github.auties00.cobalt.io.core.node.NodeAttribute;
 import com.github.auties00.cobalt.io.core.node.NodeBuilder;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.message.model.MessageStatus;
 import com.github.auties00.cobalt.socket.SocketStream;
-
-import java.nio.ByteBuffer;
 
 public final class AckStreamNodeHandler extends SocketStream.Handler {
     private static final byte[][] CALL_RELAY = new byte[][]{
@@ -25,8 +22,7 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        var ackClass = node.getRequiredAttribute("class")
-                .toString();
+        var ackClass = node.getRequiredAttributeAsString("class");
         switch (ackClass) {
             case "call" -> digestCallAck(node);
             case "message" -> digestMessageAck(node);
@@ -34,12 +30,8 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void digestMessageAck(Node node) {
-        var error = node.getAttribute("error")
-                .isPresent();
-        var messageId = node.getRequiredAttribute("id")
-                .toString();
-        var from = node.getRequiredAttribute("from")
-                .toJid();
+        var messageId = node.getRequiredAttributeAsString("id");
+        var from = node.getRequiredAttributeAsJid("from");
         var match = whatsapp.store()
                 .findMessageById(from, messageId)
                 .orElse(null);
@@ -47,7 +39,8 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
             return;
         }
 
-        if (error) {
+        var error = node.getAttributeAsLong("error");
+        if (error.isPresent()) {
             match.setStatus(MessageStatus.ERROR);
         }else if (match.status() == MessageStatus.UNKNOWN || match.status().ordinal() < MessageStatus.SERVER_ACK.ordinal()) {
             match.setStatus(MessageStatus.SERVER_ACK);
@@ -55,18 +48,15 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void digestCallAck(Node node) {
-        var relayNode = node.findChild("relay").orElse(null);
+        var relayNode = node.getChild("relay").orElse(null);
         if (relayNode == null) {
             return;
         }
 
-        var callCreator = relayNode.getRequiredAttribute("call-creator")
-                .toJid();
-        var callId = relayNode.getRequiredAttribute("call-id")
-                .toString();
+        var callCreator = relayNode.getRequiredAttributeAsJid("call-creator");
+        var callId = relayNode.getRequiredAttributeAsString("call-id");
         relayNode.streamChildren("participant")
-                .map(entry -> entry.getRequiredAttribute("value"))
-                .map(NodeAttribute::toJid)
+                .flatMap(entry -> entry.streamAttributeAsJid("jid"))
                 .forEach(to -> sendRelay(callCreator, callId, to));
     }
 
@@ -75,7 +65,7 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
             var te = new NodeBuilder()
                     .description("te")
                     .attribute("latency", 33554440)
-                    .content(ByteBuffer.wrap(value))
+                    .content(value)
                     .build();
             var relay = new NodeBuilder()
                     .description("relaylatency")
@@ -86,8 +76,7 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
             var call = new NodeBuilder()
                     .description("call")
                     .attribute("to", to)
-                    .content(relay)
-                    .build();
+                    .content(relay);
             whatsapp.sendNode(call);
         }
     }

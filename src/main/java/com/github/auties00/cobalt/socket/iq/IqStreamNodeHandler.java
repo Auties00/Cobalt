@@ -5,14 +5,19 @@ import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
 import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
 import com.github.auties00.cobalt.exception.HmacValidationException;
 import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.io.core.node.NodeBuilder;
 import com.github.auties00.cobalt.model.auth.*;
+import com.github.auties00.cobalt.model.auth.UserAgent.PlatformType;
+import com.github.auties00.cobalt.model.contact.ContactBuilder;
+import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
-import com.github.auties00.cobalt.model.mobile.PhoneNumber;
 import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.PhonePairingCode;
-import it.auties.curve25519.Curve25519;
+import com.github.auties00.curve25519.Curve25519;
+import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -20,8 +25,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.LOGIN;
 
@@ -32,32 +39,49 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
 
     private final WhatsappVerificationHandler.Web webVerificationHandler;
     private final PhonePairingCode pairingCode;
-
+    private final Executor pingExecutor;
     public IqStreamNodeHandler(Whatsapp whatsapp, WhatsappVerificationHandler.Web webVerificationHandler, PhonePairingCode pairingCode) {
         super(whatsapp, "iq");
         this.webVerificationHandler = webVerificationHandler;
         this.pairingCode = pairingCode;
+        this.pingExecutor = CompletableFuture.delayedExecutor(PING_INTERVAL, TimeUnit.SECONDS);
     }
 
     @Override
     public void handle(Node node) {
-        if (node.attributes().hasValue("xmlns", "urn:xmpp:ping")) {
-            whatsapp.sendQueryWithNoResponse("result", null);
-            return;
+        if (node.hasAttribute("xmlns", "urn:xmpp:ping")) {
+            handlePing();
+        }else {
+            handlePairing(node);
         }
+    }
 
-        var container = node.findChild().orElse(null);
+    private void handlePing() {
+        var result = new NodeBuilder()
+                .description("result")
+                .build();
+        var response = new NodeBuilder()
+                .description("iq")
+                .attribute("to", JidServer.user())
+                .attribute("type", "result")
+                .content(result)
+                .build();
+        whatsapp.sendNodeWithNoResponse(response);
+    }
+
+    private void handlePairing(Node node) {
+        var container = node.getChild().orElse(null);
         if (container == null) {
             return;
         }
 
         switch (container.description()) {
-            case "pair-device" -> startWebPairing(node, container);
-            case "pair-success" -> confirmPairing(node, container);
+            case "pair-device" -> handlePairInit(node, container);
+            case "pair-success" -> handlePairSuccess(node, container);
         }
     }
 
-    private void startWebPairing(Node node, Node container) {
+    private void handlePairInit(Node node, Node container) {
         switch (webVerificationHandler) {
             case WhatsappVerificationHandler.Web.QrCode qrHandler -> {
                 printQrCode(qrHandler, container);
@@ -73,143 +97,208 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void printQrCode(WhatsappVerificationHandler.Web.QrCode qrHandler, Node container) {
-        var ref = container.findChild("ref")
+        var ref = container.getChild("ref")
                 .flatMap(Node::toContentString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
+        var companionKeyPair = SignalIdentityKeyPair.random();
+        whatsapp.store().setCompanionKeyPair(companionKeyPair);
         var qr = String.join(
                 ",",
                 ref,
-                Base64.getEncoder().encodeToString(whatsapp.keys().noiseKeyPair().publicKey().toEncodedPoint()),
-                Base64.getEncoder().encodeToString(whatsapp.keys().identityKeyPair().publicKey().toEncodedPoint()),
-                Base64.getEncoder().encodeToString(whatsapp.keys().companionKeyPair().publicKey().toEncodedPoint()),
+                Base64.getEncoder().encodeToString(whatsapp.store().noiseKeyPair().publicKey().toEncodedPoint()),
+                Base64.getEncoder().encodeToString(whatsapp.store().identityKeyPair().publicKey().toEncodedPoint()),
+                Base64.getEncoder().encodeToString(companionKeyPair.publicKey().toEncodedPoint()),
                 "1"
         );
         qrHandler.handle(qr);
     }
 
     private void sendConfirmNode(Node node, Node content) {
-        var attributes = NodeAttributes.of()
-                .put("id", node.id())
-                .put("type", "result")
-                .put("to", JidServer.user().toJid())
-                .toMap();
-        var request = Node.of("iq", attributes, content);
+        var nodeId = node.getRequiredAttributeAsString("id");
+        var request = new NodeBuilder()
+                .description("iq")
+                .attribute("id", nodeId)
+                .attribute("type", "result")
+                .attribute("to", JidServer.user())
+                .content(content)
+                .build();
         whatsapp.sendNodeWithNoResponse(request);
     }
 
     private void schedulePing() {
-        whatsapp.scheduleAtFixedInterval(() -> {
-            var result = whatsapp.sendPing();
+        pingExecutor.execute(() -> {
+            var result = sendPing();
             if(result == Node.empty()) {
                 whatsapp.disconnect(WhatsappDisconnectReason.RECONNECTING);
             }else {
-               whatsapp.serializeAsync();
+                var store = whatsapp.store();
+                store.serialize();
             }
-        }, PING_INTERVAL, PING_INTERVAL);
+            schedulePing();
+        });
     }
 
-    private void askPairingCode(WhatsappVerificationHandler.Web.PairingCode codeHandler) {
-        var companionEphemeralPublicKey = pairingCode.encrypt(whatsapp.keys().companionKeyPair().publicKey());
-        var registration = Node.of(
-                "link_code_companion_reg",
-                Map.of("value", getPhoneNumberAsJid(), "stage", "companion_hello", "should_show_push_notification", true),
-                Node.of("link_code_pairing_wrapped_companion_ephemeral_pub", companionEphemeralPublicKey),
-                Node.of("companion_server_auth_key_pub", whatsapp.keys().noiseKeyPair().publicKey()),
-                Node.of("companion_platform_id", 49),
-                Node.of("companion_platform_display", "Chrome (Linux)".getBytes(StandardCharsets.UTF_8)),
-                Node.of("link_code_pairing_nonce", 0)
-        );
-        whatsapp.sendQuery("set", "md", registration);
-        pairingCode.accept(codeHandler);
-    }
-
-    private Jid getPhoneNumberAsJid() {
-        return whatsapp.store()
-                .phoneNumber()
-                .map(PhoneNumber::toJid)
-                .orElseThrow(() -> new IllegalArgumentException("Missing phone value while registering via OTP"));
-    }
-
-    private void confirmPairing(Node node, Node container) {
+    private Node sendPing() {
         try {
-            saveCompanion(container);
-            var deviceIdentity = container.findChild("device-identity")
-                    .orElseThrow(() -> new NoSuchElementException("Missing device identity"));
-            var advIdentity = SignedDeviceIdentityHMACSpec.decode(deviceIdentity.toContentBytes().orElseThrow());
-            var localMac = Mac.getInstance("HmacSHA256");
-            var macKey = new SecretKeySpec(whatsapp.keys().companionKeyPair().publicKey().toEncodedPoint(), "HmacSHA256");
-            localMac.init(macKey);
-            var advSign = localMac.doFinal(advIdentity.details());
-            if (!Arrays.equals(advIdentity.hmac(), advSign)) {
-                whatsapp.handleFailure(LOGIN, new HmacValidationException("adv_sign"));
-                return;
-            }
-            var account = SignedDeviceIdentitySpec.decode(advIdentity.details());
-            whatsapp.keys().setCompanionIdentity(account);
-            var identityPublicKey = whatsapp.keys().identityKeyPair().publicKey().toEncodedPoint();
-            var message = Bytes.concat(
-                    ACCOUNT_SIGNATURE_HEADER,
-                    account.details(),
-                    identityPublicKey
-            );
-            if (!Curve25519.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
-                whatsapp.handleFailure(LOGIN, new HmacValidationException("message_header"));
-                return;
-            }
-            var deviceSignatureMessage = Bytes.concat(
-                    DEVICE_WEB_SIGNATURE_HEADER,
-                    account.details(),
-                    identityPublicKey,
-                    account.accountSignatureKey()
-            );
-            var result = new SignedDeviceIdentityBuilder()
-                    .accountSignature(account.accountSignature())
-                    .accountSignatureKey(account.accountSignatureKey())
-                    .details(account.details())
-                    .deviceSignature(Curve25519.sign(whatsapp.keys().identityKeyPair().privateKey().toEncodedPoint(), deviceSignatureMessage))
+            var pingBody = new NodeBuilder()
+                    .description("ping")
                     .build();
-            var keyIndex = DeviceIdentitySpec.decode(result.details()).keyIndex();
-            var outgoingDeviceIdentity = SignedDeviceIdentitySpec.encode(new SignedDeviceIdentity(result.details(), null, result.accountSignature(), result.deviceSignature()));
-            var devicePairNode = Node.of(
-                    "pair-device-sign",
-                    Node.of(
-                            "device-identity",
-                            Map.of("key-index", keyIndex),
-                            outgoingDeviceIdentity
-                    )
-            );
-            whatsapp.keys().setCompanionIdentity(result);
-            var device = whatsapp.store().device();
-            var platform = getWebPlatform(node);
-            whatsapp.store().setDevice(device.withPlatform(platform));
-            sendConfirmNode(node, devicePairNode);
-        }catch (GeneralSecurityException exception) {
-            throw new RuntimeException("Cannot confirm pairing", exception);
+            var pingRequest = new NodeBuilder()
+                    .description("iq")
+                    .attribute("to", JidServer.user())
+                    .attribute("xmlns", "w:p")
+                    .attribute("type", "get")
+                    .content(pingBody);
+            return whatsapp.sendNode(pingRequest);
+        }catch (Throwable throwable) {
+            return Node.empty();
         }
     }
 
-    private UserAgent.PlatformType getWebPlatform(Node node) {
-        var name = node.findChild("platform")
-                .flatMap(entry -> entry.attributes().getOptionalString("name"))
+    private void askPairingCode(WhatsappVerificationHandler.Web.PairingCode codeHandler) {
+        var phoneNumber = whatsapp.store()
+                .phoneNumber()
+                .orElseThrow(() -> new InternalError("Phone number was not set"));
+        var companionKeyPair = SignalIdentityKeyPair.random();
+        whatsapp.store().setCompanionKeyPair(companionKeyPair);
+        var linkCodePairingWrappedCompanionEphemeralPub = new NodeBuilder()
+                .description("link_code_pairing_wrapped_companion_ephemeral_pub")
+                .content(pairingCode.encrypt(companionKeyPair.publicKey()))
+                .build();
+        var companionServerAuthKeyPub = new NodeBuilder()
+                .description("companion_server_auth_key_pub")
+                .content(whatsapp.store().noiseKeyPair().publicKey().toEncodedPoint())
+                .build();
+        var companionPlatformId = new NodeBuilder()
+                .description("companion_platform_id")
+                .content(49)
+                .build();
+        var companionPlatformDisplay = new NodeBuilder()
+                .description("companion_platform_display")
+                .content("Chrome (Linux)".getBytes(StandardCharsets.UTF_8))
+                .build();
+        var linkCodePairingNonce = new NodeBuilder()
+                .description("link_code_pairing_nonce")
+                .content(0)
+                .build();
+        var registrationBody = new NodeBuilder()
+                .description("link_code_companion_reg_request")
+                .attribute("jid", Jid.of(phoneNumber))
+                .attribute("stage", "companion_hello")
+                .attribute("should_show_push_notification", true)
+                .content(linkCodePairingWrappedCompanionEphemeralPub, companionServerAuthKeyPub, companionPlatformId, companionPlatformDisplay, linkCodePairingNonce)
+                .build();
+        var registrationRequest = new NodeBuilder()
+                .description("iq")
+                .attribute("to", JidServer.user())
+                .attribute("xmlns", "md")
+                .attribute("type", "set")
+                        .content(registrationBody);
+        whatsapp.sendNode(registrationRequest);
+        pairingCode.accept(codeHandler);
+    }
+
+    private void handlePairSuccess(Node node, Node container) {
+        saveCompanion(container);
+        var deviceIdentity = container.getChild("device-identity")
+                .orElseThrow(() -> new InternalError("Missing device identity"))
+                .toContentBytes()
+                .orElseThrow(() -> new InternalError("Missing device identity content"));
+        var advIdentity = SignedDeviceIdentityHMACSpec.decode(deviceIdentity);
+        var advSign = getAdvSign(advIdentity);
+        if (!Arrays.equals(advIdentity.hmac(), advSign)) {
+            whatsapp.handleFailure(LOGIN, new HmacValidationException("adv_sign"));
+            return;
+        }
+        var account = SignedDeviceIdentitySpec.decode(advIdentity.details());
+        whatsapp.store().setCompanionIdentity(account);
+        var identityPublicKey = whatsapp.store().identityKeyPair().publicKey().toEncodedPoint();
+        var message = Bytes.concat(
+                ACCOUNT_SIGNATURE_HEADER,
+                account.details(),
+                identityPublicKey
+        );
+        if (!Curve25519.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
+            whatsapp.handleFailure(LOGIN, new HmacValidationException("message_header"));
+            return;
+        }
+        var deviceSignatureMessage = Bytes.concat(
+                DEVICE_WEB_SIGNATURE_HEADER,
+                account.details(),
+                identityPublicKey,
+                account.accountSignatureKey()
+        );
+        var result = new SignedDeviceIdentityBuilder()
+                .accountSignature(account.accountSignature())
+                .accountSignatureKey(account.accountSignatureKey())
+                .details(account.details())
+                .deviceSignature(Curve25519.sign(whatsapp.store().identityKeyPair().privateKey().toEncodedPoint(), deviceSignatureMessage))
+                .build();
+        whatsapp.store().setCompanionIdentity(result);
+        var platform = getWebPlatform(node);
+        var device = whatsapp.store()
+                .device()
+                .withPlatform(platform);
+        whatsapp.store()
+                .setDevice(device);
+        var keyIndex = DeviceIdentitySpec.decode(result.details()).keyIndex();
+        var outgoingDeviceIdentity = SignedDeviceIdentitySpec.encode(new SignedDeviceIdentity(result.details(), null, result.accountSignature(), result.deviceSignature()));
+        var deviceIdentityNode = new NodeBuilder()
+                .description("device-identity")
+                .attribute("key-index", keyIndex)
+                .content(outgoingDeviceIdentity)
+                .build();
+        var devicePairRequest = new NodeBuilder()
+                .description("pair-device-sign")
+                .content(deviceIdentityNode)
+                .build();
+        sendConfirmNode(node, devicePairRequest);
+    }
+
+    private byte[] getAdvSign(SignedDeviceIdentityHMAC advIdentity) {
+        try {
+            var mac = Mac.getInstance("HmacSHA256");
+            var companionKey = whatsapp.store()
+                    .companionKeyPair()
+                    .orElseThrow(() -> new InternalError("Missing companion key pair"))
+                    .publicKey()
+                    .toEncodedPoint();
+            var companionSecretKey = new SecretKeySpec(companionKey, "HmacSHA256");
+            mac.init(companionSecretKey);
+            return mac.doFinal(advIdentity.details());
+        }catch (GeneralSecurityException exception) {
+            throw new InternalError("Cannot get adv sign", exception);
+        }
+    }
+
+    private PlatformType getWebPlatform(Node node) {
+        var name = node.getChild("platform")
+                .flatMap(entry -> entry.getAttributeAsString("name"))
                 .orElse(null);
         return switch (name) {
-            case "smbi" -> UserAgent.PlatformType.IOS_BUSINESS;
-            case "smba" -> UserAgent.PlatformType.ANDROID_BUSINESS;
-            case "android" -> UserAgent.PlatformType.ANDROID;
-            case "ios" -> UserAgent.PlatformType.IOS;
+            case "smbi" -> PlatformType.IOS_BUSINESS;
+            case "smba" -> PlatformType.ANDROID_BUSINESS;
+            case "android" -> PlatformType.ANDROID;
+            case "ios" -> PlatformType.IOS;
             case null, default -> null;
         };
     }
 
     private void saveCompanion(Node container) {
-        var node = container.findChild("device")
-                .orElseThrow(() -> new NoSuchElementException("Missing device"));
-        var companion = node.attributes()
-                .getOptionalJid("value")
-                .orElseThrow(() -> new NoSuchElementException("Missing companion"));
-        whatsapp.store().setJid(companion);
-        PhoneNumber.of(companion.user())
-                .ifPresent(phoneNumber -> whatsapp.store().setPhoneNumber(phoneNumber));
-        whatsapp.addMe(companion.withoutData());
+        var node = container.getRequiredChild("device");
+        var companion = node.getRequiredAttributeAsJid("jid");
+        whatsapp.store()
+                .setJid(companion);
+        whatsapp.store()
+                .setPhoneNumber(Long.parseUnsignedLong(companion.user()));
+        var contact = new ContactBuilder()
+                .jid(companion)
+                .chosenName(whatsapp.store().name())
+                .lastKnownPresence(ContactStatus.AVAILABLE)
+                .lastSeenSeconds(Clock.nowSeconds())
+                .blocked(false)
+                .build();
+        whatsapp.store()
+                .addContact(contact);
     }
 }

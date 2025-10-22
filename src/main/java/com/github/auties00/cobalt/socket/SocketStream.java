@@ -4,7 +4,7 @@ import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
 import com.github.auties00.cobalt.io.core.node.Node;
 import com.github.auties00.cobalt.socket.ack.AckStreamNodeHandler;
-import com.github.auties00.cobalt.socket.call.CalStreamNodeHandler;
+import com.github.auties00.cobalt.socket.call.CallStreamNodeHandler;
 import com.github.auties00.cobalt.socket.error.ErrorStreamNodeHandler;
 import com.github.auties00.cobalt.socket.error.FailureStreamNodeHandler;
 import com.github.auties00.cobalt.socket.ib.IbStreamNodeHandler;
@@ -28,7 +28,7 @@ public final class SocketStream {
         var pairingCode = new PhonePairingCode();
         this.handlers = withHandlers(
                 new AckStreamNodeHandler(whatsapp),
-                new CalStreamNodeHandler(whatsapp),
+                new CallStreamNodeHandler(whatsapp),
                 new ErrorStreamNodeHandler(whatsapp),
                 new FailureStreamNodeHandler(whatsapp),
                 new IbStreamNodeHandler(whatsapp),

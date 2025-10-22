@@ -55,10 +55,10 @@ public final class BusinessProfile {
     public static BusinessProfile of(Node node) {
         var jid = node.attributes()
                 .getRequiredJid("value");
-        var address = node.findChild("address")
+        var address = node.getChild("address")
                 .flatMap(Node::toContentString)
                 .orElse(null);
-        var description = node.findChild("description")
+        var description = node.getChild("description")
                 .flatMap(Node::toContentString)
                 .orElse(null);
         var websites = node.listChildren("website")
@@ -67,7 +67,7 @@ public final class BusinessProfile {
                 .flatMap(Optional::stream)
                 .map(URI::create)
                 .toList();
-        var email = node.findChild("email")
+        var email = node.getChild("email")
                 .flatMap(Node::toContentString)
                 .orElse(null);
         var categories = node.listChildren("categories")
@@ -76,15 +76,15 @@ public final class BusinessProfile {
                 .flatMap(Optional::stream)
                 .map(BusinessCategory::of)
                 .toList();
-        var commerceExperience = node.findChild("profile_options");
-        var cartEnabled = commerceExperience.flatMap(entry -> entry.findChild("cart_enabled"))
+        var commerceExperience = node.getChild("profile_options");
+        var cartEnabled = commerceExperience.flatMap(entry -> entry.getChild("cart_enabled"))
                 .flatMap(Node::contentAsBoolean)
                 .orElse(commerceExperience.isEmpty());
-        var hours = node.findChild("business_hours")
+        var hours = node.getChild("business_hours")
                 .map(Node::attributes)
                 .map(attributes -> attributes.getNullableString("timezone"))
                 .map(timezone -> {
-                    var entries = node.findChild("business_hours")
+                    var entries = node.getChild("business_hours")
                             .stream()
                             .map(entry -> entry.listChildren("business_hours_config"))
                             .flatMap(Collection::stream)

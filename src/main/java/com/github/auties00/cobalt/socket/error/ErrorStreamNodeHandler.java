@@ -6,7 +6,6 @@ import com.github.auties00.cobalt.exception.MalformedNodeException;
 import com.github.auties00.cobalt.exception.SessionBadMacException;
 import com.github.auties00.cobalt.exception.SessionConflictException;
 import com.github.auties00.cobalt.io.core.node.Node;
-import com.github.auties00.cobalt.io.core.node.NodeAttribute;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,45 +22,64 @@ public final class ErrorStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        if (node.findChild("xml-not-well-formed").isPresent()) {
+        if (node.hasChild("xml-not-well-formed")) {
             whatsapp.handleFailure(STREAM, new MalformedNodeException());
             return;
         }
 
-        if (node.findChild("conflict").isPresent()) {
+        if (node.hasChild("conflict")) {
             whatsapp.handleFailure(STREAM, new SessionConflictException());
             return;
         }
 
-        if (node.findChild("bad-mac").isPresent()) {
+        if (node.hasChild("bad-mac")) {
             whatsapp.handleFailure(STREAM, new SessionBadMacException());
             return;
         }
 
-        var statusCode = node.getRequiredAttribute("code")
-                .toString();
+        var statusCode = Math.toIntExact(node.getRequiredAttributeAsLong("code"));
         switch (statusCode) {
-            case "403", "503" ->
-                    whatsapp.disconnect(retriedConnection.getAndSet(true) ? WhatsappDisconnectReason.BANNED : WhatsappDisconnectReason.RECONNECTING);
-            case "500" -> whatsapp.disconnect(WhatsappDisconnectReason.LOGGED_OUT);
-            case "401" -> {
-                var type = node.findChild()
-                        .map(child -> child.getRequiredAttribute("type"))
-                        .map(NodeAttribute::toString)
-                        .orElse("");
-                var reason = node.findChild()
-                        .map(child -> child.getRequiredAttribute("reason"))
-                        .map(NodeAttribute::toString)
-                        .orElse(type);
-                if (!reason.equals("device_removed")) {
-                    whatsapp.handleFailure(STREAM, new SessionConflictException());
-                } else {
-                    whatsapp.disconnect(WhatsappDisconnectReason.LOGGED_OUT);
-                }
-            }
-            case "515" -> whatsapp.disconnect(WhatsappDisconnectReason.RECONNECTING);
-            default -> node.children()
-                    .forEach(whatsapp::resolvePendingRequest);
+            case 403, 503 -> handleBan();
+            case 500 -> handleLogout();
+            case 401 -> handleConflict(node);
+            case 515 -> handleReconnect();
+            default -> handleError(node);
+        }
+    }
+
+    private void handleReconnect() {
+        whatsapp.disconnect(WhatsappDisconnectReason.RECONNECTING);
+    }
+
+    private void handleBan() {
+        var reason = retriedConnection.getAndSet(true)
+                ? WhatsappDisconnectReason.BANNED
+                : WhatsappDisconnectReason.RECONNECTING;
+        whatsapp.disconnect(reason);
+    }
+
+    private void handleLogout() {
+        whatsapp.disconnect(WhatsappDisconnectReason.LOGGED_OUT);
+    }
+
+    private void handleConflict(Node node) {
+        var type = node.getChild()
+                .map(child -> child.getRequiredAttributeAsString("type"))
+                .orElse("");
+        var reason = node.getChild()
+                .map(child -> child.getRequiredAttributeAsString("reason"))
+                .orElse(type);
+        if (reason.equals("device_removed")) {
+            handleLogout();
+        } else {
+            whatsapp.handleFailure(STREAM, new SessionConflictException());
+        }
+    }
+
+
+    private void handleError(Node node) {
+        for (var error : node.children()) {
+            whatsapp.resolvePendingRequest(error);
         }
     }
 

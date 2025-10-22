@@ -26,6 +26,7 @@ module com.github.auties00.cobalt {
     // Mobile api
     requires net.dongliu.apkparser;
     requires com.google.i18n.phonenumbers.libphonenumber;
+    requires com.github.auties00.cobalt;
 
     exports com.github.auties00.cobalt.api;
     exports com.github.auties00.cobalt.model.action;

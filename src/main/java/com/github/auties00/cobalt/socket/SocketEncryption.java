@@ -306,7 +306,7 @@ public final class SocketEncryption {
     private CompanionProperties createCompanionProps() {
         return switch (store.clientType()) {
             case WEB -> {
-                var historyLength = store.historyLength()
+                var historyLength = store.webHistoryPolicy()
                         .orElse(WhatsappWebHistoryPolicy.standard(true));
                 var config = new HistorySyncConfigBuilder()
                         .inlineInitialPayloadInE2EeMsg(true)

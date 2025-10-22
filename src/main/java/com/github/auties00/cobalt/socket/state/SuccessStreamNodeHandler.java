@@ -50,7 +50,7 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
                 whatsapp.queryGroups();
             }
             if(whatsapp.store().hasPreKeys() && !whatsapp.store().syncedWebAppState()) {
-                whatsapp.pullWebAppStatePatches(true, PatchType.values());
+                whatsapp.pullWebAppStatePatches(PatchType.values());
                 whatsapp.store()
                         .setSyncedWebAppState(true);
             }
@@ -445,7 +445,7 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void onMediaConnection(Node node) {
-        var mediaConnection = node.findChild("media_conn").orElse(node);
+        var mediaConnection = node.getChild("media_conn").orElse(node);
         var auth = mediaConnection.attributes().getString("auth");
         var ttl = mediaConnection.attributes().getInt("ttl");
         var maxBuckets = mediaConnection.attributes().getInt("max_buckets");
