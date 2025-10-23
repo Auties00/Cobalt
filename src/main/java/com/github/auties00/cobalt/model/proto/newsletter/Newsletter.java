@@ -4,15 +4,12 @@ import com.alibaba.fastjson2.JSONObject;
 import com.github.auties00.cobalt.model.proto.info.MessageInfoParent;
 import com.github.auties00.cobalt.model.proto.info.NewsletterMessageInfo;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.collections.ConcurrentLinkedHashMap;
+import com.github.auties00.cobalt.util.Messages;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.SequencedCollection;
+import java.util.*;
 
 // TODO: Add unreadMessagesCount and timestamp
 @ProtobufMessage
@@ -30,14 +27,14 @@ public final class Newsletter implements MessageInfoParent {
     final NewsletterViewerMetadata viewerMetadata;
 
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    final ConcurrentLinkedHashMap<String, NewsletterMessageInfo> messages;
+    final Messages<NewsletterMessageInfo> messages;
 
-    Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, ConcurrentLinkedHashMap<String, NewsletterMessageInfo> messages) {
+    Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, Messages<NewsletterMessageInfo> messages) {
         this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.state = state;
         this.metadata = metadata;
         this.viewerMetadata = viewerMetadata;
-        this.messages = Objects.requireNonNullElseGet(messages, ConcurrentLinkedHashMap::new);
+        this.messages = messages;
     }
 
     public static Optional<Newsletter> ofJson(JSONObject newsletter) {
@@ -61,12 +58,12 @@ public final class Newsletter implements MessageInfoParent {
         var viewerMetadata = NewsletterViewerMetadata.ofJson(viewerMetadataJsonObject)
                 .orElse(null);
         var messagesJsonObjects = newsletter.getJSONArray("messages");
-        var messages = new ConcurrentLinkedHashMap<String, NewsletterMessageInfo>();
+        var messages = new Messages<NewsletterMessageInfo>();
         if(messagesJsonObjects != null) {
             for (var i = 0; i < messagesJsonObjects.size(); i++) {
                 var messageJsonObject = messagesJsonObjects.getJSONObject(i);
                 var message = NewsletterMessageInfo.ofJson(messageJsonObject);
-                message.ifPresent(newsletterMessageInfo -> messages.put(newsletterMessageInfo.id(), newsletterMessageInfo));
+                message.ifPresent(messages::add);
             }
         }
         var result = new Newsletter(jid, state, metadata, viewerMetadata, messages);
@@ -74,13 +71,12 @@ public final class Newsletter implements MessageInfoParent {
     }
 
     public void addMessage(NewsletterMessageInfo info) {
-        Objects.requireNonNull(info, "info cannot be null");
-        messages.put(info.id(), info);
+        messages.add(info);
     }
 
     @Override
     public boolean removeMessage(String messageId) {
-        return messages.remove(messageId) != null;
+        return messages.removeById(messageId);
     }
 
     @Override
@@ -90,19 +86,25 @@ public final class Newsletter implements MessageInfoParent {
 
     @Override
     public SequencedCollection<NewsletterMessageInfo> messages() {
-        return messages.sequencedValues();
+        return Collections.unmodifiableSequencedCollection(messages);
     }
 
     @Override
     public Optional<NewsletterMessageInfo> oldestMessage() {
-        return Optional.ofNullable(messages.pollFirstEntry())
-                .map(Map.Entry::getValue);
+        try {
+            return Optional.of(messages.getFirst());
+        }catch (NoSuchElementException e){
+            return Optional.empty();
+        }
     }
 
     @Override
     public Optional<NewsletterMessageInfo> newestMessage() {
-        return Optional.ofNullable(messages.pollLastEntry())
-                .map(Map.Entry::getValue);
+        try {
+            return Optional.of(messages.getLast());
+        }catch (NoSuchElementException e){
+            return Optional.empty();
+        }
     }
 
     @Override

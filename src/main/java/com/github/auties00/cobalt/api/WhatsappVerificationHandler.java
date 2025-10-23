@@ -43,6 +43,7 @@ public sealed interface WhatsappVerificationHandler {
          * An interface for handling QR codes sent by WhatsApp Web during authentication.
          * Provides various methods to process and display QR codes in different formats.
          */
+        @FunctionalInterface
         non-sealed interface QrCode extends Web {
             /**
              * Creates a handler that prints the QR code to the terminal.
@@ -159,6 +160,7 @@ public sealed interface WhatsappVerificationHandler {
          * An interface for handling pairing codes sent by WhatsApp Web during authentication.
          * Provides methods to process and display pairing codes.
          */
+        @FunctionalInterface
         non-sealed interface PairingCode extends Web {
             /**
              * Creates a handler that prints the pairing code to the terminal.

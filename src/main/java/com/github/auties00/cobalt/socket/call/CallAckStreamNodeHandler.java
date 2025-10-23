@@ -1,13 +1,12 @@
-package com.github.auties00.cobalt.socket.ack;
+package com.github.auties00.cobalt.socket.call;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.model.node.Node;
 import com.github.auties00.cobalt.model.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.model.proto.message.model.MessageStatus;
 import com.github.auties00.cobalt.socket.SocketStream;
 
-public final class AckStreamNodeHandler extends SocketStream.Handler {
+public final class CallAckStreamNodeHandler extends SocketStream.Handler {
     private static final byte[][] CALL_RELAY = new byte[][]{
             new byte[]{-105, 99, -47, -29, 13, -106},
             new byte[]{-99, -16, -53, 62, 13, -106},
@@ -16,46 +15,27 @@ public final class AckStreamNodeHandler extends SocketStream.Handler {
             new byte[]{-71, 60, -37, 62, 13, -106}
     };
 
-    public AckStreamNodeHandler(Whatsapp whatsapp) {
+    public CallAckStreamNodeHandler(Whatsapp whatsapp) {
         super(whatsapp, "ack");
     }
 
     @Override
     public void handle(Node node) {
-        var ackClass = node.getRequiredAttributeAsString("class");
-        switch (ackClass) {
-            case "call" -> digestCallAck(node);
-            case "message" -> digestMessageAck(node);
-        }
-    }
-
-    private void digestMessageAck(Node node) {
-        var messageId = node.getRequiredAttributeAsString("id");
-        var from = node.getRequiredAttributeAsJid("from");
-        var match = whatsapp.store()
-                .findMessageById(from, messageId)
-                .orElse(null);
-        if (match == null) {
+        if(!node.hasAttribute("class", "call")) {
             return;
         }
 
-        var error = node.getAttributeAsLong("error");
-        if (error.isPresent()) {
-            match.setStatus(MessageStatus.ERROR);
-        }else if (match.status() == MessageStatus.UNKNOWN || match.status().ordinal() < MessageStatus.SERVER_ACK.ordinal()) {
-            match.setStatus(MessageStatus.SERVER_ACK);
-        }
-    }
-
-    private void digestCallAck(Node node) {
-        var relayNode = node.getChild("relay").orElse(null);
-        if (relayNode == null) {
+        var relayNode = node.getChild("relay");
+        if (relayNode.isEmpty()) {
             return;
         }
 
-        var callCreator = relayNode.getRequiredAttributeAsJid("call-creator");
-        var callId = relayNode.getRequiredAttributeAsString("call-id");
-        relayNode.streamChildren("participant")
+        var callCreator = relayNode.get()
+                .getRequiredAttributeAsJid("call-creator");
+        var callId = relayNode.get()
+                .getRequiredAttributeAsString("call-id");
+        relayNode.get()
+                .streamChildren("participant")
                 .flatMap(entry -> entry.streamAttributeAsJid("jid"))
                 .forEach(to -> sendRelay(callCreator, callId, to));
     }

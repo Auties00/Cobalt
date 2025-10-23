@@ -114,7 +114,7 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
         if (!whatsapp.store().hasPreKeys() || whatsapp.store().syncedWebAppState()) {
             return;
         }
-        whatsapp.pullWebAppStatePatches(PatchType.values());
+        whatsapp.pullWebAppState(PatchType.values());
         whatsapp.store()
                 .setSyncedWebAppState(true);
     }

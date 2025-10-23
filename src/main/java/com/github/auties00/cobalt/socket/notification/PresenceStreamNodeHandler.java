@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.socket.presence;
+package com.github.auties00.cobalt.socket.notification;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.model.node.Node;

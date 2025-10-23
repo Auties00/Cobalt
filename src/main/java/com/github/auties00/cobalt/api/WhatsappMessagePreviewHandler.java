@@ -26,6 +26,7 @@ import java.util.Objects;
  * @see TextMessage
  * @see LinkPreview
  */
+@FunctionalInterface
 public interface WhatsappMessagePreviewHandler {
     /**
      * Creates an enabled preview handler that processes messages to generate link previews.

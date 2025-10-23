@@ -20,6 +20,7 @@ public final class CallStreamNodeHandler extends SocketStream.Handler {
             return;
         }
 
+        // TODO: Support other types
         switch (callNode.get().description()) {
             case "offer" -> handleOffer(node, callNode.get());
         }

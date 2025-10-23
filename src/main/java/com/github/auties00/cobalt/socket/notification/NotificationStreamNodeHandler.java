@@ -568,7 +568,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 .map(PatchType::of)
                 .flatMap(Optional::stream)
                 .toArray(PatchType[]::new);
-        whatsapp.pullWebAppStatePatches(patches);
+        whatsapp.pullWebAppState(patches);
     }
 
 

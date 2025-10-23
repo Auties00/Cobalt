@@ -6,7 +6,7 @@ import com.github.auties00.cobalt.model.proto.jid.JidServer;
 import java.util.HashMap;
 import java.util.Map;
 
-final class MetaBots {
+final class MessageMetaBots {
     private static final Map<String, Jid> botJIDMap;
 
     static {
@@ -222,7 +222,7 @@ final class MetaBots {
         botJIDMap = data;
     }
 
-    private MetaBots() {
+    private MessageMetaBots() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
 

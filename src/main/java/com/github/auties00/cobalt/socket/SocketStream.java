@@ -3,69 +3,76 @@ package com.github.auties00.cobalt.socket;
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
 import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.socket.ack.AckStreamNodeHandler;
+import com.github.auties00.cobalt.socket.call.CallAckStreamNodeHandler;
 import com.github.auties00.cobalt.socket.call.CallStreamNodeHandler;
 import com.github.auties00.cobalt.socket.error.ErrorStreamNodeHandler;
 import com.github.auties00.cobalt.socket.error.FailureStreamNodeHandler;
 import com.github.auties00.cobalt.socket.ib.IbStreamNodeHandler;
 import com.github.auties00.cobalt.socket.iq.IqStreamNodeHandler;
+import com.github.auties00.cobalt.socket.message.MessageAckStreamNodeHandler;
+import com.github.auties00.cobalt.socket.message.MessageReceiptStreamNodeHandler;
 import com.github.auties00.cobalt.socket.message.MessageStreamNodeHandler;
 import com.github.auties00.cobalt.socket.notification.NotificationStreamNodeHandler;
-import com.github.auties00.cobalt.socket.presence.PresenceStreamNodeHandler;
-import com.github.auties00.cobalt.socket.receipt.ReceiptStreamNodeHandler;
+import com.github.auties00.cobalt.socket.notification.PresenceStreamNodeHandler;
 import com.github.auties00.cobalt.socket.state.EndStreamNodeHandler;
 import com.github.auties00.cobalt.socket.state.SuccessStreamNodeHandler;
 import com.github.auties00.cobalt.util.PhonePairingCode;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public final class SocketStream {
-    private final Map<String, Handler> handlers;
+    private final Map<String, SequencedCollection<Handler>> handlers;
     public SocketStream(Whatsapp whatsapp, WhatsappVerificationHandler.Web webVerificationHandler) {
-        var pairingCode = new PhonePairingCode();
+        var pairingCode = webVerificationHandler instanceof WhatsappVerificationHandler.Web.PairingCode
+                ? new PhonePairingCode()
+                : null;
         this.handlers = withHandlers(
-                new AckStreamNodeHandler(whatsapp),
                 new CallStreamNodeHandler(whatsapp),
+                new CallAckStreamNodeHandler(whatsapp),
                 new ErrorStreamNodeHandler(whatsapp),
                 new FailureStreamNodeHandler(whatsapp),
                 new IbStreamNodeHandler(whatsapp),
                 new IqStreamNodeHandler(whatsapp, webVerificationHandler, pairingCode),
                 new MessageStreamNodeHandler(whatsapp),
+                new MessageAckStreamNodeHandler(whatsapp),
+                new MessageReceiptStreamNodeHandler(whatsapp),
                 new NotificationStreamNodeHandler(whatsapp, pairingCode),
-                new ReceiptStreamNodeHandler(whatsapp),
                 new PresenceStreamNodeHandler(whatsapp),
                 new EndStreamNodeHandler(whatsapp),
                 new SuccessStreamNodeHandler(whatsapp)
         );
     }
 
-    private static Map<String, Handler> withHandlers(Handler... handlers) {
-        Map<String, Handler> result = HashMap.newHashMap(handlers.length);
+    private static Map<String, SequencedCollection<Handler>> withHandlers(Handler... handlers) {
+        Map<String, SequencedCollection<Handler>> result = HashMap.newHashMap(handlers.length);
         for(var handler : handlers) {
             for(var description : handler.descriptions()) {
-                var existing = result.put(description, handler);
-                if(existing != null) {
-                    throw new IllegalStateException("A handler for the description " + description + " is already present");
-                }
+                result.compute(description, (_, values) -> {
+                    if(values == null) {
+                        values = new ArrayList<>();
+                    }
+                    values.add(handler);
+                    return values;
+                });
             }
         }
         return Collections.unmodifiableMap(result);
     }
 
     public void digest(Node node) {
-        var handler = handlers.get(node.description());
-        if(handler != null) {
-            handler.handle(node);
+        var handlers = this.handlers.get(node.description());
+        if(handlers != null) {
+            for(var handler : handlers) {
+                handler.handle(node);
+            }
         }
     }
 
     public void dispose() {
         for (var entry : handlers.entrySet()) {
-            var handler = entry.getValue();
-            handler.dispose();
+            for(var handler : entry.getValue()) {
+                handler.dispose();
+            }
         }
     }
 

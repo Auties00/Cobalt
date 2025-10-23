@@ -20,19 +20,15 @@ import com.github.auties00.cobalt.model.proto.sync.PatchType;
 import com.github.auties00.cobalt.model.proto.sync.ServerErrorReceipt;
 import com.github.auties00.cobalt.io.node.NodeDecoder;
 import com.github.auties00.cobalt.model.proto.action.*;
-import com.github.auties00.cobalt.model.proto.business.*;
 import com.github.auties00.cobalt.model.proto.call.Call;
 import com.github.auties00.cobalt.model.proto.call.CallBuilder;
 import com.github.auties00.cobalt.model.proto.call.CallStatus;
-import com.github.auties00.cobalt.model.proto.chat.*;
 import com.github.auties00.cobalt.model.proto.contact.Contact;
 import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
-import com.github.auties00.cobalt.model.proto.info.*;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.model.proto.jid.JidProvider;
 import com.github.auties00.cobalt.model.proto.jid.JidServer;
 import com.github.auties00.cobalt.model.media.MediaProvider;
-import com.github.auties00.cobalt.model.proto.message.model.*;
 import com.github.auties00.cobalt.model.proto.message.server.ProtocolMessage;
 import com.github.auties00.cobalt.model.proto.message.server.ProtocolMessageBuilder;
 import com.github.auties00.cobalt.model.proto.message.standard.NewsletterAdminInviteMessageBuilder;
@@ -45,9 +41,8 @@ import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.proto.setting.Setting;
 import com.github.auties00.cobalt.model.proto.sync.*;
 import com.github.auties00.cobalt.model.proto.sync.RecordSync.Operation;
+import com.github.auties00.cobalt.model.sync.WebAppStatePatch;
 import com.github.auties00.cobalt.socket.*;
-import com.github.auties00.cobalt.socket.appState.WebAppStatePatch;
-import com.github.auties00.cobalt.socket.appState.WebAppStatePushRequest;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Clock;
@@ -1573,7 +1568,7 @@ public final class Whatsapp {
         if (compose) {
             changePresence(recipient, COMPOSING);
         }
-        sendMessage(new MessageRequest.Chat(info));
+        sendMessage0(info, Map.of());
         if (compose) {
             var pausedNode = new NodeBuilder()
                     .description("paused")
@@ -1596,9 +1591,15 @@ public final class Whatsapp {
      * @return a CompletableFuture
      */
     public NewsletterMessageInfo sendMessage(NewsletterMessageInfo info) {
-        sendMessage(new MessageRequest.Newsletter(info));
-        return info;
+        return sendMessage0(info, Map.of());
     }
+
+    // TODO: Implement message sending
+    private <T extends MessageInfo> T sendMessage0(T info, Map<String, ?> attributes) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+
     //</editor-fold>
 
     //<editor-fold desc="Send status updates">
@@ -1830,8 +1831,7 @@ public final class Whatsapp {
                         .status(MessageStatus.PENDING)
                         .build();
                 info.setNewsletter(oldNewsletterInfo.newsletter());
-                var request = new MessageRequest.Newsletter(info, Map.of("edit", getEditBit(info)));
-                sendMessage(request);
+                sendMessage0(info, Map.of("edit", getEditBit(info)));
                 return oldMessage;
             }
             case ChatMessageInfo oldChatInfo -> {
@@ -1849,8 +1849,7 @@ public final class Whatsapp {
                         .timestampSeconds(Clock.nowSeconds())
                         .broadcast(oldChatInfo.chatJid().hasServer(JidServer.broadcast()))
                         .build();
-                var request = new MessageRequest.Chat(info, null, false, false, Map.of("edit", getEditBit(info)));
-                sendMessage(request);
+                sendMessage0(info, Map.of("edit", getEditBit(info)));
                 return oldMessage;
             }
             default -> throw new IllegalStateException("Unsupported edit: " + oldMessage);
@@ -1860,39 +1859,37 @@ public final class Whatsapp {
     /**
      * Deletes a message
      *
-     * @param messageInfo the non-null message to delete
+     * @param info the non-null message to delete
      */
-    public void deleteMessage(NewsletterMessageInfo messageInfo) {
+    public void deleteMessage(NewsletterMessageInfo info) {
         var revokeInfo = new NewsletterMessageInfoBuilder()
-                .id(messageInfo.id())
-                .serverId(messageInfo.serverId())
+                .id(info.id())
+                .serverId(info.serverId())
                 .timestampSeconds(Clock.nowSeconds())
                 .message(MessageContainer.empty())
                 .status(MessageStatus.PENDING)
                 .build();
-        revokeInfo.setNewsletter(messageInfo.newsletter());
-        var attrs = Map.of("edit", getEditBit(messageInfo));
-        var request = new MessageRequest.Newsletter(revokeInfo, attrs);
-        sendMessage(request);
+        revokeInfo.setNewsletter(info.newsletter());
+        sendMessage0(info, Map.of("edit", getEditBit(info)));;
     }
 
     /**
      * Deletes a message
      *
-     * @param messageInfo non-null message to delete
+     * @param info non-null message to delete
      * @param everyone    whether the message should be deleted for everyone or only for this client and
      *                    its companions
      */
-    public void deleteMessage(ChatMessageInfo messageInfo, boolean everyone) {
+    public void deleteMessage(ChatMessageInfo info, boolean everyone) {
         if (everyone) {
             var message = new ProtocolMessageBuilder()
                     .protocolType(ProtocolMessage.Type.REVOKE)
-                    .key(messageInfo.key())
+                    .key(info.key())
                     .build();
-            var sender = messageInfo.chatJid().hasServer(JidServer.groupOrCommunity()) ? jidOrThrowError() : null;
+            var sender = info.chatJid().hasServer(JidServer.groupOrCommunity()) ? jidOrThrowError() : null;
             var key = new ChatMessageKeyBuilder()
                     .id(ChatMessageKey.randomId(store.clientType()))
-                    .chatJid(messageInfo.chatJid())
+                    .chatJid(info.chatJid())
                     .fromMe(true)
                     .senderJid(sender)
                     .build();
@@ -1903,25 +1900,21 @@ public final class Whatsapp {
                     .message(MessageContainer.of(message))
                     .timestampSeconds(Clock.nowSeconds())
                     .build();
-            var attrs = Map.of("edit", getEditBit(messageInfo));
-            var request = new MessageRequest.Chat(revokeInfo, null, false, false, attrs);
-            sendMessage(request);
-            return;
-        }
-
-        switch (store.clientType()) {
-            case WEB -> {
-                var range = createRange(messageInfo.chatJid(), false);
-                var deleteMessageAction = new DeleteMessageForMeActionBuilder()
-                        .deleteMedia(false)
-                        .messageTimestampSeconds(messageInfo.timestampSeconds().orElse(0L))
-                        .build();
-                var syncAction = ActionValueSync.of(deleteMessageAction);
-                var entry = WebAppStatePatch.of(syncAction, Operation.SET, messageInfo.chatJid().toString(), messageInfo.id(), fromMeToFlag(messageInfo), participantToFlag(messageInfo));
-                var request = new WebAppStatePushRequest(PatchType.REGULAR_HIGH, List.of(entry));
-                pushPatch(request);
+            sendMessage0(info, Map.of("edit", getEditBit(info)));
+        }else{
+            switch (store.clientType()) {
+                case WEB -> {
+                    var range = createRange(info.chatJid(), false);
+                    var deleteMessageAction = new DeleteMessageForMeActionBuilder()
+                            .deleteMedia(false)
+                            .messageTimestampSeconds(info.timestampSeconds().orElse(0L))
+                            .build();
+                    var syncAction = ActionValueSync.of(deleteMessageAction);
+                    var entry = new WebAppStatePatch(syncAction, Operation.SET, info.chatJid().toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
+                    pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
+                }
+                case MOBILE -> info.chat().ifPresent(chat -> chat.removeMessage(info.id()));
             }
-            case MOBILE -> messageInfo.chat().ifPresent(chat -> chat.removeMessage(messageInfo.id()));
         }
     }
 
@@ -1986,9 +1979,8 @@ public final class Whatsapp {
                 .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(markAction);
-        var entry = WebAppStatePatch.of(syncAction, Operation.SET, chat.toJid().toString());
-        var request = new WebAppStatePushRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        pushPatch(request);
+        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString());
+        pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
     }
 
     /**
@@ -2020,9 +2012,8 @@ public final class Whatsapp {
                 .autoMuted(false)
                 .build();
         var syncAction = ActionValueSync.of(muteAction);
-        var entry = WebAppStatePatch.of(syncAction, Operation.SET, chat.toJid().toString());
-        var request = new WebAppStatePushRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        pushPatch(request);
+        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString());
+        pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
     }
 
     /**
@@ -2043,9 +2034,8 @@ public final class Whatsapp {
                 .autoMuted(false)
                 .build();
         var syncAction = ActionValueSync.of(muteAction);
-        var entry = WebAppStatePatch.of(syncAction, Operation.SET, chat.toJid().toString());
-        var request = new WebAppStatePushRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        pushPatch(request);
+        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString());
+        pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
     }
 
     /**
@@ -2170,9 +2160,9 @@ public final class Whatsapp {
                 .pinned(pin)
                 .build();
         var syncAction = ActionValueSync.of(pinAction);
-        var entry = WebAppStatePatch.of(syncAction, Operation.SET, chat.toJid().toString());
-        var request = new WebAppStatePushRequest(PatchType.REGULAR_LOW, List.of(entry));
-        pushPatch(request);
+
+        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString());
+        pushWebAppState(PatchType.REGULAR_LOW, List.of(entry));
     }
 
     /**
@@ -2195,10 +2185,9 @@ public final class Whatsapp {
                 .starred(star)
                 .build();
         var syncAction = ActionValueSync.of(starAction);
-        var entry = WebAppStatePatch.of(syncAction, Operation.SET, info.chatJid()
+        var entry = new WebAppStatePatch(syncAction, Operation.SET, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
-        var request = new WebAppStatePushRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        pushPatch(request);
+        pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
         return info;
     }
 
@@ -2249,9 +2238,8 @@ public final class Whatsapp {
                 .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(archiveAction);
-        var entry = WebAppStatePatch.of(syncAction, Operation.SET, chat.toJid().toString());
-        var request = new WebAppStatePushRequest(PatchType.REGULAR_LOW, List.of(entry));
-        pushPatch(request);
+        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString());
+        pushWebAppState(PatchType.REGULAR_LOW, List.of(entry));
     }
 
     /**
@@ -3012,9 +3000,8 @@ public final class Whatsapp {
                 .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(deleteChatAction);
-        var entry = WebAppStatePatch.of(syncAction, Operation.SET, chat.toJid().toString(), "1");
-        var request = new WebAppStatePushRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        pushPatch(request);
+        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString(), "1");
+        pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
     }
 
     /**
@@ -3037,9 +3024,8 @@ public final class Whatsapp {
                 .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(clearChatAction);
-        var entry = WebAppStatePatch.of(syncAction, Operation.SET, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
-        var request = new WebAppStatePushRequest(PatchType.REGULAR_HIGH, List.of(entry));
-        pushPatch(request);
+        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
+        pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
     }
 
     /**
@@ -4412,7 +4398,11 @@ public final class Whatsapp {
 
     // TODO: Stuff to fix
 
-    private void pushPatch(WebAppStatePushRequest request) {
+    public void pushWebAppState(PatchType type, List<WebAppStatePatch> patches) {
+
+    }
+
+    public void pullWebAppState(PatchType... patches) {
 
     }
 
@@ -4429,10 +4419,6 @@ public final class Whatsapp {
     }
 
     public void sendAck(Node node) {
-
-    }
-
-    public void pullWebAppStatePatches(PatchType... patches) {
 
     }
 

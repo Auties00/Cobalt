@@ -5,9 +5,9 @@ import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappClientType;
 import com.github.auties00.cobalt.api.WhatsappListener;
 import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
+import com.github.auties00.cobalt.model.media.MediaConnection;
 import com.github.auties00.cobalt.model.proto.auth.SignedDeviceIdentity;
 import com.github.auties00.cobalt.model.proto.auth.UserAgent.ReleaseChannel;
-import com.github.auties00.cobalt.model.proto.auth.Version;
 import com.github.auties00.cobalt.model.proto.business.BusinessCategory;
 import com.github.auties00.cobalt.model.proto.call.Call;
 import com.github.auties00.cobalt.model.proto.chat.Chat;
@@ -22,7 +22,6 @@ import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.model.proto.jid.JidDevice;
 import com.github.auties00.cobalt.model.proto.jid.JidProvider;
 import com.github.auties00.cobalt.model.proto.jid.JidServer;
-import com.github.auties00.cobalt.model.media.MediaConnection;
 import com.github.auties00.cobalt.model.proto.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.proto.newsletter.Newsletter;
 import com.github.auties00.cobalt.model.proto.newsletter.NewsletterBuilder;
@@ -83,6 +82,7 @@ import java.util.concurrent.ConcurrentMap;
  * @see Whatsapp
  * @see WhatsappStoreSerializer
  */
+// TODO: Evaluate whether version should be stored here
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 @ProtobufMessage
 public final class WhatsappStore implements SignalProtocolStore {
@@ -828,7 +828,6 @@ public final class WhatsappStore implements SignalProtocolStore {
             WhatsappClientType clientType,
             long initializationTimeStamp,
             URI proxy,
-            Version version,
             JidDevice device,
             ReleaseChannel releaseChannel,
             boolean online,

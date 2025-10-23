@@ -26,6 +26,7 @@ public final class IbStreamNodeHandler extends SocketStream.Handler {
 
     private void handleIbDirty(Node dirty) {
         var type = dirty.getRequiredAttributeAsString("type");
+        // TODO: Support other types
         switch (type) {
             case "account_sync" -> handleAccountSync(dirty, type);
         }

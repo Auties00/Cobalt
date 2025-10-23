@@ -33,6 +33,7 @@ import static java.lang.System.Logger.Level.WARNING;
  * common error handling patterns, including logging to the terminal or saving to files.
  */
 @SuppressWarnings("unused")
+@FunctionalInterface
 public interface WhatsappErrorHandler {
     /**
      * Processes an error that occurred within the WhatsApp API.

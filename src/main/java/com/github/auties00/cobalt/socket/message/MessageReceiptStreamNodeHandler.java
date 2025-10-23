@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.socket.receipt;
+package com.github.auties00.cobalt.socket.message;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.model.node.Node;
@@ -14,10 +14,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-public final class ReceiptStreamNodeHandler extends SocketStream.Handler {
+public final class MessageReceiptStreamNodeHandler extends SocketStream.Handler {
     private final Set<String> retries;
 
-    public ReceiptStreamNodeHandler(Whatsapp whatsapp) {
+    public MessageReceiptStreamNodeHandler(Whatsapp whatsapp) {
         super(whatsapp, "receipt");
         this.retries = ConcurrentHashMap.newKeySet();
     }

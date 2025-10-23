@@ -30,12 +30,13 @@ public final class Jid implements JidProvider {
     private static final Jid LID = new Jid(null, JidServer.lid(), 0, 0);
     private static final Jid NEWSLETTER = new Jid(null, JidServer.newsletter(), 0, 0);
     private static final Jid BOT = new Jid(null, JidServer.bot(), 0, 0);
-    private static final ConcurrentMap<JidServer, Jid> unknownServerJidsStore = new ConcurrentHashMap<>();
 
     private static final Jid OFFICIAL_SURVEYS_ACCOUNT = new Jid("16505361212", JidServer.user(), 0, 0);
     private static final Jid OFFICIAL_BUSINESS_ACCOUNT = new Jid("16505361212", JidServer.legacyUser(), 0, 0);
     private static final Jid STATUS_BROADCAST = new Jid("status", JidServer.broadcast(), 0, 0);
     private static final Jid ANNOUNCEMENTS = new Jid("0", JidServer.user(), 0, 0);
+
+    private static final ConcurrentMap<JidServer, Jid> unknownServerJidsStore = new ConcurrentHashMap<>();
 
     private final String user;
     private final JidServer server;

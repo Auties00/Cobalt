@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.socket.appState;
+package com.github.auties00.cobalt.model.sync;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.github.auties00.cobalt.model.proto.sync.ActionValueSync;
@@ -8,16 +8,10 @@ import java.util.Collections;
 
 public final class WebAppStatePatch {
     private final ActionValueSync sync;
-    private final String index;
     private final RecordSync.Operation operation;
+    private final String index;
 
-    private WebAppStatePatch(ActionValueSync sync, String index, RecordSync.Operation operation) {
-        this.sync = sync;
-        this.index = index;
-        this.operation = operation;
-    }
-
-    public static WebAppStatePatch of(ActionValueSync sync, RecordSync.Operation operation, String... args) {
+    public WebAppStatePatch(ActionValueSync sync, RecordSync.Operation operation, String... args) {
         var array = new JSONArray(1 + args.length);
         if (sync.action().isPresent()) {
             array.add(sync.action().get().indexName());
@@ -27,7 +21,9 @@ public final class WebAppStatePatch {
             throw new IllegalArgumentException("Invalid sync: expected an action or setting");
         }
         Collections.addAll(array, args);
-        return new WebAppStatePatch(sync, array.toJSONString(), operation);
+        this.sync = sync;
+        this.index = array.toJSONString();
+        this.operation = operation;
     }
 
     public ActionValueSync sync() {

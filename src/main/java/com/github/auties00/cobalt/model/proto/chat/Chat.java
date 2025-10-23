@@ -8,7 +8,7 @@ import com.github.auties00.cobalt.model.proto.jid.JidProvider;
 import com.github.auties00.cobalt.model.proto.jid.JidServer;
 import com.github.auties00.cobalt.model.proto.media.MediaVisibility;
 import com.github.auties00.cobalt.util.Clock;
-import com.github.auties00.collections.ConcurrentLinkedHashMap;
+import com.github.auties00.cobalt.util.Messages;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;
@@ -32,7 +32,7 @@ public final class Chat implements MessageInfoParent {
     final Jid jid;
 
     @ProtobufProperty(index = 2, type = ProtobufType.MESSAGE)
-    final ConcurrentLinkedHashMap<String, ChatMessageInfo> historySyncMessages;
+    final Messages<ChatMessageInfo> messages;
 
     @ProtobufProperty(index = 3, type = ProtobufType.STRING)
     Jid newJid;
@@ -112,9 +112,9 @@ public final class Chat implements MessageInfoParent {
     @ProtobufProperty(index = 999, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.ENUM)
     final ConcurrentHashMap<Jid, ContactStatus> presences;
 
-    Chat(Jid jid, ConcurrentLinkedHashMap<String, ChatMessageInfo> messages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, boolean suspended, boolean terminated, boolean support, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean phoneDuplicateLidThread, Jid lid, ConcurrentHashMap<Jid, ContactStatus> presences) {
+    Chat(Jid jid, Messages<ChatMessageInfo> messages, Jid newJid, Jid oldJid, int unreadMessagesCount, boolean endOfHistoryTransfer, ChatEphemeralTimer ephemeralMessageDuration, long ephemeralMessagesToggleTimeSeconds, EndOfHistoryTransferType endOfHistoryTransferType, long timestampSeconds, String name, boolean notSpam, boolean archived, ChatDisappear disappearInitiator, boolean markedAsUnread, int pinnedTimestampSeconds, ChatMute mute, ChatWallpaper wallpaper, MediaVisibility mediaVisibility, boolean suspended, boolean terminated, boolean support, String displayName, Jid phoneJid, boolean shareOwnPhoneNumber, boolean phoneDuplicateLidThread, Jid lid, ConcurrentHashMap<Jid, ContactStatus> presences) {
         this.jid = jid;
-        this.historySyncMessages = messages;
+        this.messages = messages;
         this.newJid = newJid;
         this.oldJid = oldJid;
         this.unreadMessagesCount = unreadMessagesCount;
@@ -402,9 +402,7 @@ public final class Chat implements MessageInfoParent {
             return List.of();
         }
 
-        return historySyncMessages
-                .sequencedValues()
-                .stream()
+        return messages.stream()
                 .limit(unreadMessagesCount())
                 .toList();
     }
@@ -454,8 +452,11 @@ public final class Chat implements MessageInfoParent {
      */
     @Override
     public Optional<ChatMessageInfo> newestMessage() {
-        return Optional.ofNullable(historySyncMessages.lastEntry())
-                .map(Map.Entry::getValue);
+        try {
+            return Optional.of(messages.getLast());
+        }catch (NoSuchElementException e){
+            return Optional.empty();
+        }
     }
 
     /**
@@ -465,8 +466,11 @@ public final class Chat implements MessageInfoParent {
      */
     @Override
     public Optional<ChatMessageInfo> oldestMessage() {
-        return Optional.ofNullable(historySyncMessages.firstEntry())
-                .map(Map.Entry::getValue);
+        try {
+            return Optional.of(messages.getFirst());
+        }catch (NoSuchElementException e){
+            return Optional.empty();
+        }
     }
 
     /**
@@ -475,9 +479,7 @@ public final class Chat implements MessageInfoParent {
      * @return a non-null list of messages
      */
     public SequencedCollection<ChatMessageInfo> starredMessages() {
-        return historySyncMessages
-                .sequencedValues()
-                .stream()
+        return messages.stream()
                 .filter(ChatMessageInfo::starred)
                 .toList();
     }
@@ -489,7 +491,7 @@ public final class Chat implements MessageInfoParent {
      */
     public void addMessage(ChatMessageInfo info) {
         Objects.requireNonNull(info, "info cannot be null");
-        historySyncMessages.put(info.id(), info);
+        messages.add(info);
         updateChatTimestamp(info);
     }
 
@@ -501,7 +503,7 @@ public final class Chat implements MessageInfoParent {
      */
     @Override
     public boolean removeMessage(String info) {
-        if(historySyncMessages.remove(info) == null) {
+        if(!messages.removeById(info)) {
             return false;
         }
 
@@ -540,7 +542,7 @@ public final class Chat implements MessageInfoParent {
      */
     @Override
     public void removeMessages() {
-        historySyncMessages.clear();
+        messages.clear();
     }
 
     /**
@@ -550,7 +552,7 @@ public final class Chat implements MessageInfoParent {
      * @return a non-null collection
      */
     public SequencedCollection<ChatMessageInfo> messages() {
-        return historySyncMessages.sequencedValues();
+        return Collections.unmodifiableSequencedCollection(messages);
     }
 
     /**
@@ -566,10 +568,10 @@ public final class Chat implements MessageInfoParent {
     @Override
     public boolean equals(Object o) {
         return o instanceof Chat chat &&
-                unreadMessagesCount == chat.unreadMessagesCount &&
-                endOfHistoryTransfer == chat.endOfHistoryTransfer &&
-                ephemeralMessagesToggleTimeSeconds == chat.ephemeralMessagesToggleTimeSeconds &&
-                timestampSeconds == chat.timestampSeconds &&
+               unreadMessagesCount == chat.unreadMessagesCount &&
+               endOfHistoryTransfer == chat.endOfHistoryTransfer &&
+               ephemeralMessagesToggleTimeSeconds == chat.ephemeralMessagesToggleTimeSeconds &&
+               timestampSeconds == chat.timestampSeconds &&
                 notSpam == chat.notSpam &&
                 archived == chat.archived &&
                 markedAsUnread == chat.markedAsUnread &&
@@ -579,30 +581,30 @@ public final class Chat implements MessageInfoParent {
                 support == chat.support &&
                 shareOwnPhoneNumber == chat.shareOwnPhoneNumber &&
                 phoneDuplicateLidThread == chat.phoneDuplicateLidThread &&
-                Objects.equals(jid, chat.jid) &&
-                Objects.equals(historySyncMessages, chat.historySyncMessages) &&
-                Objects.equals(newJid, chat.newJid) &&
-                Objects.equals(oldJid, chat.oldJid) &&
+               Objects.equals(jid, chat.jid) &&
+               Objects.equals(messages, chat.messages) &&
+               Objects.equals(newJid, chat.newJid) &&
+               Objects.equals(oldJid, chat.oldJid) &&
                 ephemeralMessageDuration == chat.ephemeralMessageDuration &&
                 endOfHistoryTransferType == chat.endOfHistoryTransferType &&
-                Objects.equals(name, chat.name) &&
-                Objects.equals(disappearInitiator, chat.disappearInitiator) &&
-                Objects.equals(mute, chat.mute) &&
-                Objects.equals(wallpaper, chat.wallpaper) &&
+               Objects.equals(name, chat.name) &&
+               Objects.equals(disappearInitiator, chat.disappearInitiator) &&
+               Objects.equals(mute, chat.mute) &&
+               Objects.equals(wallpaper, chat.wallpaper) &&
                 mediaVisibility == chat.mediaVisibility &&
-                Objects.equals(displayName, chat.displayName) &&
-                Objects.equals(phoneJid, chat.phoneJid) &&
-                Objects.equals(lid, chat.lid) &&
-                Objects.equals(presences, chat.presences);
+               Objects.equals(displayName, chat.displayName) &&
+               Objects.equals(phoneJid, chat.phoneJid) &&
+               Objects.equals(lid, chat.lid) &&
+               Objects.equals(presences, chat.presences);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(jid, historySyncMessages, newJid, oldJid, unreadMessagesCount, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTimeSeconds, endOfHistoryTransferType, timestampSeconds, name, notSpam, archived, disappearInitiator, markedAsUnread, pinnedTimestampSeconds, mute, wallpaper, mediaVisibility, suspended, terminated, support, displayName, phoneJid, shareOwnPhoneNumber, phoneDuplicateLidThread, lid, presences);
+        return Objects.hash(jid, messages, newJid, oldJid, unreadMessagesCount, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTimeSeconds, endOfHistoryTransferType, timestampSeconds, name, notSpam, archived, disappearInitiator, markedAsUnread, pinnedTimestampSeconds, mute, wallpaper, mediaVisibility, suspended, terminated, support, displayName, phoneJid, shareOwnPhoneNumber, phoneDuplicateLidThread, lid, presences);
     }
 
     public Optional<ChatMessageInfo> getMessageById(String id) {
-        return Optional.ofNullable(historySyncMessages.get(id));
+        return messages.getById(id);
     }
 
     /**

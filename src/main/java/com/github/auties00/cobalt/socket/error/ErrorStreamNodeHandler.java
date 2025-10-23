@@ -24,26 +24,19 @@ public final class ErrorStreamNodeHandler extends SocketStream.Handler {
     public void handle(Node node) {
         if (node.hasChild("xml-not-well-formed")) {
             whatsapp.handleFailure(STREAM, new MalformedNodeException());
-            return;
-        }
-
-        if (node.hasChild("conflict")) {
+        } else if (node.hasChild("conflict")) {
             whatsapp.handleFailure(STREAM, new SessionConflictException());
-            return;
-        }
-
-        if (node.hasChild("bad-mac")) {
+        } else if (node.hasChild("bad-mac")) {
             whatsapp.handleFailure(STREAM, new SessionBadMacException());
-            return;
-        }
-
-        var statusCode = Math.toIntExact(node.getRequiredAttributeAsLong("code"));
-        switch (statusCode) {
-            case 403, 503 -> handleBan();
-            case 500 -> handleLogout();
-            case 401 -> handleConflict(node);
-            case 515 -> handleReconnect();
-            default -> handleError(node);
+        } else {
+            var statusCode = Math.toIntExact(node.getRequiredAttributeAsLong("code"));
+            switch (statusCode) {
+                case 403, 503 -> handleBan();
+                case 500 -> handleLogout();
+                case 401 -> handleConflict(node);
+                case 515 -> handleReconnect();
+                default -> handleError(node);
+            }
         }
     }
 
@@ -75,7 +68,6 @@ public final class ErrorStreamNodeHandler extends SocketStream.Handler {
             whatsapp.handleFailure(STREAM, new SessionConflictException());
         }
     }
-
 
     private void handleError(Node node) {
         for (var error : node.children()) {
