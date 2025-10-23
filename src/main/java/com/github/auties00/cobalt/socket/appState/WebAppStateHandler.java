@@ -2,16 +2,15 @@ package com.github.auties00.cobalt.socket.appState;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.exception.WebAppStatePushException;
-import com.github.auties00.cobalt.core.node.NodeBuilder;
+import com.github.auties00.cobalt.model.node.NodeBuilder;
 import com.github.auties00.cobalt.io.sync.WebAppStateEncoder;
-import com.github.auties00.cobalt.model.sync.AppStateSyncHash;
-import com.github.auties00.cobalt.model.sync.PatchType;
+import com.github.auties00.cobalt.model.proto.sync.AppStateSyncHash;
+import com.github.auties00.cobalt.model.proto.sync.PatchType;
 
 import java.util.List;
 import java.util.Objects;
 
 public final class WebAppStateHandler {
-    private final
     public WebAppStateHandler(Whatsapp whatsapp) {
         super(whatsapp);
     }

@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.io.node;
 
-import com.github.auties00.cobalt.core.node.Node;
-import com.github.auties00.cobalt.core.node.NodeAttribute;
-import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.node.NodeAttribute;
+import com.github.auties00.cobalt.model.proto.jid.Jid;
 
 import java.io.IOException;
 import java.io.InputStream;

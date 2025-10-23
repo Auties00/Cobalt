@@ -1,16 +1,16 @@
 package com.github.auties00.cobalt.socket.state;
 
 import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.core.node.Node;
-import com.github.auties00.cobalt.core.node.NodeBuilder;
-import com.github.auties00.cobalt.model.contact.ContactStatus;
-import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.jid.JidServer;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.node.NodeBuilder;
+import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
+import com.github.auties00.cobalt.model.proto.jid.Jid;
+import com.github.auties00.cobalt.model.proto.jid.JidServer;
 import com.github.auties00.cobalt.model.media.MediaConnection;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingEntryBuilder;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
-import com.github.auties00.cobalt.model.sync.PatchType;
+import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingEntryBuilder;
+import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingType;
+import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
+import com.github.auties00.cobalt.model.proto.sync.PatchType;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 import java.time.ZonedDateTime;

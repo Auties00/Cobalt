@@ -2,7 +2,7 @@ package com.github.auties00.cobalt.io.media.download;
 
 import com.github.auties00.cobalt.exception.HmacValidationException;
 import com.github.auties00.cobalt.exception.MediaDownloadException;
-import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
+import com.github.auties00.cobalt.model.media.MediaProvider;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
@@ -31,11 +31,11 @@ public final class MediaDownloadCiphertextInputStream extends MediaDownloadInput
     private boolean finished = false;
     private boolean validated = false;
 
-    public MediaDownloadCiphertextInputStream(InputStream rawInputStream, int payloadLength, MutableAttachmentProvider provider) throws GeneralSecurityException {
+    public MediaDownloadCiphertextInputStream(InputStream rawInputStream, int payloadLength, MediaProvider provider) throws GeneralSecurityException {
         Objects.requireNonNull(rawInputStream, "rawInputStream must not be null");
         Objects.requireNonNull(provider, "provider must not be null");
 
-        super(rawInputStream, provider.attachmentType().inflatable());
+        super(rawInputStream, provider.mediaPath().inflatable());
         this.ciphertextBuffer = new byte[BUFFER_LENGTH];
         this.plaintextBuffer = new byte[BUFFER_LENGTH];
         this.expectedPlaintextSha256 = provider.mediaSha256().orElse(null);
@@ -46,7 +46,7 @@ public final class MediaDownloadCiphertextInputStream extends MediaDownloadInput
 
         var mediaKey = provider.mediaKey()
                 .orElseThrow(() -> new MediaDownloadException("Media key must be present"));
-        var keyName = provider.attachmentType()
+        var keyName = provider.mediaPath()
                 .keyName()
                 .orElseThrow(() -> new MediaDownloadException("Key name must be present"));
         var expanded = deriveMediaKeyData(mediaKey, keyName);

@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.socket.ack;
 
 import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.core.node.Node;
-import com.github.auties00.cobalt.core.node.NodeBuilder;
-import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.message.model.MessageStatus;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.node.NodeBuilder;
+import com.github.auties00.cobalt.model.proto.jid.Jid;
+import com.github.auties00.cobalt.model.proto.message.model.MessageStatus;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 public final class AckStreamNodeHandler extends SocketStream.Handler {

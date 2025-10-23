@@ -1,41 +1,50 @@
 package com.github.auties00.cobalt.api;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.core.json.request.CommunityRequests;
-import com.github.auties00.cobalt.core.json.request.NewsletterRequests;
-import com.github.auties00.cobalt.core.json.request.UserRequests;
-import com.github.auties00.cobalt.core.json.response.*;
-import com.github.auties00.cobalt.core.node.Node;
-import com.github.auties00.cobalt.core.node.NodeAttribute;
-import com.github.auties00.cobalt.core.node.NodeBuilder;
+import com.github.auties00.cobalt.model.json.request.CommunityRequests;
+import com.github.auties00.cobalt.model.json.request.NewsletterRequests;
+import com.github.auties00.cobalt.model.json.request.UserRequests;
+import com.github.auties00.cobalt.model.json.response.*;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.node.NodeAttribute;
+import com.github.auties00.cobalt.model.node.NodeBuilder;
+import com.github.auties00.cobalt.model.proto.action.Action;
+import com.github.auties00.cobalt.model.proto.business.*;
+import com.github.auties00.cobalt.model.proto.chat.*;
+import com.github.auties00.cobalt.model.proto.info.*;
+import com.github.auties00.cobalt.model.proto.message.model.*;
+import com.github.auties00.cobalt.model.proto.newsletter.*;
+import com.github.auties00.cobalt.model.proto.sync.ActionMessageRangeSync;
+import com.github.auties00.cobalt.model.proto.sync.ActionValueSync;
+import com.github.auties00.cobalt.model.proto.sync.PatchType;
+import com.github.auties00.cobalt.model.proto.sync.ServerErrorReceipt;
 import com.github.auties00.cobalt.io.node.NodeDecoder;
-import com.github.auties00.cobalt.model.action.*;
-import com.github.auties00.cobalt.model.business.*;
-import com.github.auties00.cobalt.model.call.Call;
-import com.github.auties00.cobalt.model.call.CallBuilder;
-import com.github.auties00.cobalt.model.call.CallStatus;
-import com.github.auties00.cobalt.model.chat.*;
-import com.github.auties00.cobalt.model.contact.Contact;
-import com.github.auties00.cobalt.model.contact.ContactStatus;
-import com.github.auties00.cobalt.model.info.*;
-import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.jid.JidProvider;
-import com.github.auties00.cobalt.model.jid.JidServer;
-import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
-import com.github.auties00.cobalt.model.message.model.*;
-import com.github.auties00.cobalt.model.message.server.ProtocolMessage;
-import com.github.auties00.cobalt.model.message.server.ProtocolMessageBuilder;
-import com.github.auties00.cobalt.model.message.standard.NewsletterAdminInviteMessageBuilder;
-import com.github.auties00.cobalt.model.message.standard.ReactionMessageBuilder;
-import com.github.auties00.cobalt.model.message.standard.TextMessage;
-import com.github.auties00.cobalt.model.newsletter.*;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingEntryBuilder;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
-import com.github.auties00.cobalt.model.setting.Setting;
-import com.github.auties00.cobalt.model.sync.*;
-import com.github.auties00.cobalt.model.sync.RecordSync.Operation;
+import com.github.auties00.cobalt.model.proto.action.*;
+import com.github.auties00.cobalt.model.proto.business.*;
+import com.github.auties00.cobalt.model.proto.call.Call;
+import com.github.auties00.cobalt.model.proto.call.CallBuilder;
+import com.github.auties00.cobalt.model.proto.call.CallStatus;
+import com.github.auties00.cobalt.model.proto.chat.*;
+import com.github.auties00.cobalt.model.proto.contact.Contact;
+import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
+import com.github.auties00.cobalt.model.proto.info.*;
+import com.github.auties00.cobalt.model.proto.jid.Jid;
+import com.github.auties00.cobalt.model.proto.jid.JidProvider;
+import com.github.auties00.cobalt.model.proto.jid.JidServer;
+import com.github.auties00.cobalt.model.media.MediaProvider;
+import com.github.auties00.cobalt.model.proto.message.model.*;
+import com.github.auties00.cobalt.model.proto.message.server.ProtocolMessage;
+import com.github.auties00.cobalt.model.proto.message.server.ProtocolMessageBuilder;
+import com.github.auties00.cobalt.model.proto.message.standard.NewsletterAdminInviteMessageBuilder;
+import com.github.auties00.cobalt.model.proto.message.standard.ReactionMessageBuilder;
+import com.github.auties00.cobalt.model.proto.message.standard.TextMessage;
+import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingEntry;
+import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingEntryBuilder;
+import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingType;
+import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
+import com.github.auties00.cobalt.model.proto.setting.Setting;
+import com.github.auties00.cobalt.model.proto.sync.*;
+import com.github.auties00.cobalt.model.proto.sync.RecordSync.Operation;
 import com.github.auties00.cobalt.socket.*;
 import com.github.auties00.cobalt.socket.appState.WebAppStatePatch;
 import com.github.auties00.cobalt.socket.appState.WebAppStatePushRequest;
@@ -74,7 +83,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.*;
-import static com.github.auties00.cobalt.model.contact.ContactStatus.*;
+import static com.github.auties00.cobalt.model.proto.contact.ContactStatus.*;
 
 /**
  * A class used to interface a user to Whatsapp
@@ -1650,7 +1659,7 @@ public final class Whatsapp {
      */
     public void requireReupload(MessageInfo info) {
         try {
-            if (!(info.message().content() instanceof MutableAttachmentProvider attachmentProvider)) {
+            if (!(info.message().content() instanceof MediaProvider mediaProvider)) {
                 throw new IllegalArgumentException("Expected media message, got: " + info.message().category());
             }
 
@@ -1660,7 +1669,7 @@ public final class Whatsapp {
                 return;
             }
 
-            var mediaKey = attachmentProvider.mediaKey()
+            var mediaKey = mediaProvider.mediaKey()
                     .orElseThrow(() -> new NoSuchElementException("Missing media key"));
             var hkdf = KDF.getInstance("HKDF-SHA256");
             var params = HKDFParameterSpec.ofExtract()
@@ -1728,8 +1737,8 @@ public final class Whatsapp {
             var mediaRetryNotification = MediaRetryNotificationSpec.decode(mediaRetryNotificationData);
             var directPath = mediaRetryNotification.directPath()
                     .orElseThrow(() -> new RuntimeException("Media reupload failed"));
-            attachmentProvider.setMediaUrl(null);
-            attachmentProvider.setMediaDirectPath(directPath);
+            mediaProvider.setMediaUrl(null);
+            mediaProvider.setMediaDirectPath(directPath);
         } catch (GeneralSecurityException exception) {
             throw new RuntimeException("Cannot reupload media", exception);
         }

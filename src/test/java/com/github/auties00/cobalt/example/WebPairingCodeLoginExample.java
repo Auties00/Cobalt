@@ -1,7 +1,7 @@
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
 import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
-import com.github.auties00.cobalt.model.info.ChatMessageInfo;
+import com.github.auties00.cobalt.model.proto.info.ChatMessageInfo;
 
 void main() {
     var phoneNumber = promptPhoneNumber();

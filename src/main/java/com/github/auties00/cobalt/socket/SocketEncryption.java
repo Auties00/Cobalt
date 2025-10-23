@@ -1,14 +1,14 @@
 package com.github.auties00.cobalt.socket;
 
 import com.github.auties00.cobalt.api.WhatsappClientType;
-import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
 import com.github.auties00.cobalt.client.WhatsappClientInfo;
-import com.github.auties00.cobalt.core.node.Node;
 import com.github.auties00.cobalt.io.node.NodeEncoder;
 import com.github.auties00.cobalt.io.node.NodeTokens;
-import com.github.auties00.cobalt.model.auth.*;
-import com.github.auties00.cobalt.model.sync.HistorySyncConfigBuilder;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.proto.auth.*;
+import com.github.auties00.cobalt.model.proto.sync.HistorySyncConfigBuilder;
+import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;

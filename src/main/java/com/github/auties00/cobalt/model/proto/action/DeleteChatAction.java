@@ -1,0 +1,54 @@
+package com.github.auties00.cobalt.model.proto.action;
+
+import com.github.auties00.cobalt.model.proto.sync.ActionMessageRangeSync;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * A model clas that represents a deleted chat
+ */
+@ProtobufMessage(name = "SyncActionValue.DeleteChatAction")
+public final class DeleteChatAction implements Action {
+    @ProtobufProperty(index = 1, type = ProtobufType.MESSAGE)
+    final ActionMessageRangeSync messageRange;
+
+    DeleteChatAction(ActionMessageRangeSync messageRange) {
+        this.messageRange = messageRange;
+    }
+
+
+    @Override
+    public String indexName() {
+        return "deleteChat";
+    }
+
+    @Override
+    public int actionVersion() {
+        return 6;
+    }
+
+    public Optional<ActionMessageRangeSync> messageRange() {
+        return Optional.ofNullable(messageRange);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof DeleteChatAction that
+                && Objects.equals(messageRange, that.messageRange);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(messageRange);
+    }
+
+    @Override
+    public String toString() {
+        return "DeleteChatAction[" +
+                "messageRange=" + messageRange + ']';
+    }
+}

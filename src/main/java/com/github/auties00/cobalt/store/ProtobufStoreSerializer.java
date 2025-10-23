@@ -1,15 +1,14 @@
 package com.github.auties00.cobalt.store;
 
 import com.github.auties00.cobalt.api.WhatsappClientType;
-import com.github.auties00.cobalt.api.WhatsappStoreSpec;
-import com.github.auties00.cobalt.model.chat.Chat;
-import com.github.auties00.cobalt.model.chat.ChatSpec;
-import com.github.auties00.cobalt.model.info.ContextInfo;
-import com.github.auties00.cobalt.model.info.MessageInfo;
-import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.message.model.ContextualMessage;
-import com.github.auties00.cobalt.model.newsletter.Newsletter;
-import com.github.auties00.cobalt.model.newsletter.NewsletterSpec;
+import com.github.auties00.cobalt.model.proto.chat.Chat;
+import com.github.auties00.cobalt.model.proto.chat.ChatSpec;
+import com.github.auties00.cobalt.model.proto.info.ContextInfo;
+import com.github.auties00.cobalt.model.proto.info.MessageInfo;
+import com.github.auties00.cobalt.model.proto.jid.Jid;
+import com.github.auties00.cobalt.model.proto.message.model.ContextualMessage;
+import com.github.auties00.cobalt.model.proto.newsletter.Newsletter;
+import com.github.auties00.cobalt.model.proto.newsletter.NewsletterSpec;
 import it.auties.protobuf.stream.ProtobufInputStream;
 import it.auties.protobuf.stream.ProtobufOutputStream;
 

@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.io.sync;
 
-import com.github.auties00.cobalt.model.sync.AppStateSyncHash;
-import com.github.auties00.cobalt.model.sync.AppStateSyncKey;
+import com.github.auties00.cobalt.model.proto.sync.AppStateSyncHash;
+import com.github.auties00.cobalt.model.proto.sync.AppStateSyncKey;
 import com.github.auties00.cobalt.socket.appState.WebAppStatePatch;
 
 import java.nio.ByteBuffer;

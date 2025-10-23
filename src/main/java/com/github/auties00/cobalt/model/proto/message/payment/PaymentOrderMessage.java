@@ -1,0 +1,177 @@
+package com.github.auties00.cobalt.model.proto.message.payment;
+
+import com.github.auties00.cobalt.model.proto.info.ContextInfo;
+import com.github.auties00.cobalt.model.proto.jid.Jid;
+import com.github.auties00.cobalt.model.proto.message.model.ContextualMessage;
+import com.github.auties00.cobalt.model.proto.message.model.PaymentMessage;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+
+import java.util.Arrays;
+import java.util.Optional;
+
+
+/**
+ * A model class that represents a message to pay an order.
+ */
+@ProtobufMessage(name = "Message.PaymentOrderMessage")
+public final class PaymentOrderMessage implements ContextualMessage, PaymentMessage {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    final String id;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.BYTES)
+    final byte[] thumbnail;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.UINT32)
+    final int itemCount;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.ENUM)
+    final Status status;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
+    final PaymentOrderSurface surface;
+
+    @ProtobufProperty(index = 6, type = ProtobufType.STRING)
+    final String message;
+
+    @ProtobufProperty(index = 7, type = ProtobufType.STRING)
+    final String title;
+
+    @ProtobufProperty(index = 8, type = ProtobufType.STRING)
+    final Jid sellerId;
+
+    @ProtobufProperty(index = 9, type = ProtobufType.STRING)
+    final String token;
+
+    @ProtobufProperty(index = 10, type = ProtobufType.UINT64)
+    final long amount;
+
+    @ProtobufProperty(index = 11, type = ProtobufType.STRING)
+    final String currency;
+
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    PaymentOrderMessage(String id, byte[] thumbnail, int itemCount, Status status, PaymentOrderSurface surface, String message, String title, Jid sellerId, String token, long amount, String currency, ContextInfo contextInfo) {
+        this.id = id;
+        this.thumbnail = thumbnail;
+        this.itemCount = itemCount;
+        this.status = status;
+        this.surface = surface;
+        this.message = message;
+        this.title = title;
+        this.sellerId = sellerId;
+        this.token = token;
+        this.amount = amount;
+        this.currency = currency;
+        this.contextInfo = contextInfo;
+    }
+
+    @Override
+    public Type type() {
+        return Type.PAYMENT_ORDER;
+    }
+
+    public String id() {
+        return id;
+    }
+
+    public Optional<byte[]> thumbnail() {
+        return Optional.ofNullable(thumbnail);
+    }
+
+    public int itemCount() {
+        return itemCount;
+    }
+
+    public Status status() {
+        return status;
+    }
+
+    public PaymentOrderSurface surface() {
+        return surface;
+    }
+
+    public Optional<String> message() {
+        return Optional.ofNullable(message);
+    }
+
+    public Optional<String> title() {
+        return Optional.ofNullable(title);
+    }
+
+    public Jid sellerId() {
+        return sellerId;
+    }
+
+    public String token() {
+        return token;
+    }
+
+    public long amount() {
+        return amount;
+    }
+
+    public String currency() {
+        return currency;
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
+    @Override
+    public void setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+    }
+
+    @Override
+    public String toString() {
+        return "PaymentOrderMessage[" +
+                "id=" + id + ", " +
+                "thumbnail=" + Arrays.toString(thumbnail) + ", " +
+                "itemCount=" + itemCount + ", " +
+                "status=" + status + ", " +
+                "surface=" + surface + ", " +
+                "message=" + message + ", " +
+                "title=" + title + ", " +
+                "sellerId=" + sellerId + ", " +
+                "token=" + token + ", " +
+                "amount=" + amount + ", " +
+                "currency=" + currency + ", " +
+                "contextInfo=" + contextInfo + ']';
+    }
+
+
+    @ProtobufEnum(name = "Message.OrderMessage.OrderStatus")
+    public enum Status {
+        /**
+         * Inquiry
+         */
+        INQUIRY(1);
+
+        final int index;
+
+        Status(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+    }
+
+    @ProtobufEnum(name = "Message.OrderMessage.OrderSurface")
+    public enum PaymentOrderSurface {
+        /**
+         * Catalog
+         */
+        CATALOG(1);
+
+        final int index;
+
+        PaymentOrderSurface(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+    }
+}

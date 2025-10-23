@@ -3,7 +3,7 @@ package com.github.auties00.cobalt.client.mobile;
 import com.github.auties00.cobalt.client.WhatsappClientInfo;
 import com.github.auties00.cobalt.client.mobile.android.WhatsappAndroidClientInfo;
 import com.github.auties00.cobalt.client.mobile.ios.WhatsappIosClientInfo;
-import com.github.auties00.cobalt.model.auth.UserAgent;
+import com.github.auties00.cobalt.model.proto.auth.UserAgent;
 
 public sealed interface WhatsappMobileClientInfo
         extends WhatsappClientInfo

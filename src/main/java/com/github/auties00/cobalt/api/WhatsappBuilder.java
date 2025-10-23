@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.api;
 
 import com.github.auties00.cobalt.client.mobile.WhatsappMobileClientRegistration;
-import com.github.auties00.cobalt.model.business.BusinessCategory;
-import com.github.auties00.cobalt.model.jid.JidDevice;
+import com.github.auties00.cobalt.model.proto.business.BusinessCategory;
+import com.github.auties00.cobalt.model.proto.jid.JidDevice;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.store.WhatsappStoreSerializer;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;

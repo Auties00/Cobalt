@@ -1,8 +1,8 @@
 
 package com.github.auties00.cobalt.api;
 
-import com.github.auties00.cobalt.model.message.model.Message;
-import com.github.auties00.cobalt.model.message.standard.TextMessage;
+import com.github.auties00.cobalt.model.proto.message.model.Message;
+import com.github.auties00.cobalt.model.proto.message.standard.TextMessage;
 import it.auties.linkpreview.LinkPreview;
 
 import java.util.Objects;

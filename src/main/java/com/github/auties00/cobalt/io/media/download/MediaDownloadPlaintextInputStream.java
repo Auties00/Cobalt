@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.io.media.download;
 
 import com.github.auties00.cobalt.exception.MediaDownloadException;
-import com.github.auties00.cobalt.model.media.MutableAttachmentProvider;
+import com.github.auties00.cobalt.model.media.MediaProvider;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,11 +16,11 @@ public final class MediaDownloadPlaintextInputStream extends MediaDownloadInputS
     private long remainingBytes;
     private boolean validated = false;
 
-    public MediaDownloadPlaintextInputStream(InputStream rawInputStream, int payloadLength, MutableAttachmentProvider provider) throws NoSuchAlgorithmException {
+    public MediaDownloadPlaintextInputStream(InputStream rawInputStream, int payloadLength, MediaProvider provider) throws NoSuchAlgorithmException {
         Objects.requireNonNull(rawInputStream, "rawInputStream must not be null");
         Objects.requireNonNull(provider, "provider must not be null");
 
-        super(rawInputStream, provider.attachmentType().inflatable());
+        super(rawInputStream, provider.mediaPath().inflatable());
         this.expectedPlaintextSha256 = provider.mediaSha256().orElse(null);
         this.plaintextDigest = expectedPlaintextSha256 != null ? MessageDigest.getInstance("SHA-256") : null;
         this.remainingBytes = payloadLength;

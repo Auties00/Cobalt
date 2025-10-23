@@ -1,19 +1,19 @@
 package com.github.auties00.cobalt.api;
 
-import com.github.auties00.cobalt.core.node.Node;
-import com.github.auties00.cobalt.model.action.Action;
-import com.github.auties00.cobalt.model.call.Call;
-import com.github.auties00.cobalt.model.chat.Chat;
-import com.github.auties00.cobalt.model.chat.ChatPastParticipant;
-import com.github.auties00.cobalt.model.contact.Contact;
-import com.github.auties00.cobalt.model.info.ChatMessageInfo;
-import com.github.auties00.cobalt.model.info.MessageIndexInfo;
-import com.github.auties00.cobalt.model.info.MessageInfo;
-import com.github.auties00.cobalt.model.info.QuotedMessageInfo;
-import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.newsletter.Newsletter;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
-import com.github.auties00.cobalt.model.setting.Setting;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.proto.action.Action;
+import com.github.auties00.cobalt.model.proto.call.Call;
+import com.github.auties00.cobalt.model.proto.chat.Chat;
+import com.github.auties00.cobalt.model.proto.chat.ChatPastParticipant;
+import com.github.auties00.cobalt.model.proto.contact.Contact;
+import com.github.auties00.cobalt.model.proto.info.ChatMessageInfo;
+import com.github.auties00.cobalt.model.proto.info.MessageIndexInfo;
+import com.github.auties00.cobalt.model.proto.info.MessageInfo;
+import com.github.auties00.cobalt.model.proto.info.QuotedMessageInfo;
+import com.github.auties00.cobalt.model.proto.jid.Jid;
+import com.github.auties00.cobalt.model.proto.newsletter.Newsletter;
+import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingEntry;
+import com.github.auties00.cobalt.model.proto.setting.Setting;
 
 import java.util.Collection;
 import java.util.List;

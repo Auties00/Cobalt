@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.socket.appState;
 
 import com.alibaba.fastjson2.JSONArray;
-import com.github.auties00.cobalt.model.sync.ActionValueSync;
-import com.github.auties00.cobalt.model.sync.RecordSync;
+import com.github.auties00.cobalt.model.proto.sync.ActionValueSync;
+import com.github.auties00.cobalt.model.proto.sync.RecordSync;
 
 import java.util.Collections;
 

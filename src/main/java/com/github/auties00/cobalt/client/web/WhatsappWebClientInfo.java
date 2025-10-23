@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.client.web;
 
-import com.github.auties00.cobalt.model.auth.Version;
+import com.github.auties00.cobalt.model.proto.auth.Version;
 import com.github.auties00.cobalt.client.WhatsappClientInfo;
 
 import java.io.IOException;

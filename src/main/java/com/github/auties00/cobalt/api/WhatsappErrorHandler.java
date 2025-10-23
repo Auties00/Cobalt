@@ -3,7 +3,7 @@ package com.github.auties00.cobalt.api;
 import com.github.auties00.cobalt.exception.MalformedNodeException;
 import com.github.auties00.cobalt.exception.SessionBadMacException;
 import com.github.auties00.cobalt.exception.SessionConflictException;
-import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.proto.jid.Jid;
 
 import java.io.IOException;
 import java.io.PrintWriter;
