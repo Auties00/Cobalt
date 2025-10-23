@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.exception;
 
-import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.core.node.Node;
 
 /**
  * A runtime exception thrown when a WhatsApp protocol node request does not receive a response

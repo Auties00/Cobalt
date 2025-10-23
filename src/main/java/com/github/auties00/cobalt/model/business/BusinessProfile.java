@@ -1,13 +1,12 @@
 package com.github.auties00.cobalt.model.business;
 
-import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.core.node.Node;
 import com.github.auties00.cobalt.model.jid.Jid;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -53,47 +52,41 @@ public final class BusinessProfile {
     }
 
     public static BusinessProfile of(Node node) {
-        var jid = node.attributes()
-                .getRequiredJid("value");
+        var jid = node.getRequiredAttributeAsJid("value");
         var address = node.getChild("address")
                 .flatMap(Node::toContentString)
                 .orElse(null);
         var description = node.getChild("description")
                 .flatMap(Node::toContentString)
                 .orElse(null);
-        var websites = node.listChildren("website")
-                .stream()
-                .map(Node::toContentString)
-                .flatMap(Optional::stream)
+        var websites = node.streamChildren("website")
+                .flatMap(Node::streamContentString)
                 .map(URI::create)
                 .toList();
         var email = node.getChild("email")
                 .flatMap(Node::toContentString)
                 .orElse(null);
-        var categories = node.listChildren("categories")
-                .stream()
-                .map(entry -> entry.findChild("category"))
-                .flatMap(Optional::stream)
+        var categories = node.streamChildren("categories")
+                .flatMap(entry -> entry.streamChild("category"))
                 .map(BusinessCategory::of)
                 .toList();
-        var commerceExperience = node.getChild("profile_options");
-        var cartEnabled = commerceExperience.flatMap(entry -> entry.getChild("cart_enabled"))
-                .flatMap(Node::contentAsBoolean)
-                .orElse(commerceExperience.isEmpty());
+        var cartEnabled = node.getChild("profile_options")
+                .flatMap(entry -> entry.getChild("cart_enabled"))
+                .flatMap(Node::toContentBool)
+                .orElse(!node.hasChild("profile_options"));
         var hours = node.getChild("business_hours")
-                .map(Node::attributes)
-                .map(attributes -> attributes.getNullableString("timezone"))
-                .map(timezone -> {
-                    var entries = node.getChild("business_hours")
-                            .stream()
-                            .map(entry -> entry.listChildren("business_hours_config"))
-                            .flatMap(Collection::stream)
-                            .map(BusinessHoursEntry::of)
-                            .toList();
-                    return new BusinessHours(timezone, entries);
-                })
+                .flatMap(attributes -> attributes.getAttributeAsString("timezone"))
+                .map(timezone -> getBusinessHours(node, timezone))
                 .orElse(null);
         return new BusinessProfile(jid, description, address, email, hours, cartEnabled, websites, categories);
+    }
+
+    private static BusinessHours getBusinessHours(Node node, String timezone) {
+        var entries = node.streamChild("business_hours")
+                .flatMap(entry -> entry.streamChildren("business_hours_config"))
+                .map(BusinessHoursEntry::of)
+                .toList();
+        return new BusinessHours(timezone, entries);
     }
 
     public Jid jid() {

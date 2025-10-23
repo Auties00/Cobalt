@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.business;
 
-import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.core.node.Node;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -36,8 +36,7 @@ public final class BusinessCollectionEntry {
         var name = node.getChild("name")
                 .flatMap(Node::toContentString)
                 .orElseThrow(() -> new NoSuchElementException("Missing name from business collections"));
-        var products = node.listChildren("product")
-                .stream()
+        var products = node.streamChildren("product")
                 .map(BusinessCatalogEntry::of)
                 .toList();
         return new BusinessCollectionEntry(id, name, products);

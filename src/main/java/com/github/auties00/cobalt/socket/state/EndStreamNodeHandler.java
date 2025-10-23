@@ -2,7 +2,7 @@ package com.github.auties00.cobalt.socket.state;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
-import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.core.node.Node;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 public final class EndStreamNodeHandler extends SocketStream.Handler {

@@ -1,14 +1,14 @@
 package com.github.auties00.cobalt.api;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.io.core.json.request.CommunityRequests;
-import com.github.auties00.cobalt.io.core.json.request.NewsletterRequests;
-import com.github.auties00.cobalt.io.core.json.request.UserRequests;
-import com.github.auties00.cobalt.io.core.json.response.*;
-import com.github.auties00.cobalt.io.core.node.Node;
-import com.github.auties00.cobalt.io.core.node.NodeAttribute;
-import com.github.auties00.cobalt.io.core.node.NodeBuilder;
-import com.github.auties00.cobalt.io.core.node.NodeDecoder;
+import com.github.auties00.cobalt.core.json.request.CommunityRequests;
+import com.github.auties00.cobalt.core.json.request.NewsletterRequests;
+import com.github.auties00.cobalt.core.json.request.UserRequests;
+import com.github.auties00.cobalt.core.json.response.*;
+import com.github.auties00.cobalt.core.node.Node;
+import com.github.auties00.cobalt.core.node.NodeAttribute;
+import com.github.auties00.cobalt.core.node.NodeBuilder;
+import com.github.auties00.cobalt.io.node.NodeDecoder;
 import com.github.auties00.cobalt.model.action.*;
 import com.github.auties00.cobalt.model.business.*;
 import com.github.auties00.cobalt.model.call.Call;
@@ -39,7 +39,6 @@ import com.github.auties00.cobalt.model.sync.RecordSync.Operation;
 import com.github.auties00.cobalt.socket.*;
 import com.github.auties00.cobalt.socket.appState.WebAppStatePatch;
 import com.github.auties00.cobalt.socket.appState.WebAppStatePushRequest;
-import com.github.auties00.cobalt.socket.message.MessageRequest;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.util.Bytes;
 import com.github.auties00.cobalt.util.Clock;
@@ -49,6 +48,10 @@ import javax.crypto.KDF;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.HKDFParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -57,6 +60,7 @@ import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -73,10 +77,11 @@ import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.*;
 import static com.github.auties00.cobalt.model.contact.ContactStatus.*;
 
 /**
- * A class used to interface a user to Whatsapp's WebSocket
+ * A class used to interface a user to Whatsapp
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class Whatsapp {
+    private static final int PROFILE_PIC_SIZE = 64;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^(.+)@(\\S+)$");
 
     private final WhatsappStore store;
@@ -780,12 +785,10 @@ public final class Whatsapp {
      * @param image the new image, can be null if you want to remove it
      */
     public void changeProfilePicture(InputStream image) {
-        var data = image != null ? new MediaProfilePictureInputStream(image) : null;
-        var dataLength = data != null ? data.available() : 0;
         var body = new NodeBuilder()
                 .description("picture")
                 .attribute("type", "image")
-                .content(data, dataLength)
+                .content(getProfilePic(image))
                 .build();
         switch (store.clientType()) {
             case WEB -> {
@@ -806,6 +809,31 @@ public final class Whatsapp {
                         .content(body);
                 sendNode(iqNode);
             }
+        }
+    }
+
+    private static byte[] getProfilePic(InputStream inputStream) {
+        if(inputStream == null) {
+            return null;
+        }
+
+        try (inputStream) {
+            var inputImage = ImageIO.read(inputStream);
+            var scaledImage = inputImage.getScaledInstance(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, Image.SCALE_SMOOTH);
+            var outputImage = new BufferedImage(PROFILE_PIC_SIZE, PROFILE_PIC_SIZE, BufferedImage.TYPE_INT_RGB);
+            var graphics2D = outputImage.createGraphics();
+            graphics2D.drawImage(scaledImage, 0, 0, null);
+            graphics2D.dispose();
+            var outputStream = new ByteArrayOutputStream() {
+                @Override
+                public byte[] toByteArray() {
+                    return buf;
+                }
+            };
+            ImageIO.write(outputImage, "jpg", outputStream);
+            return outputStream.toByteArray();
+        } catch (Throwable exception) {
+            throw new InternalError("Cannot get profile pic", exception);
         }
     }
 
@@ -2787,12 +2815,10 @@ public final class Whatsapp {
         if (!group.toJid().hasServer(JidServer.groupOrCommunity())) {
             throw new IllegalArgumentException("Expected a group/community");
         }
-        var data = image != null ? new MediaProfilePictureInputStream(image) : null;
-        var dataLength = data != null ? data.available() : 0;
         var body = new NodeBuilder()
                 .description("picture")
                 .attribute("type", "image")
-                .content(data, dataLength)
+                .content(getProfilePic(image))
                 .build();
         var iqNode = new NodeBuilder()
                 .description("iq")
@@ -4381,10 +4407,6 @@ public final class Whatsapp {
 
     }
 
-    private void sendMessage(MessageRequest request) {
-
-    }
-
     private void updateBusinessCertificate(String newName) {
 
     }
@@ -4419,5 +4441,13 @@ public final class Whatsapp {
 
     public SequencedCollection<Chat> queryGroups() {
         return List.of();
+    }
+
+    public void sendReceipt(String id, Jid jid, Jid jid1, boolean b) {
+
+    }
+
+    public void sendReceipt(String id, Jid jid, String histSync) {
+
     }
 }

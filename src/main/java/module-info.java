@@ -26,7 +26,6 @@ module com.github.auties00.cobalt {
     // Mobile api
     requires net.dongliu.apkparser;
     requires com.google.i18n.phonenumbers.libphonenumber;
-    requires com.github.auties00.cobalt;
 
     exports com.github.auties00.cobalt.api;
     exports com.github.auties00.cobalt.model.action;
@@ -41,7 +40,7 @@ module com.github.auties00.cobalt {
     exports com.github.auties00.cobalt.model.message.standard;
     exports com.github.auties00.cobalt.model.product;
     exports com.github.auties00.cobalt.model.setting;
-    exports com.github.auties00.cobalt.io.core.json.response;
+    exports com.github.auties00.cobalt.core.json.response;
     exports com.github.auties00.cobalt.model.payment;
     exports com.github.auties00.cobalt.model.message.button;
     exports com.github.auties00.cobalt.model.privacy;
@@ -56,6 +55,7 @@ module com.github.auties00.cobalt {
     exports com.github.auties00.cobalt.model.jid;
     exports com.github.auties00.cobalt.model.newsletter;
     exports com.github.auties00.cobalt.exception;
-    exports com.github.auties00.cobalt.io.core.node;
+    exports com.github.auties00.cobalt.io.node;
     exports com.github.auties00.cobalt.store;
+    exports com.github.auties00.cobalt.core.node;
 }

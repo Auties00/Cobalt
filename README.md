@@ -1,5 +1,7 @@
 # Cobalt
 
+> **_IMPORTANT:_** The library is currently being rewritten to prepare for a stable release. The code on the master branch is under active development.
+
 Whatsapp4j has been renamed to Cobalt to comply with an official request coming from Whatsapp.
 To be clear, this library is not affiliated with Whatsapp LLC in any way.
 This is a personal project that I maintain in my free time

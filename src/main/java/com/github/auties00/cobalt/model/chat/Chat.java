@@ -601,6 +601,10 @@ public final class Chat implements MessageInfoParent {
         return Objects.hash(jid, historySyncMessages, newJid, oldJid, unreadMessagesCount, endOfHistoryTransfer, ephemeralMessageDuration, ephemeralMessagesToggleTimeSeconds, endOfHistoryTransferType, timestampSeconds, name, notSpam, archived, disappearInitiator, markedAsUnread, pinnedTimestampSeconds, mute, wallpaper, mediaVisibility, suspended, terminated, support, displayName, phoneJid, shareOwnPhoneNumber, phoneDuplicateLidThread, lid, presences);
     }
 
+    public Optional<ChatMessageInfo> getMessageById(String id) {
+        return Optional.ofNullable(historySyncMessages.get(id));
+    }
+
     /**
      * The constants of this enumerated type describe the various types of transfers that can regard a
      * chat history sync

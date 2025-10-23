@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.business;
 
-import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.core.node.Node;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -27,7 +27,7 @@ public final class BusinessCategory {
     }
 
     public static BusinessCategory of(Node node) {
-        var id = node.attributes().getRequiredString("id");
+        var id = node.getRequiredAttributeAsString("id");
         var name = URLDecoder.decode(node.toContentString().orElseThrow(), StandardCharsets.UTF_8);
         return new BusinessCategory(id, name);
     }

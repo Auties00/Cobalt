@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.business;
 
-import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.core.node.Node;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -71,8 +71,8 @@ public final class BusinessCatalogEntry {
     }
 
     public static BusinessCatalogEntry of(Node node) {
-        var id = node.attributes().getRequiredString("id");
-        var hidden = node.attributes().getBoolean("is_hidden");
+        var id = node.getRequiredAttributeAsString("id");
+        var hidden = node.getAttributeAsBool("is_hidden", false);
         var name = node.getChild("name")
                 .flatMap(Node::toContentString)
                 .orElseThrow(() -> new NoSuchElementException("Missing name for catalog entry"));

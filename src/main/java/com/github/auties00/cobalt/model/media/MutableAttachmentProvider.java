@@ -33,8 +33,8 @@ import java.util.OptionalLong;
  */
 public sealed interface MutableAttachmentProvider
         permits StickerAction, MediaMessage, ExternalBlobReference, HistorySyncNotification {
-    default boolean upload(InputStream file, MediaConnection mediaConnection) {
-        Objects.requireNonNull(file, "file cannot be null");
+    default boolean upload(InputStream inputStream, MediaConnection mediaConnection) {
+        Objects.requireNonNull(inputStream, "inputStream cannot be null");
         Objects.requireNonNull(mediaConnection, "mediaConnection cannot be null");
 
         var type = attachmentType();
@@ -47,8 +47,8 @@ public sealed interface MutableAttachmentProvider
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build()) {
             var uploadStream = type.keyName()
-                    .map(keyName -> (MediaUploadInputStream) new MediaUploadCiphertextInputStream(file, keyName))
-                    .orElseGet(() -> new MediaUploadPlaintextInputStream(file));
+                    .map(keyName -> (MediaUploadInputStream) new MediaUploadCiphertextInputStream(inputStream, keyName))
+                    .orElseGet(() -> new MediaUploadPlaintextInputStream(inputStream));
             var tempFile = Files.createTempFile("upload", ".tmp");
             try (uploadStream; var outputStream = Files.newOutputStream(tempFile)) {
                 uploadStream.transferTo(outputStream);

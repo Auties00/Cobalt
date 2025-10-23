@@ -23,6 +23,7 @@ import com.github.auties00.cobalt.model.jid.JidDevice;
 import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.media.MediaConnection;
+import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.newsletter.Newsletter;
 import com.github.auties00.cobalt.model.newsletter.NewsletterBuilder;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
@@ -1235,6 +1236,16 @@ public final class WhatsappStore implements SignalProtocolStore {
         return chatJid == null
                 ? Optional.empty()
                 : Optional.ofNullable(chats.remove(chatJid.toJid()));
+    }
+
+    public ChatMessageInfo addStatus(ChatMessageInfo messageInfo) {
+        Objects.requireNonNull(messageInfo, "messageInfo cannot be null");
+        status.put(messageInfo.key().id(), messageInfo);
+        return messageInfo;
+    }
+
+    public Optional<ChatMessageInfo> removeStatus(String id) {
+        return Optional.ofNullable(status.remove(id));
     }
 
     // =====================================================
@@ -2561,5 +2572,14 @@ public final class WhatsappStore implements SignalProtocolStore {
     public void addPrivacySetting(PrivacySettingEntry entry) {
         Objects.requireNonNull(entry, "entry cannot be null");
         privacySettings.put(entry.type(), entry);
+    }
+
+    public Optional<ChatMessageInfo> findChatMessageByKey(ChatMessageKey key) {
+        var chat = chats.get(key.chatJid());
+        if(chat == null) {
+            return Optional.empty();
+        }
+
+        return chat.getMessageById(key.id());
     }
 }

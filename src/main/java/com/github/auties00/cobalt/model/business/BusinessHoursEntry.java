@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.business;
 
-import com.github.auties00.cobalt.io.core.node.Node;
+import com.github.auties00.cobalt.core.node.Node;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -33,10 +33,10 @@ public final class BusinessHoursEntry {
 
     public static BusinessHoursEntry of(Node node) {
         return new BusinessHoursEntry(
-                node.attributes().getString("day_of_week"),
-                node.attributes().getString("mode"),
-                node.attributes().getLong("open_time"),
-                node.attributes().getLong("close_time")
+                node.getRequiredAttributeAsString("day_of_week"),
+                node.getRequiredAttributeAsString("mode"),
+                node.getAttributeAsLong("open_time", 0),
+                node.getAttributeAsLong("close_time", 0)
         );
     }
 
