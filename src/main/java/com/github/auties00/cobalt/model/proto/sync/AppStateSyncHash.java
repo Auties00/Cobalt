@@ -35,8 +35,16 @@ public final class AppStateSyncHash implements Cloneable{
         return version;
     }
 
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
     public byte[] hash() {
         return hash;
+    }
+
+    public void setHash(byte[] hash) {
+        this.hash = hash;
     }
 
     @Override

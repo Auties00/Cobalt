@@ -12,7 +12,7 @@ import com.github.auties00.libsignal.protocol.SignalPreKeyMessage;
 import com.github.auties00.libsignal.protocol.SignalSenderKeyDistributionMessage;
 import it.auties.protobuf.stream.ProtobufInputStream;
 
-import static com.github.auties00.cobalt.io.message.MessageTypes.*;
+import static com.github.auties00.cobalt.io.message.MessageConstants.*;
 
 public final class MessageDecoder {
     private final SignalSessionCipher sessionCipher;

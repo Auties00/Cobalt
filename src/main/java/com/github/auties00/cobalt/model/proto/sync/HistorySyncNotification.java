@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.model.proto.sync;
 
-import com.github.auties00.cobalt.model.media.MediaPath;
-import com.github.auties00.cobalt.model.media.MediaProvider;
+import com.github.auties00.cobalt.model.proto.media.MediaPath;
+import com.github.auties00.cobalt.model.proto.media.MediaProvider;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 import it.auties.protobuf.annotation.ProtobufMessage;

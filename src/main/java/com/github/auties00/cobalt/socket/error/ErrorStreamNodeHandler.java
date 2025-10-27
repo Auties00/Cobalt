@@ -5,7 +5,7 @@ import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
 import com.github.auties00.cobalt.exception.MalformedNodeException;
 import com.github.auties00.cobalt.exception.SessionBadMacException;
 import com.github.auties00.cobalt.exception.SessionConflictException;
-import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.core.node.Node;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 import java.util.concurrent.atomic.AtomicBoolean;

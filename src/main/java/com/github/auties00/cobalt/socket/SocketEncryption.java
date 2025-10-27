@@ -5,11 +5,11 @@ import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
 import com.github.auties00.cobalt.client.WhatsappClientInfo;
 import com.github.auties00.cobalt.io.node.NodeEncoder;
 import com.github.auties00.cobalt.io.node.NodeTokens;
-import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.core.node.Node;
 import com.github.auties00.cobalt.model.proto.auth.*;
 import com.github.auties00.cobalt.model.proto.sync.HistorySyncConfigBuilder;
 import com.github.auties00.cobalt.store.WhatsappStore;
-import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
@@ -32,9 +32,9 @@ public final class SocketEncryption {
     private static final byte[] NOISE_PROTOCOL = "Noise_XX_25519_AESGCM_SHA256\0\0\0\0".getBytes(StandardCharsets.UTF_8);
     private static final byte[] WHATSAPP_VERSION_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
     private static final byte[] WEB_VERSION = new byte[]{6, NodeTokens.DICTIONARY_VERSION};
-    private static final byte[] WEB_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);
+    private static final byte[] WEB_PROLOGUE = SecureBytes.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);
     private static final byte[] MOBILE_VERSION = new byte[]{5, NodeTokens.DICTIONARY_VERSION};
-    private static final byte[] MOBILE_PROLOGUE = Bytes.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
+    private static final byte[] MOBILE_PROLOGUE = SecureBytes.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
     private static final int HEADER_LENGTH = Integer.BYTES + Short.BYTES;
 
     private static GCMParameterSpec createGcmIv(long counter) {
@@ -288,10 +288,10 @@ public final class SocketEncryption {
         var clientInfo = WhatsappClientInfo.of(store.device().platform());
         var companion = new CompanionRegistrationDataBuilder()
                 .buildHash(clientInfo.version().toHash())
-                .eRegid(Bytes.intToBytes(store.registrationId(), 4))
-                .eKeytype(Bytes.intToBytes(SignalIdentityPublicKey.type(), 1))
+                .eRegid(SecureBytes.intToBytes(store.registrationId(), 4))
+                .eKeytype(SecureBytes.intToBytes(SignalIdentityPublicKey.type(), 1))
                 .eIdent(store.identityKeyPair().publicKey().toEncodedPoint())
-                .eSkeyId(Bytes.intToBytes(store.signedKeyPair().id(), 3))
+                .eSkeyId(SecureBytes.intToBytes(store.signedKeyPair().id(), 3))
                 .eSkeyVal(store.signedKeyPair().publicKey().toEncodedPoint())
                 .eSkeySig(store.signedKeyPair().signature());
         if (store.clientType() == WhatsappClientType.WEB) {

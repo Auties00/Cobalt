@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.socket;
 
 import com.github.auties00.cobalt.exception.NodeTimeoutException;
-import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.core.node.Node;
 
 import java.time.Duration;
 import java.util.Objects;

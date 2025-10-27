@@ -32,6 +32,9 @@ public sealed interface MessageInfo
 
     Optional<MessageInfoStubType> stubType();
 
+    boolean starred();
+    void setStarred(boolean starred);
+
     default Optional<QuotedMessageInfo> quotedMessage() {
         var message = message();
         if(message == null) {

@@ -9,7 +9,7 @@ import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameCerti
 import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameDetailsBuilder;
 import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameDetailsSpec;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
@@ -229,7 +229,7 @@ public final class WhatsappMobileClientRegistration implements AutoCloseable {
                     new GCMParameterSpec(128, new byte[12])
             );
             var result = cipher.doFinal(params.getBytes(StandardCharsets.UTF_8));
-            var cipheredParameters = Base64.getUrlEncoder().encodeToString(Bytes.concat(keypair.publicKey().toEncodedPoint(), result));
+            var cipheredParameters = Base64.getUrlEncoder().encodeToString(SecureBytes.concat(keypair.publicKey().toEncodedPoint(), result));
             var userAgent = store.device().toUserAgent();
             var requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create("%s%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path)))
@@ -264,10 +264,10 @@ public final class WhatsappMobileClientRegistration implements AutoCloseable {
                 "lc", "US",
                 "authkey", Base64.getUrlEncoder().encodeToString(store.noiseKeyPair().publicKey().toEncodedPoint()),
                 "vname", certificate,
-                "e_regid", Base64.getUrlEncoder().encodeToString(Bytes.intToBytes(store.registrationId(), 4)),
+                "e_regid", Base64.getUrlEncoder().encodeToString(SecureBytes.intToBytes(store.registrationId(), 4)),
                 "e_keytype", SIGNAL_PUBLIC_KEY_TYPE,
                 "e_ident", Base64.getUrlEncoder().encodeToString(store.identityKeyPair().publicKey().toEncodedPoint()),
-                "e_skey_id", Base64.getUrlEncoder().encodeToString(Bytes.intToBytes(store.signedKeyPair().id(), 3)),
+                "e_skey_id", Base64.getUrlEncoder().encodeToString(SecureBytes.intToBytes(store.signedKeyPair().id(), 3)),
                 "e_skey_val", Base64.getUrlEncoder().encodeToString(store.signedKeyPair().publicKey().toEncodedPoint()),
                 "e_skey_sig", Base64.getUrlEncoder().encodeToString(store.signedKeyPair().signature()),
                 "fdid", fdid,

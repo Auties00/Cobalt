@@ -5,8 +5,8 @@ import com.github.auties00.cobalt.model.json.response.NewsletterLeaveResponse;
 import com.github.auties00.cobalt.model.json.response.NewsletterMuteResponse;
 import com.github.auties00.cobalt.model.json.response.NewsletterResponse;
 import com.github.auties00.cobalt.model.json.response.NewsletterStateResponse;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.node.NodeBuilder;
+import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.model.core.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.chat.Chat;
 import com.github.auties00.cobalt.model.proto.chat.ChatEphemeralTimer;
 import com.github.auties00.cobalt.model.proto.info.ChatMessageInfoBuilder;
@@ -26,8 +26,8 @@ import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingType;
 import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.proto.sync.PatchType;
 import com.github.auties00.cobalt.socket.SocketStream;
-import com.github.auties00.cobalt.util.Bytes;
-import com.github.auties00.cobalt.util.PhonePairingCode;
+import com.github.auties00.cobalt.util.SecureBytes;
+import com.github.auties00.cobalt.socket.SocketPhonePairing;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
@@ -50,8 +50,8 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
     private static final byte[] SIGNAL_KEY_TYPE = {SignalIdentityPublicKey.type()};
 
-    private final PhonePairingCode pairingCode;
-    public NotificationStreamNodeHandler(Whatsapp whatsapp, PhonePairingCode pairingCode) {
+    private final SocketPhonePairing pairingCode;
+    public NotificationStreamNodeHandler(Whatsapp whatsapp, SocketPhonePairing pairingCode) {
         super(whatsapp, "notification");
         this.pairingCode = pairingCode;
     }
@@ -395,14 +395,14 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             keys.addPreKey(preKeyPair);
             var preKayNode = new NodeBuilder()
                     .description("key")
-                    .attribute("id", Bytes.intToBytes(preKeyPair.id(), 3))
+                    .attribute("id", SecureBytes.intToBytes(preKeyPair.id(), 3))
                     .attribute("value", preKeyPair.publicKey().toEncodedPoint())
                     .build();
             preKeys.add(preKayNode);
         }
         var registration = new NodeBuilder()
                 .description("registration")
-                .content(Bytes.intToBytes(keys.registrationId(), 4))
+                .content(SecureBytes.intToBytes(keys.registrationId(), 4))
                 .build();
         var type = new NodeBuilder()
                 .description("type")
@@ -418,7 +418,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                 .build();
         var skey = new NodeBuilder()
                 .description("skey")
-                .attribute("id", Bytes.intToBytes(keys.signedKeyPair().id(), 3))
+                .attribute("id", SecureBytes.intToBytes(keys.signedKeyPair().id(), 3))
                 .attribute("value", keys.signedKeyPair().publicKey().toEncodedPoint())
                 .attribute("signature", keys.signedKeyPair().signature())
                 .build();
@@ -594,8 +594,8 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                     .orElseThrow(() -> new InternalError("No companion key pair was set"))
                     .privateKey();
             var companionSharedKey = Curve25519.sharedKey(companionPrivateKey.toEncodedPoint(), codePairingPublicKey);
-            var random = Bytes.random(32);
-            var linkCodeSalt = Bytes.random(32);
+            var random = SecureBytes.random(32);
+            var linkCodeSalt = SecureBytes.random(32);
             var secretKeyHkdf = KDF.getInstance("HKDF-SHA256");
             var secretKeyHkdfParams = HKDFParameterSpec.ofExtract()
                     .addSalt(linkCodeSalt)
@@ -606,15 +606,15 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             cipher.init(
                     Cipher.ENCRYPT_MODE,
                     secretKey,
-                    new GCMParameterSpec(128, Bytes.random(12))
+                    new GCMParameterSpec(128, SecureBytes.random(12))
             );
             cipher.update(whatsapp.store().identityKeyPair().publicKey().toEncodedPoint());
             cipher.update(primaryIdentityPublicKey);
             cipher.update(random);
             var encrypted = cipher.doFinal();
-            var encryptedPayload = Bytes.concat(linkCodeSalt, Bytes.random(12), encrypted);
+            var encryptedPayload = SecureBytes.concat(linkCodeSalt, SecureBytes.random(12), encrypted);
             var identitySharedKey = Curve25519.sharedKey(whatsapp.store().identityKeyPair().privateKey().toEncodedPoint(), primaryIdentityPublicKey);
-            var identityPayload = Bytes.concat(companionSharedKey, identitySharedKey, random);
+            var identityPayload = SecureBytes.concat(companionSharedKey, identitySharedKey, random);
             var companionKeyHkdf = KDF.getInstance("HKDF-SHA256");
             var companionKeyHkdfParams = HKDFParameterSpec.ofExtract()
                     .addIKM(new SecretKeySpec(identityPayload, "AES"))

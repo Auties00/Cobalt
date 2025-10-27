@@ -3,6 +3,7 @@ package com.github.auties00.cobalt.api;
 import com.github.auties00.cobalt.exception.MalformedNodeException;
 import com.github.auties00.cobalt.exception.SessionBadMacException;
 import com.github.auties00.cobalt.exception.SessionConflictException;
+import com.github.auties00.cobalt.exception.WebAppStateSyncFatalException;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 
 import java.io.IOException;
@@ -118,10 +119,10 @@ public interface WhatsappErrorHandler {
     }
 
     private static boolean isCriticalError(Location location, Throwable throwable) {
-        return location == LOGIN // Can't log in
-                || location == INITIAL_WEB_APP_STATE_SYNC // Web app state sync failed
-                || location == CRYPTOGRAPHY // Can't encrypt/decrypt a node
-                || (location == STREAM && (throwable instanceof SessionConflictException || throwable instanceof SessionBadMacException || throwable instanceof MalformedNodeException)); // Something went wrong in the stream
+        return location == AUTH // Can't log in
+               || (location == WEB_APP_STATE && throwable instanceof WebAppStateSyncFatalException) // Web app state sync failed
+               || location == CRYPTOGRAPHY // Can't encrypt/decrypt a node
+               || (location == STREAM && (throwable instanceof SessionConflictException || throwable instanceof SessionBadMacException || throwable instanceof MalformedNodeException)); // Something went wrong in the stream
     }
 
     /**
@@ -139,7 +140,7 @@ public interface WhatsappErrorHandler {
         /**
          * Indicates an error that occurred during the authentication process
          */
-        LOGIN,
+        AUTH,
 
         /**
          * Indicates an error in cryptographic operations, such as encryption or decryption
@@ -157,19 +158,9 @@ public interface WhatsappErrorHandler {
         STREAM,
 
         /**
-         * Indicates an error that occurred during initial synchronization of web app state
-         */
-        INITIAL_WEB_APP_STATE_SYNC,
-
-        /**
          * Indicates an error that occurred while retrieving web app state data
          */
-        PULL_WEB_APP_STATE,
-
-        /**
-         * Indicates an error that occurred while updating web app state data
-         */
-        PUSH_WEB_APP_STATE,
+        WEB_APP_STATE,
 
         /**
          * Indicates an error in message serialization or deserialization

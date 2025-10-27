@@ -2,7 +2,7 @@ package com.github.auties00.cobalt.socket;
 
 import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
-import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.core.node.Node;
 import com.github.auties00.cobalt.socket.call.CallAckStreamNodeHandler;
 import com.github.auties00.cobalt.socket.call.CallStreamNodeHandler;
 import com.github.auties00.cobalt.socket.error.ErrorStreamNodeHandler;
@@ -16,7 +16,6 @@ import com.github.auties00.cobalt.socket.notification.NotificationStreamNodeHand
 import com.github.auties00.cobalt.socket.notification.PresenceStreamNodeHandler;
 import com.github.auties00.cobalt.socket.state.EndStreamNodeHandler;
 import com.github.auties00.cobalt.socket.state.SuccessStreamNodeHandler;
-import com.github.auties00.cobalt.util.PhonePairingCode;
 
 import java.util.*;
 
@@ -24,7 +23,7 @@ public final class SocketStream {
     private final Map<String, SequencedCollection<Handler>> handlers;
     public SocketStream(Whatsapp whatsapp, WhatsappVerificationHandler.Web webVerificationHandler) {
         var pairingCode = webVerificationHandler instanceof WhatsappVerificationHandler.Web.PairingCode
-                ? new PhonePairingCode()
+                ? new SocketPhonePairing()
                 : null;
         this.handlers = withHandlers(
                 new CallStreamNodeHandler(whatsapp),

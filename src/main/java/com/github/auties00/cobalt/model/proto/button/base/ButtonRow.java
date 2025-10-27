@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.proto.button.base;
 
-import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.SecureBytes;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -29,7 +29,7 @@ public final class ButtonRow {
     }
 
     public static ButtonRow of(String title, String description) {
-        return new ButtonRow(title, description, HexFormat.of().formatHex(Bytes.random(5)));
+        return new ButtonRow(title, description, HexFormat.of().formatHex(SecureBytes.random(5)));
     }
 
     public String title() {

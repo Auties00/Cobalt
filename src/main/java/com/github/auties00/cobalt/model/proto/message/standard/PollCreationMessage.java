@@ -8,7 +8,7 @@ import com.github.auties00.cobalt.model.proto.message.model.ContextualMessage;
 import com.github.auties00.cobalt.model.proto.poll.PollOption;
 import com.github.auties00.cobalt.model.proto.poll.SelectedPollOption;
 import com.github.auties00.cobalt.model.proto.poll.SelectedPollOptionBuilder;
-import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.SecureBytes;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
@@ -72,7 +72,7 @@ public final class PollCreationMessage implements ContextualMessage {
             throw new IllegalArgumentException("Options must have at least two patches");
         }
         var result = new PollCreationMessageBuilder()
-                .encryptionKey(Bytes.random(32))
+                .encryptionKey(SecureBytes.random(32))
                 .title(title)
                 .selectableOptions(selectableOptions)
                 .selectableOptionsCount(selectableOptions.size())

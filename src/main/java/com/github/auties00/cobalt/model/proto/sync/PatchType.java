@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @ProtobufEnum
 public enum PatchType {
@@ -18,12 +19,14 @@ public enum PatchType {
     REGULAR(4);
 
     private static final Map<String, PatchType> BY_NAME = Arrays.stream(values())
-            .collect(java.util.stream.Collectors.toMap(PatchType::toString, Function.identity()));
+            .collect(Collectors.toMap(PatchType::toString, Function.identity()));
 
     final int index;
+    private final byte[] bytes;
 
     PatchType(@ProtobufEnumIndex int index) {
         this.index = index;
+        this.bytes = toString().getBytes();
     }
 
     public int index() {
@@ -37,5 +40,9 @@ public enum PatchType {
     @Override
     public String toString() {
         return name().toLowerCase(Locale.ROOT);
+    }
+
+    public byte[] toBytes() {
+        return bytes;
     }
 }

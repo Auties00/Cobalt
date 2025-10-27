@@ -1,0 +1,73 @@
+package com.github.auties00.cobalt.io.sync;
+
+import com.github.auties00.cobalt.exception.WebAppStateSyncFatalException;
+import com.github.auties00.cobalt.model.core.sync.DecryptedMutation;
+import com.github.auties00.cobalt.model.proto.sync.ActionDataSyncSpec;
+import com.github.auties00.cobalt.model.proto.sync.RecordSync;
+import com.github.auties00.cobalt.sync.WebAppStateSyncKeys;
+import it.auties.protobuf.stream.ProtobufInputStream;
+
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.Mac;
+import javax.crypto.spec.IvParameterSpec;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.util.Arrays;
+
+import static com.github.auties00.cobalt.io.sync.MutationConstants.*;
+
+public final class MutationDecoder {
+    public static DecryptedMutation.Untrusted decryptMutation(
+            byte[] encryptedValue,
+            byte[] indexMac,
+            WebAppStateSyncKeys keys,
+            RecordSync.Operation operation
+    ) throws GeneralSecurityException {
+        if (encryptedValue.length < IV_LENGTH + MAC_LENGTH) {
+            throw new IllegalArgumentException("Encrypted value too short");
+        }
+
+        // 1. Extract value MAC
+        var valueMac = Arrays.copyOfRange(encryptedValue, encryptedValue.length - 32, encryptedValue.length);
+
+        // 2. Verify value MAC
+        var mac = Mac.getInstance("HmacSHA256");
+        mac.init(keys.valueMacKey());
+        mac.update(operation.content());
+        mac.update(VERSION);
+        mac.update(encryptedValue, 0, IV_LENGTH);
+        mac.update(encryptedValue, IV_LENGTH, encryptedValue.length - IV_LENGTH - MAC_LENGTH);
+        var expectedMac = mac.doFinal();
+        if (!MessageDigest.isEqual(valueMac, expectedMac)) {
+            throw new WebAppStateSyncFatalException("Value MAC mismatch");
+        }
+
+        // 3. Decrypt payload with AES-256-CBC and decode protobuf
+        var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        var ivSpec = new IvParameterSpec(encryptedValue, 0, IV_LENGTH);
+        cipher.init(Cipher.DECRYPT_MODE, keys.valueEncryptionKey(), ivSpec);
+        var ciphertextStream = new ByteArrayInputStream(encryptedValue, IV_LENGTH, encryptedValue.length - IV_LENGTH - MAC_LENGTH);
+        var plaintextStream = new CipherInputStream(ciphertextStream, cipher);
+        var actionData = ActionDataSyncSpec.decode(ProtobufInputStream.fromStream(plaintextStream));
+
+        // 4. Verify index MAC
+        mac.init(keys.indexKey());
+        var expectedIndexMac = mac.doFinal(actionData.index());
+        if (!MessageDigest.isEqual(indexMac, expectedIndexMac)) {
+            throw new WebAppStateSyncFatalException("Index MAC mismatch");
+        }
+
+        // 5. Build mutation
+        return new DecryptedMutation.Untrusted(
+                new String(actionData.index(), StandardCharsets.UTF_8),
+                indexMac,
+                valueMac,
+                actionData.value(),
+                operation,
+                actionData.value().timestamp()
+        );
+    }
+}

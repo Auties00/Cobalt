@@ -17,7 +17,7 @@ import com.github.auties00.cobalt.model.proto.sync.HistorySyncNotification;
 import com.github.auties00.cobalt.model.proto.sync.PatchType;
 import com.github.auties00.cobalt.model.proto.sync.PushName;
 import com.github.auties00.cobalt.exception.MediaDownloadException;
-import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.core.node.Node;
 import com.github.auties00.cobalt.io.message.MessageDecoder;
 import com.github.auties00.cobalt.model.proto.action.ContactActionBuilder;
 import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameCertificateSpec;

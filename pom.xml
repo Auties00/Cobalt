@@ -198,8 +198,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>25</source>
+                    <target>25</target>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
                         <annotationProcessorPath>
@@ -208,6 +208,7 @@
                             <version>${protoc.version}</version>
                         </annotationProcessorPath>
                     </annotationProcessorPaths>
+                    <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
 

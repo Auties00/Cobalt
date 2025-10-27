@@ -5,7 +5,10 @@ import com.github.auties00.cobalt.api.Whatsapp;
 import com.github.auties00.cobalt.api.WhatsappClientType;
 import com.github.auties00.cobalt.api.WhatsappListener;
 import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
-import com.github.auties00.cobalt.model.media.MediaConnection;
+import com.github.auties00.cobalt.io.media.MediaConnection;
+import com.github.auties00.cobalt.io.sync.LTHash;
+import com.github.auties00.cobalt.model.core.sync.CollectionMetadata;
+import com.github.auties00.cobalt.model.core.sync.CollectionState;
 import com.github.auties00.cobalt.model.proto.auth.SignedDeviceIdentity;
 import com.github.auties00.cobalt.model.proto.auth.UserAgent.ReleaseChannel;
 import com.github.auties00.cobalt.model.proto.business.BusinessCategory;
@@ -31,7 +34,8 @@ import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.proto.sync.AppStateSyncHash;
 import com.github.auties00.cobalt.model.proto.sync.AppStateSyncKey;
 import com.github.auties00.cobalt.model.proto.sync.PatchType;
-import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.model.core.sync.PendingMutation;
+import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.libsignal.SignalProtocolAddress;
 import com.github.auties00.libsignal.SignalProtocolStore;
@@ -813,6 +817,12 @@ public final class WhatsappStore implements SignalProtocolStore {
      */
     private MediaConnection mediaConnection;
 
+    /**
+     * Pending mutations awaiting synchronization to the server.
+     */
+    private final ConcurrentMap<PatchType, SequencedCollection<PendingMutation>> pendingMutations;
+
+    private final ConcurrentMap<PatchType, CollectionMetadata> collections;
 
     // =====================================================
     // SECTION: Constructor & Factory Methods
@@ -932,14 +942,16 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.fdid = Objects.requireNonNullElseGet(fdid, UUID::randomUUID);
         this.deviceId = Objects.requireNonNullElseGet(deviceId, () -> HexFormat.of().parseHex(UUID.randomUUID().toString().replace("-", "")));
         this.advertisingId = Objects.requireNonNullElseGet(advertisingId, UUID::randomUUID);
-        this.identityId = Objects.requireNonNullElseGet(identityId, () -> Bytes.random(16));
-        this.backupToken = Objects.requireNonNullElseGet(backupToken, () -> Bytes.random(20));
+        this.identityId = Objects.requireNonNullElseGet(identityId, () -> SecureBytes.random(16));
+        this.backupToken = Objects.requireNonNullElseGet(backupToken, () -> SecureBytes.random(20));
         this.companionIdentity = companionIdentity;
         this.senderKeys = Objects.requireNonNull(senderKeys, "senderKeys cannot be null");
         this.appStateKeys = Objects.requireNonNull(appStateKeys, "appStateKeys cannot be null");
         this.sessions = Objects.requireNonNull(sessions, "sessions cannot be null");
         this.hashStates = Objects.requireNonNull(hashStates, "hashStates cannot be null");
         this.registered = registered;
+        this.pendingMutations = new ConcurrentHashMap<>();
+        this.collections = new ConcurrentHashMap<>();
         this.serializable = true;
     }
 
@@ -1005,16 +1017,6 @@ public final class WhatsappStore implements SignalProtocolStore {
             serializer.serialize(this);
         }
         return this;
-    }
-
-    /**
-     * Cleans up resources and prepares this store for disposal.
-     * <p>
-     * Should be called when the session ends to properly serialize the current state
-     * and release resources. After calling this method, the store should not be reused.
-     */
-    public void dispose() {
-        serialize();
     }
 
     // =====================================================
@@ -2416,6 +2418,47 @@ public final class WhatsappStore implements SignalProtocolStore {
     }
 
     /**
+     * Adds a pending mutation to the queue for the specified collection.
+     *
+     * @param collectionName the collection name
+     * @param patch the patch to queue
+     */
+    public void addPendingMutations(PatchType collectionName, Collection<? extends PendingMutation> patch) {
+        pendingMutations
+            .computeIfAbsent(collectionName, k -> new ArrayList<>())
+            .addAll(patch);
+    }
+
+    /**
+     * Gets all pending mutations for the specified collection.
+     *
+     * @param collectionName the collection name
+     * @return list of pending patches
+     */
+    public SequencedCollection<PendingMutation> getPendingMutations(PatchType collectionName) {
+        var collectionPending = pendingMutations.get(collectionName);
+        return collectionPending == null ? List.of() : Collections.unmodifiableSequencedCollection(collectionPending);
+    }
+
+    /**
+     * Removes pending mutations by their indices.
+     *
+     * @param collectionName the collection name
+     */
+    public void removePendingMutations(PatchType collectionName) {
+        pendingMutations.remove(collectionName);
+    }
+
+    /**
+     * Clears all pending mutations for a collection.
+     *
+     * @param collectionName the collection name
+     */
+    public void clearPendingMutations(PatchType collectionName) {
+        pendingMutations.remove(collectionName);
+    }
+
+    /**
      * Returns whether the client has completed registration.
      *
      * @return true if registered, false otherwise
@@ -2461,6 +2504,183 @@ public final class WhatsappStore implements SignalProtocolStore {
     @Override
     public void addTrustedIdentity(SignalProtocolAddress signalProtocolAddress, SignalIdentityPublicKey signalIdentityPublicKey) {
 
+    }
+
+    /**
+     * Marks a collection as dirty.
+     *
+     * @param collectionName the collection name
+     */
+    public void markDirty(PatchType collectionName) {
+        collections.compute(collectionName, (_, current) -> {
+            if (current == null || current.state() == CollectionState.UP_TO_DATE) {
+                return new CollectionMetadata(
+                        collectionName,
+                        current != null ? current.version() : 0,
+                        current != null ? LTHash.copy(current.ltHash()) : LTHash.copy(LTHash.EMPTY_HASH),
+                        System.currentTimeMillis(),
+                        CollectionState.DIRTY,
+                        0,  // Reset retry count
+                        0   // Reset error timestamp
+                );
+            }
+            return current;
+        });
+    }
+
+    /**
+     * Marks a collection as in-flight.
+     *
+     * @param collectionName the collection name
+     */
+    public void markInFlight(PatchType collectionName) {
+        collections.computeIfPresent(collectionName, (_, current) ->
+                new CollectionMetadata(
+                        current.name(),
+                        current.version(),
+                        current.ltHash(),
+                        current.lastSyncTimestamp(),
+                        CollectionState.IN_FLIGHT,
+                        current.retryCount(),
+                        current.lastErrorTimestamp()
+                )
+        );
+    }
+
+    /**
+     * Marks a collection as up-to-date.
+     *
+     * @param collectionName the collection name
+     */
+    public void markUpToDate(PatchType collectionName) {
+        collections.computeIfPresent(collectionName, (_, current) ->
+                new CollectionMetadata(
+                        current.name(),
+                        current.version(),
+                        current.ltHash(),
+                        System.currentTimeMillis(),
+                        CollectionState.UP_TO_DATE,
+                        0,  // Reset retry count on success
+                        0   // Reset error timestamp
+                )
+        );
+    }
+
+    /**
+     * Marks a collection as pending.
+     *
+     * @param collectionName the collection name
+     */
+    public void markPending(PatchType collectionName) {
+        collections.computeIfPresent(collectionName, (_, current) ->
+                new CollectionMetadata(
+                        current.name(),
+                        current.version(),
+                        current.ltHash(),
+                        current.lastSyncTimestamp(),
+                        CollectionState.PENDING,
+                        current.retryCount(),
+                        current.lastErrorTimestamp()
+                )
+        );
+    }
+
+    /**
+     * Marks a collection as blocked.
+     *
+     * @param collectionName the collection name
+     */
+    public void markBlocked(PatchType collectionName) {
+        collections.computeIfPresent(collectionName, (_, current) ->
+                new CollectionMetadata(
+                        current.name(),
+                        current.version(),
+                        current.ltHash(),
+                        current.lastSyncTimestamp(),
+                        CollectionState.BLOCKED,
+                        current.retryCount(),
+                        System.currentTimeMillis()
+                )
+        );
+    }
+
+    /**
+     * Marks a collection in error retry state.
+     *
+     * @param collectionName the collection name
+     */
+    public void markErrorRetry(PatchType collectionName) {
+        collections.computeIfPresent(collectionName, (_, current) ->
+                new CollectionMetadata(
+                        current.name(),
+                        current.version(),
+                        current.ltHash(),
+                        current.lastSyncTimestamp(),
+                        CollectionState.ERROR_RETRY,
+                        current.retryCount() + 1,
+                        System.currentTimeMillis()
+                )
+        );
+    }
+
+    /**
+     * Marks a collection in fatal error state.
+     *
+     * @param collectionName the collection name
+     */
+    public void markErrorFatal(PatchType collectionName) {
+        collections.computeIfPresent(collectionName, (_, current) ->
+                new CollectionMetadata(
+                        current.name(),
+                        current.version(),
+                        current.ltHash(),
+                        current.lastSyncTimestamp(),
+                        CollectionState.ERROR_FATAL,
+                        current.retryCount(),
+                        System.currentTimeMillis()
+                )
+        );
+    }
+
+    /**
+     * Gets metadata for a collection.
+     *
+     * @param collectionName the collection name
+     * @return the collection metadata
+     */
+    public CollectionMetadata getMetadata(PatchType collectionName) {
+        return collections.computeIfAbsent(collectionName, key ->
+                new CollectionMetadata(
+                        key,
+                        0,
+                        LTHash.copy(LTHash.EMPTY_HASH),
+                        0,
+                        CollectionState.UP_TO_DATE,
+                        0,
+                        0
+                )
+        );
+    }
+
+    /**
+     * Updates a collection's version and LT-Hash.
+     *
+     * @param collectionName the collection name
+     * @param newVersion the new version
+     * @param newLtHash the new LT-Hash
+     */
+    public void updateVersion(PatchType collectionName, long newVersion, byte[] newLtHash) {
+        collections.compute(collectionName, (_, current) ->
+                new CollectionMetadata(
+                        collectionName,
+                        newVersion,
+                        LTHash.copy(newLtHash),
+                        System.currentTimeMillis(),
+                        current != null ? current.state() : CollectionState.UP_TO_DATE,
+                        0,  // Reset retry count on successful update
+                        0   // Reset error timestamp
+                )
+        );
     }
 
     // =====================================================

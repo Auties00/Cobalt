@@ -1,12 +1,12 @@
 package com.github.auties00.cobalt.socket.state;
 
 import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.node.NodeBuilder;
+import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.model.core.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.model.proto.jid.JidServer;
-import com.github.auties00.cobalt.model.media.MediaConnection;
+import com.github.auties00.cobalt.io.media.MediaConnection;
 import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingEntryBuilder;
 import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingType;
 import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.LOGIN;
+import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.AUTH;
 import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.MEDIA_CONNECTION;
 
 // TODO: Orchestrate a platform specific login flow in separate classes that can be auto updated
@@ -65,7 +65,7 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
             onInitialInfo();
             queryNewsletters();
         } catch (Exception throwable) {
-            whatsapp.handleFailure(LOGIN, throwable);
+            whatsapp.handleFailure(AUTH, throwable);
         }
     }
 
@@ -99,7 +99,7 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
                 }
             }
         } catch (Exception exception) {
-            whatsapp.handleFailure(LOGIN, exception);
+            whatsapp.handleFailure(AUTH, exception);
         }
     }
 

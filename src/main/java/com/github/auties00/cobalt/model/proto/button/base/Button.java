@@ -2,7 +2,7 @@ package com.github.auties00.cobalt.model.proto.button.base;
 
 import com.github.auties00.cobalt.model.proto.button.base.ButtonBody.Type;
 import com.github.auties00.cobalt.model.proto.info.NativeFlowInfo;
-import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.SecureBytes;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -58,7 +58,7 @@ public final class Button {
      * @return a non-null button
      */
     public static Button of(ButtonBody body) {
-        var id = HexFormat.of().formatHex(Bytes.random(6));
+        var id = HexFormat.of().formatHex(SecureBytes.random(6));
         return Button.of(id, body);
     }
 

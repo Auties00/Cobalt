@@ -6,7 +6,7 @@ import com.github.auties00.cobalt.model.proto.button.template.hydrated.HydratedF
 import com.github.auties00.cobalt.model.proto.info.ContextInfo;
 import com.github.auties00.cobalt.model.proto.message.model.ButtonMessage;
 import com.github.auties00.cobalt.model.proto.message.model.ContextualMessage;
-import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.SecureBytes;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
@@ -52,7 +52,7 @@ public final class TemplateMessage implements ContextualMessage, ButtonMessage {
     @ProtobufBuilder(className = "TemplateMessageSimpleBuilder")
     static TemplateMessage customBuilder(String id, HydratedFourRowTemplate content, TemplateFormatter format, ContextInfo contextInfo) {
         var builder = new TemplateMessageBuilder()
-                .id(Objects.requireNonNullElseGet(id, () -> HexFormat.of().formatHex(Bytes.random(6))))
+                .id(Objects.requireNonNullElseGet(id, () -> HexFormat.of().formatHex(SecureBytes.random(6))))
                 .content(content)
                 .contextInfo(contextInfo);
         switch (format) {

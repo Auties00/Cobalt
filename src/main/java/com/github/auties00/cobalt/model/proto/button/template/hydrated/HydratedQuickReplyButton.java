@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.proto.button.template.hydrated;
 
-import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.SecureBytes;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -21,7 +21,7 @@ public final class HydratedQuickReplyButton implements HydratedButton {
 
     HydratedQuickReplyButton(String text, String id) {
         this.text = Objects.requireNonNull(text, "text cannot be null");
-        this.id = Objects.requireNonNullElseGet(id, () -> Bytes.randomHex(6));
+        this.id = Objects.requireNonNullElseGet(id, () -> SecureBytes.randomHex(6));
     }
 
     public String text() {

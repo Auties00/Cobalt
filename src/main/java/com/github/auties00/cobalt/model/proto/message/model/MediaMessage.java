@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.model.proto.message.model;
 
 import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.model.media.MediaPath;
-import com.github.auties00.cobalt.model.media.MediaProvider;
+import com.github.auties00.cobalt.model.proto.media.MediaPath;
+import com.github.auties00.cobalt.model.proto.media.MediaProvider;
 import com.github.auties00.cobalt.model.proto.message.payment.PaymentInvoiceMessage;
 import com.github.auties00.cobalt.model.proto.message.standard.*;
 

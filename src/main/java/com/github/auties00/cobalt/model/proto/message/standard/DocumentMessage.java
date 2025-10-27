@@ -4,7 +4,7 @@ import com.github.auties00.cobalt.model.proto.button.interactive.InteractiveHead
 import com.github.auties00.cobalt.model.proto.button.template.highlyStructured.HighlyStructuredFourRowTemplateTitle;
 import com.github.auties00.cobalt.model.proto.button.template.hydrated.HydratedFourRowTemplateTitle;
 import com.github.auties00.cobalt.model.proto.info.ContextInfo;
-import com.github.auties00.cobalt.model.media.MediaPath;
+import com.github.auties00.cobalt.model.proto.media.MediaPath;
 import com.github.auties00.cobalt.model.proto.message.button.ButtonsMessageHeader;
 import com.github.auties00.cobalt.model.proto.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;

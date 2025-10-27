@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.exception;
 
-import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.core.node.Node;
 
 /**
  * A runtime exception thrown when a WhatsApp protocol node request does not receive a response
@@ -33,8 +33,6 @@ public class NodeTimeoutException extends RuntimeException {
     public NodeTimeoutException(Node node) {
         this.node = node;
     }
-
-    // Accessor
 
     /**
      * Returns the WhatsApp protocol node that did not receive a response within the timeout period.

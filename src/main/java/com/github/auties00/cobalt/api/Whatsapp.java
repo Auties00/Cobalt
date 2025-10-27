@@ -1,13 +1,15 @@
 package com.github.auties00.cobalt.api;
 
 import com.alibaba.fastjson2.JSON;
+import com.github.auties00.cobalt.model.core.sync.PendingMutation;
+import com.github.auties00.cobalt.sync.WebAppState;
 import com.github.auties00.cobalt.model.json.request.CommunityRequests;
 import com.github.auties00.cobalt.model.json.request.NewsletterRequests;
 import com.github.auties00.cobalt.model.json.request.UserRequests;
 import com.github.auties00.cobalt.model.json.response.*;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.node.NodeAttribute;
-import com.github.auties00.cobalt.model.node.NodeBuilder;
+import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.model.core.node.NodeAttribute;
+import com.github.auties00.cobalt.model.core.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.action.Action;
 import com.github.auties00.cobalt.model.proto.business.*;
 import com.github.auties00.cobalt.model.proto.chat.*;
@@ -28,7 +30,7 @@ import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.model.proto.jid.JidProvider;
 import com.github.auties00.cobalt.model.proto.jid.JidServer;
-import com.github.auties00.cobalt.model.media.MediaProvider;
+import com.github.auties00.cobalt.model.proto.media.MediaProvider;
 import com.github.auties00.cobalt.model.proto.message.server.ProtocolMessage;
 import com.github.auties00.cobalt.model.proto.message.server.ProtocolMessageBuilder;
 import com.github.auties00.cobalt.model.proto.message.standard.NewsletterAdminInviteMessageBuilder;
@@ -41,10 +43,9 @@ import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.proto.setting.Setting;
 import com.github.auties00.cobalt.model.proto.sync.*;
 import com.github.auties00.cobalt.model.proto.sync.RecordSync.Operation;
-import com.github.auties00.cobalt.model.sync.WebAppStatePatch;
 import com.github.auties00.cobalt.socket.*;
 import com.github.auties00.cobalt.store.WhatsappStore;
-import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.cobalt.util.Clock;
 
 import javax.crypto.Cipher;
@@ -90,6 +91,7 @@ public final class Whatsapp {
 
     private final WhatsappStore store;
     private final WhatsappErrorHandler errorHandler;
+    private final WebAppState webAppState;
 
     private SocketSession socketSession;
     private final SocketEncryption socketEncryption;
@@ -101,6 +103,7 @@ public final class Whatsapp {
     Whatsapp(WhatsappStore store, WhatsappVerificationHandler.Web webVerificationHandler, WhatsappMessagePreviewHandler messagePreviewHandler, WhatsappErrorHandler errorHandler) {
         this.store = store;
         this.errorHandler = errorHandler;
+        this.webAppState = new WebAppState(this);
         this.pendingSocketRequests = new ConcurrentHashMap<>();
         this.socketEncryption = new SocketEncryption(store, this::sendBinary);
         this.socketStream = new SocketStream(this, webVerificationHandler);
@@ -151,7 +154,7 @@ public final class Whatsapp {
                 socketState.set(SocketState.DISCONNECTED);
                 handleFailure(RECONNECT, throwable);
             } else {
-                handleFailure(LOGIN, throwable);
+                handleFailure(AUTH, throwable);
             }
             return;
         }
@@ -199,7 +202,8 @@ public final class Whatsapp {
     }
 
     private void onShutdown() {
-        store.dispose();
+        webAppState.close();
+        store.serialize();
     }
 
     private void onMessage(ByteBuffer message) {
@@ -216,7 +220,7 @@ public final class Whatsapp {
             socketEncryption.finishHandshake(message);
             socketState.compareAndSet(SocketState.HANDSHAKING, SocketState.CONNECTED);
         } catch (Throwable throwable) {
-            handleFailure(LOGIN, throwable);
+            handleFailure(AUTH, throwable);
         }
     }
 
@@ -272,7 +276,7 @@ public final class Whatsapp {
 
     public Node sendNode(NodeBuilder node, Function<Node, Boolean> filter) {
         if (!node.hasAttribute("id")) {
-            node.attribute("id", Bytes.randomHex(10));
+            node.attribute("id", SecureBytes.randomHex(10));
         }
 
         var outgoing = node.build();
@@ -1683,7 +1687,7 @@ public final class Whatsapp {
             encryptCipher.init(
                     Cipher.ENCRYPT_MODE,
                     retryKey,
-                    new GCMParameterSpec(128, Bytes.random(12))
+                    new GCMParameterSpec(128, SecureBytes.random(12))
             );
             encryptCipher.updateAAD(aad);
             var ciphertext = encryptCipher.update(receipt);
@@ -1693,7 +1697,7 @@ public final class Whatsapp {
                     .build();
             var encIvNode = new NodeBuilder()
                     .description("enc_iv")
-                    .content(Bytes.random(12))
+                    .content(SecureBytes.random(12))
                     .build();
             var encryptNode = new NodeBuilder()
                     .description("encrypt")
@@ -1910,7 +1914,7 @@ public final class Whatsapp {
                             .messageTimestampSeconds(info.timestampSeconds().orElse(0L))
                             .build();
                     var syncAction = ActionValueSync.of(deleteMessageAction);
-                    var entry = new WebAppStatePatch(syncAction, Operation.SET, info.chatJid().toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
+                    var entry = new PendingMutation(syncAction, Operation.SET, info.chatJid().toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
                     pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
                 }
                 case MOBILE -> info.chat().ifPresent(chat -> chat.removeMessage(info.id()));
@@ -1979,7 +1983,7 @@ public final class Whatsapp {
                 .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(markAction);
-        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString());
+        var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString());
         pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
     }
 
@@ -2012,7 +2016,7 @@ public final class Whatsapp {
                 .autoMuted(false)
                 .build();
         var syncAction = ActionValueSync.of(muteAction);
-        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString());
+        var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString());
         pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
     }
 
@@ -2034,7 +2038,7 @@ public final class Whatsapp {
                 .autoMuted(false)
                 .build();
         var syncAction = ActionValueSync.of(muteAction);
-        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString());
+        var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString());
         pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
     }
 
@@ -2161,7 +2165,7 @@ public final class Whatsapp {
                 .build();
         var syncAction = ActionValueSync.of(pinAction);
 
-        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString());
+        var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString());
         pushWebAppState(PatchType.REGULAR_LOW, List.of(entry));
     }
 
@@ -2185,7 +2189,7 @@ public final class Whatsapp {
                 .starred(star)
                 .build();
         var syncAction = ActionValueSync.of(starAction);
-        var entry = new WebAppStatePatch(syncAction, Operation.SET, info.chatJid()
+        var entry = new PendingMutation(syncAction, Operation.SET, info.chatJid()
                 .toString(), info.id(), fromMeToFlag(info), participantToFlag(info));
         pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
         return info;
@@ -2238,7 +2242,7 @@ public final class Whatsapp {
                 .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(archiveAction);
-        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString());
+        var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString());
         pushWebAppState(PatchType.REGULAR_LOW, List.of(entry));
     }
 
@@ -3000,7 +3004,7 @@ public final class Whatsapp {
                 .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(deleteChatAction);
-        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString(), "1");
+        var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString(), "1");
         pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
     }
 
@@ -3024,7 +3028,7 @@ public final class Whatsapp {
                 .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(clearChatAction);
-        var entry = new WebAppStatePatch(syncAction, Operation.SET, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
+        var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");
         pushWebAppState(PatchType.REGULAR_HIGH, List.of(entry));
     }
 
@@ -3036,7 +3040,7 @@ public final class Whatsapp {
      * @return a CompletableFuture
      */
     public Optional<GroupOrCommunityMetadata> createCommunity(String subject, String body) {
-        var descriptionId = HexFormat.of().formatHex(Bytes.random(12));
+        var descriptionId = HexFormat.of().formatHex(SecureBytes.random(12));
         var children = new ArrayList<Node>();
         var bodyNode = new NodeBuilder()
                 .description("body")
@@ -4398,12 +4402,12 @@ public final class Whatsapp {
 
     // TODO: Stuff to fix
 
-    public void pushWebAppState(PatchType type, List<WebAppStatePatch> patches) {
-
+    public void pushWebAppState(PatchType type, List<PendingMutation> patches) {
+        webAppState.pushPatches(type, patches);
     }
 
     public void pullWebAppState(PatchType... patches) {
-
+        webAppState.pullPatches(patches);
     }
 
     private void updateBusinessCertificate(String newName) {

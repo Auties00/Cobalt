@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.socket.call;
 
 import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.node.NodeBuilder;
+import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.model.core.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.socket.SocketStream;
 

@@ -63,19 +63,12 @@ public record ChatMute(long endTimeStamp) {
     }
 
     /**
-     * Do not use this method, reserved for protobuf
-     */
-    @ProtobufDeserializer
-    public static ChatMute ofProtobuf(long object) {
-        return muted(object);
-    }
-
-    /**
      * Constructs a new mute for a duration in endTimeStamp
      *
      * @param seconds can be null and is considered as not muted
      * @return a non-null mute
      */
+    @ProtobufDeserializer
     public static ChatMute muted(Long seconds) {
         if (seconds == null || seconds == NOT_MUTED_FLAG) {
             return NOT_MUTED;

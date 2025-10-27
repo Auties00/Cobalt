@@ -6,6 +6,7 @@ import it.auties.protobuf.model.ProtobufType;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * A model clas that represents an agent
@@ -16,14 +17,14 @@ public final class AgentAction implements Action {
     final String name;
 
     @ProtobufProperty(index = 2, type = ProtobufType.INT32)
-    final int deviceId;
+    final Integer deviceId;
 
     @ProtobufProperty(index = 3, type = ProtobufType.BOOL)
     final boolean deleted;
 
     AgentAction(
             String name,
-            int deviceId,
+            Integer deviceId,
             boolean deleted
     ) {
         this.name = name;
@@ -45,8 +46,8 @@ public final class AgentAction implements Action {
         return Optional.ofNullable(name);
     }
 
-    public int deviceId() {
-        return deviceId;
+    public OptionalInt deviceId() {
+        return deviceId == null ? OptionalInt.empty() : OptionalInt.of(deviceId);
     }
 
     public boolean deleted() {
@@ -56,9 +57,9 @@ public final class AgentAction implements Action {
     @Override
     public boolean equals(Object o) {
         return o instanceof AgentAction that
-                && deviceId == that.deviceId
-                && deleted == that.deleted
-                && Objects.equals(name, that.name);
+               && deviceId.equals(that.deviceId)
+               && deleted == that.deleted
+               && Objects.equals(name, that.name);
     }
 
     @Override

@@ -6,8 +6,8 @@ import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
 import com.github.auties00.cobalt.model.proto.auth.SignedDeviceIdentity;
 import com.github.auties00.cobalt.model.proto.auth.SignedDeviceIdentityHMAC;
 import com.github.auties00.cobalt.exception.HmacValidationException;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.node.NodeBuilder;
+import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.model.core.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.auth.*;
 import com.github.auties00.cobalt.model.proto.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.proto.contact.ContactBuilder;
@@ -15,9 +15,9 @@ import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.model.proto.jid.JidServer;
 import com.github.auties00.cobalt.socket.SocketStream;
-import com.github.auties00.cobalt.util.Bytes;
+import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.cobalt.util.Clock;
-import com.github.auties00.cobalt.util.PhonePairingCode;
+import com.github.auties00.cobalt.socket.SocketPhonePairing;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 
@@ -32,7 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.LOGIN;
+import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.AUTH;
 
 public final class IqStreamNodeHandler extends SocketStream.Handler {
     private static final int PING_INTERVAL = 30;
@@ -40,9 +40,9 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     private static final byte[] ACCOUNT_SIGNATURE_HEADER = {6, 0};
 
     private final WhatsappVerificationHandler.Web webVerificationHandler;
-    private final PhonePairingCode pairingCode;
+    private final SocketPhonePairing pairingCode;
     private final Executor pingExecutor;
-    public IqStreamNodeHandler(Whatsapp whatsapp, WhatsappVerificationHandler.Web webVerificationHandler, PhonePairingCode pairingCode) {
+    public IqStreamNodeHandler(Whatsapp whatsapp, WhatsappVerificationHandler.Web webVerificationHandler, SocketPhonePairing pairingCode) {
         super(whatsapp, "iq");
         this.webVerificationHandler = webVerificationHandler;
         this.pairingCode = pairingCode;
@@ -209,22 +209,22 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
         var advIdentity = SignedDeviceIdentityHMACSpec.decode(deviceIdentity);
         var advSign = getAdvSign(advIdentity);
         if (!Arrays.equals(advIdentity.hmac(), advSign)) {
-            whatsapp.handleFailure(LOGIN, new HmacValidationException("adv_sign"));
+            whatsapp.handleFailure(AUTH, new HmacValidationException("adv_sign"));
             return;
         }
         var account = SignedDeviceIdentitySpec.decode(advIdentity.details());
         whatsapp.store().setCompanionIdentity(account);
         var identityPublicKey = whatsapp.store().identityKeyPair().publicKey().toEncodedPoint();
-        var message = Bytes.concat(
+        var message = SecureBytes.concat(
                 ACCOUNT_SIGNATURE_HEADER,
                 account.details(),
                 identityPublicKey
         );
         if (!Curve25519.verifySignature(account.accountSignatureKey(), message, account.accountSignature())) {
-            whatsapp.handleFailure(LOGIN, new HmacValidationException("message_header"));
+            whatsapp.handleFailure(AUTH, new HmacValidationException("message_header"));
             return;
         }
-        var deviceSignatureMessage = Bytes.concat(
+        var deviceSignatureMessage = SecureBytes.concat(
                 DEVICE_WEB_SIGNATURE_HEADER,
                 account.details(),
                 identityPublicKey,
