@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.sync;
 
-import com.github.auties00.cobalt.model.core.sync.DecryptedMutation;
+import com.github.auties00.cobalt.sync.model.DecryptedMutation;
 import com.github.auties00.cobalt.model.proto.sync.ActionValueSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
 

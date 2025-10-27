@@ -1,6 +1,8 @@
 package com.github.auties00.cobalt.model.proto.message.model;
 
+import com.github.auties00.cobalt.model.core.proto.message.payment.*;
 import com.github.auties00.cobalt.model.proto.message.payment.*;
+import com.github.auties00.cobalt.model.support.proto.message.payment.*;
 
 /**
  * A model interface that represents a message regarding a payment

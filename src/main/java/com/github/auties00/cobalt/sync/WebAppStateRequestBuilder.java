@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.sync;
 
-import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.io.sync.MutationEncoder;
-import com.github.auties00.cobalt.model.core.node.Node;
-import com.github.auties00.cobalt.model.core.node.NodeBuilder;
-import com.github.auties00.cobalt.model.core.sync.PendingMutation;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.node.NodeBuilder;
+import com.github.auties00.cobalt.sync.model.PendingMutation;
 import com.github.auties00.cobalt.model.proto.sync.AppStateSyncHash;
 import com.github.auties00.cobalt.model.proto.sync.PatchType;
 
@@ -14,9 +14,9 @@ import java.util.List;
 import java.util.SequencedCollection;
 
 public final class WebAppStateRequestBuilder {
-    private final Whatsapp whatsapp;
+    private final WhatsAppClient whatsapp;
 
-    public WebAppStateRequestBuilder(Whatsapp whatsapp) {
+    public WebAppStateRequestBuilder(WhatsAppClient whatsapp) {
         this.whatsapp = whatsapp;
     }
 

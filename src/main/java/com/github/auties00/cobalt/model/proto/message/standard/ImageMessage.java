@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.proto.message.standard;
 
-import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.proto.button.interactive.InteractiveHeaderAttachment;
 import com.github.auties00.cobalt.model.proto.button.interactive.InteractiveLocationAnnotation;
 import com.github.auties00.cobalt.model.proto.button.template.highlyStructured.HighlyStructuredFourRowTemplateTitle;
@@ -136,7 +136,7 @@ public final class ImageMessage
 
     /**
      * Constructs a new builder to create a ImageMessage. The newsletters can be later sent using
-     * {@link Whatsapp#sendChatMessage(ChatMessageInfo)}
+     * {@link WhatsAppClient#sendChatMessage(ChatMessageInfo)}
      *
      * @param media       the non-null image that the new message wraps
      * @param mimeType    the mime type of the new message, by default

@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.socket.call;
 
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.model.core.node.Node;
-import com.github.auties00.cobalt.model.core.node.NodeBuilder;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.socket.SocketStream;
 
@@ -15,7 +15,7 @@ public final class CallAckStreamNodeHandler extends SocketStream.Handler {
             new byte[]{-71, 60, -37, 62, 13, -106}
     };
 
-    public CallAckStreamNodeHandler(Whatsapp whatsapp) {
+    public CallAckStreamNodeHandler(WhatsAppClient whatsapp) {
         super(whatsapp, "ack");
     }
 

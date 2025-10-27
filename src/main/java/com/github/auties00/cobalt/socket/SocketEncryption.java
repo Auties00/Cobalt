@@ -1,11 +1,11 @@
 package com.github.auties00.cobalt.socket;
 
-import com.github.auties00.cobalt.api.WhatsappClientType;
-import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
-import com.github.auties00.cobalt.client.WhatsappClientInfo;
+import com.github.auties00.cobalt.client.WhatsAppClientType;
+import com.github.auties00.cobalt.client.WhatsAppWebClientHistory;
+import com.github.auties00.cobalt.client.version.WhatsAppClientVersion;
 import com.github.auties00.cobalt.io.node.NodeEncoder;
 import com.github.auties00.cobalt.io.node.NodeTokens;
-import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.model.node.Node;
 import com.github.auties00.cobalt.model.proto.auth.*;
 import com.github.auties00.cobalt.model.proto.sync.HistorySyncConfigBuilder;
 import com.github.auties00.cobalt.store.WhatsappStore;
@@ -218,11 +218,11 @@ public final class SocketEncryption {
     }
 
     private UserAgent createUserAgent() {
-        var clientInfo = WhatsappClientInfo.of(store.device().platform());
-        var mobile = store.clientType() == WhatsappClientType.MOBILE;
+        var clientInfo = WhatsAppClientVersion.of(store.device().platform());
+        var mobile = store.clientType() == WhatsAppClientType.MOBILE;
         return new UserAgentBuilder()
                 .platform(store.device().platform())
-                .appVersion(clientInfo.version())
+                .appVersion(clientInfo.latest())
                 .mcc("000")
                 .mnc("000")
                 .osVersion(mobile ? store.device().osVersion().toString() : null)
@@ -285,16 +285,16 @@ public final class SocketEncryption {
     }
 
     private CompanionRegistrationData createRegisterData() {
-        var clientInfo = WhatsappClientInfo.of(store.device().platform());
+        var clientInfo = WhatsAppClientVersion.of(store.device().platform());
         var companion = new CompanionRegistrationDataBuilder()
-                .buildHash(clientInfo.version().toHash())
+                .buildHash(clientInfo.latest().toHash())
                 .eRegid(SecureBytes.intToBytes(store.registrationId(), 4))
                 .eKeytype(SecureBytes.intToBytes(SignalIdentityPublicKey.type(), 1))
                 .eIdent(store.identityKeyPair().publicKey().toEncodedPoint())
                 .eSkeyId(SecureBytes.intToBytes(store.signedKeyPair().id(), 3))
                 .eSkeyVal(store.signedKeyPair().publicKey().toEncodedPoint())
                 .eSkeySig(store.signedKeyPair().signature());
-        if (store.clientType() == WhatsappClientType.WEB) {
+        if (store.clientType() == WhatsAppClientType.WEB) {
             var props = createCompanionProps();
             var encodedProps = props == null ? null : CompanionPropertiesSpec.encode(props);
             companion.companionProps(encodedProps);
@@ -307,7 +307,7 @@ public final class SocketEncryption {
         return switch (store.clientType()) {
             case WEB -> {
                 var historyLength = store.webHistoryPolicy()
-                        .orElse(WhatsappWebHistoryPolicy.standard(true));
+                        .orElse(WhatsAppWebClientHistory.standard(true));
                 var config = new HistorySyncConfigBuilder()
                         .inlineInitialPayloadInE2EeMsg(true)
                         .supportBotUserAgentChatHistory(true)

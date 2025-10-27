@@ -1,14 +1,15 @@
 
 package com.github.auties00.cobalt.store;
 
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.api.WhatsappClientType;
-import com.github.auties00.cobalt.api.WhatsappListener;
-import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.client.WhatsAppClientType;
+import com.github.auties00.cobalt.client.WhatsAppWebClientHistory;
+import com.github.auties00.cobalt.client.listener.WhatsAppClientListener;
 import com.github.auties00.cobalt.io.media.MediaConnection;
 import com.github.auties00.cobalt.io.sync.LTHash;
-import com.github.auties00.cobalt.model.core.sync.CollectionMetadata;
-import com.github.auties00.cobalt.model.core.sync.CollectionState;
+import com.github.auties00.cobalt.sync.model.CollectionMetadata;
+import com.github.auties00.cobalt.sync.model.CollectionState;
+import com.github.auties00.cobalt.sync.model.PendingMutation;
 import com.github.auties00.cobalt.model.proto.auth.SignedDeviceIdentity;
 import com.github.auties00.cobalt.model.proto.auth.UserAgent.ReleaseChannel;
 import com.github.auties00.cobalt.model.proto.business.BusinessCategory;
@@ -25,6 +26,7 @@ import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.model.proto.jid.JidDevice;
 import com.github.auties00.cobalt.model.proto.jid.JidProvider;
 import com.github.auties00.cobalt.model.proto.jid.JidServer;
+import com.github.auties00.cobalt.model.proto.media.MediaProvider;
 import com.github.auties00.cobalt.model.proto.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.proto.newsletter.Newsletter;
 import com.github.auties00.cobalt.model.proto.newsletter.NewsletterBuilder;
@@ -34,9 +36,8 @@ import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.proto.sync.AppStateSyncHash;
 import com.github.auties00.cobalt.model.proto.sync.AppStateSyncKey;
 import com.github.auties00.cobalt.model.proto.sync.PatchType;
-import com.github.auties00.cobalt.model.core.sync.PendingMutation;
-import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.cobalt.util.Clock;
+import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.libsignal.SignalProtocolAddress;
 import com.github.auties00.libsignal.SignalProtocolStore;
 import com.github.auties00.libsignal.groups.SignalSenderKeyName;
@@ -72,10 +73,10 @@ import java.util.concurrent.ConcurrentMap;
  * </ul>
  * <p>
  * <b>Client Type Support:</b>
- * The store adapts its behavior based on {@link WhatsappClientType}:
+ * The store adapts its behavior based on {@link WhatsAppClientType}:
  * <ul>
- *     <li>{@link WhatsappClientType#WEB} - Web/Desktop client using QR/pairing code authentication</li>
- *     <li>{@link WhatsappClientType#MOBILE} - Mobile client using phone number authentication</li>
+ *     <li>{@link WhatsAppClientType#WEB} - Web/Desktop client using QR/pairing code authentication</li>
+ *     <li>{@link WhatsAppClientType#MOBILE} - Mobile client using phone number authentication</li>
  * </ul>
  * <p>
  * <b>Serialization:</b>
@@ -83,7 +84,7 @@ import java.util.concurrent.ConcurrentMap;
  * {@link #setSerializer(WhatsappStoreSerializer)} to control persistence location and behavior.
  * Some fields (like runtime connections and listeners) are not serialized.
  *
- * @see Whatsapp
+ * @see WhatsAppClient
  * @see WhatsappStoreSerializer
  */
 // TODO: Evaluate whether version should be stored here
@@ -137,7 +138,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * </ul>
      */
     @ProtobufProperty(index = 3, type = ProtobufType.ENUM)
-    final WhatsappClientType clientType;
+    final WhatsAppClientType clientType;
 
     /**
      * Unix timestamp (seconds) when this store instance was created.
@@ -216,7 +217,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Display name shown to other WhatsApp users.
      * <p>
      * Null until successful login. For unregistered accounts, defaults to device
-     * platform name. Updated via {@link Whatsapp#changeName(String)}.
+     * platform name. Updated via {@link WhatsAppClient#changeName(String)}.
      */
     @ProtobufProperty(index = 11, type = ProtobufType.STRING)
     String name;
@@ -234,7 +235,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * URL of this account's profile picture.
      * <p>
      * Points to WhatsApp-hosted image resource. Null when no profile picture is set
-     * or before initial login. Updated via {@link Whatsapp#changeProfilePicture(java.io.InputStream)}.
+     * or before initial login. Updated via {@link WhatsAppClient#changeProfilePicture(java.io.InputStream)}.
      */
     @ProtobufProperty(index = 13, type = ProtobufType.STRING)
     URI profilePicture;
@@ -243,7 +244,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Personal status message (about text) displayed on profile.
      * <p>
      * Examples: "Hey there! I am using WhatsApp", custom status messages.
-     * Null before login. Updated via {@link Whatsapp#changeAbout(String)}.
+     * Null before login. Updated via {@link WhatsAppClient#changeAbout(String)}.
      */
     @ProtobufProperty(index = 14, type = ProtobufType.STRING)
     String about;
@@ -456,10 +457,10 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Options range from recent messages only to full history, balancing storage and
      * bandwidth requirements.
      *
-     * @see WhatsappWebHistoryPolicy
+     * @see WhatsAppWebClientHistory
      */
     @ProtobufProperty(index = 31, type = ProtobufType.MESSAGE)
-    WhatsappWebHistoryPolicy webHistoryPolicy;
+    WhatsAppWebClientHistory webHistoryPolicy;
 
     /**
      * Whether presence updates are automatically sent to WhatsApp servers.
@@ -476,7 +477,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Whether message read receipts are automatically sent.
      * <p>
      * When true: read receipts (blue ticks) automatically sent when messages are processed.
-     * When false: read receipts must be sent manually via {@link Whatsapp#markMessageRead(MessageInfo)}.
+     * When false: read receipts must be sent manually via {@link WhatsAppClient#markMessageRead(MessageInfo)}.
      * Typically true for Mobile clients, configurable for Web clients.
      * Default: true
      */
@@ -768,6 +769,15 @@ public final class WhatsappStore implements SignalProtocolStore {
     @ProtobufProperty(index = 58, type = ProtobufType.BOOL)
     boolean registered;
 
+    /**
+     * Whether to show security notifications when chatting with a contact.
+     */
+    @ProtobufProperty(index = 59, type = ProtobufType.BOOL)
+    boolean showSecurityNotifications;
+
+    @ProtobufProperty(index = 60, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
+    final ConcurrentMap<String, MediaProvider> recentStickers;
+
     // =====================================================
     // SECTION: Runtime State (Non-Serialized)
     // =====================================================
@@ -798,12 +808,12 @@ public final class WhatsappStore implements SignalProtocolStore {
      * <p>
      * Thread-safe set receiving callbacks for WhatsApp events (new messages, status
      * changes, connection events). Not serialized - must be repopulated after session
-     * restoration. Add/remove via {@link Whatsapp#addListener(WhatsappListener)} and
-     * {@link Whatsapp#removeListener(WhatsappListener)}.
+     * restoration. Add/remove via {@link WhatsAppClient#addListener(WhatsAppClientListener)} and
+     * {@link WhatsAppClient#removeListener(WhatsAppClientListener)}.
      *
-     * @see WhatsappListener
+     * @see WhatsAppClientListener
      */
-    private final KeySetView<WhatsappListener, Boolean> listeners;
+    private final KeySetView<WhatsAppClientListener, Boolean> listeners;
 
     /**
      * Active media connection for uploading/downloading media files.
@@ -835,7 +845,7 @@ public final class WhatsappStore implements SignalProtocolStore {
     WhatsappStore(
             UUID uuid,
             Long phoneNumber,
-            WhatsappClientType clientType,
+            WhatsAppClientType clientType,
             long initializationTimeStamp,
             URI proxy,
             JidDevice device,
@@ -862,7 +872,7 @@ public final class WhatsappStore implements SignalProtocolStore {
             boolean unarchiveChats,
             boolean twentyFourHourFormat,
             ChatEphemeralTimer newChatsEphemeralTimer,
-            WhatsappWebHistoryPolicy webHistoryPolicy,
+            WhatsAppWebClientHistory webHistoryPolicy,
             boolean automaticPresenceUpdates,
             boolean automaticMessageReceipts,
             boolean checkPatchMacs,
@@ -888,7 +898,9 @@ public final class WhatsappStore implements SignalProtocolStore {
             LinkedHashMap<Integer, AppStateSyncKey> appStateKeys,
             ConcurrentMap<SignalProtocolAddress, SignalSessionRecord> sessions,
             ConcurrentMap<PatchType, AppStateSyncHash> hashStates,
-            boolean registered
+            boolean registered,
+            boolean showSecurityNotifications,
+            ConcurrentMap<String, MediaProvider> recentStickers
     ) {
         this.uuid = Objects.requireNonNull(uuid, "uuid cannot be null");
         this.phoneNumber = phoneNumber; 
@@ -950,6 +962,8 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.sessions = Objects.requireNonNull(sessions, "sessions cannot be null");
         this.hashStates = Objects.requireNonNull(hashStates, "hashStates cannot be null");
         this.registered = registered;
+        this.showSecurityNotifications = showSecurityNotifications;
+        this.recentStickers = recentStickers;
         this.pendingMutations = new ConcurrentHashMap<>();
         this.collections = new ConcurrentHashMap<>();
         this.serializable = true;
@@ -1389,7 +1403,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @return the client type, never null
      */
-    public WhatsappClientType clientType() {
+    public WhatsAppClientType clientType() {
         return clientType;
     }
 
@@ -1863,7 +1877,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @return Optional containing the history policy, empty if not configured
      */
-    public Optional<WhatsappWebHistoryPolicy> webHistoryPolicy() {
+    public Optional<WhatsAppWebClientHistory> webHistoryPolicy() {
         return Optional.ofNullable(webHistoryPolicy);
     }
 
@@ -1873,7 +1887,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param webHistoryPolicy the history policy, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setWebHistoryPolicy(WhatsappWebHistoryPolicy webHistoryPolicy) {
+    public WhatsappStore setWebHistoryPolicy(WhatsAppWebClientHistory webHistoryPolicy) {
         this.webHistoryPolicy = webHistoryPolicy;
         return this;
     }
@@ -2057,12 +2071,12 @@ public final class WhatsappStore implements SignalProtocolStore {
         return this;
     }
 
-    public WhatsappListener addListener(WhatsappListener listener) {
+    public WhatsAppClientListener addListener(WhatsAppClientListener listener) {
         listeners.add(listener);
         return listener;
     }
 
-    public boolean removeListener(WhatsappListener listener) {
+    public boolean removeListener(WhatsAppClientListener listener) {
         return listeners.remove(listener);
     }
 
@@ -2071,7 +2085,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @return immutable collection of event listeners, never null
      */
-    public Collection<WhatsappListener> listeners() {
+    public Collection<WhatsAppClientListener> listeners() {
         return Collections.unmodifiableCollection(listeners);
     }
 
@@ -2800,5 +2814,27 @@ public final class WhatsappStore implements SignalProtocolStore {
         }
 
         return chat.getMessageById(key.id());
+    }
+
+    public boolean showSecurityNotifications() {
+        return showSecurityNotifications;
+    }
+
+    public void setShowSecurityNotifications(boolean showSecurityNotifications) {
+        this.showSecurityNotifications = showSecurityNotifications;
+    }
+
+    public void addRecentSticker(String stickerHash, MediaProvider action) {
+        Objects.requireNonNull(stickerHash, "stickerHash cannot be null");
+        Objects.requireNonNull(action, "action cannot be null");
+        recentStickers.put(stickerHash, action);
+    }
+
+    public Optional<MediaProvider> removeRecentSticker(String stickerHash) {
+        return Optional.ofNullable(recentStickers.remove(stickerHash));
+    }
+
+    public void removeQuickReply(String shortcut) {
+
     }
 }

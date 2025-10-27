@@ -354,9 +354,9 @@ Listeners can be used either as:
    To create a new concrete listener, declare a class or record that implements the Listener interface:
 
    ```java
-   import com.github.auties00.cobalt.api.WhatsappListener;
+import com.github.auties00.cobalt.listener.WhatsAppClientListener;
 
-   public class MyListener implements WhatsappListener {
+   public class MyListener implements com.github.auties00.cobalt.listener.WhatsAppClientListener {
     @Override
     public void onLoggedIn() {
         System.out.println("Hello :)");
@@ -428,7 +428,6 @@ These are the three reasons that can cause a disconnect:
    By default, no error is thrown if this happens, though this behaviour can be changed easily:
     ```java
 
-    import com.github.auties00.cobalt.api.WhatsappListener;
 
     class ThrowOnLogOut implements WhatsappListener {
         @Override

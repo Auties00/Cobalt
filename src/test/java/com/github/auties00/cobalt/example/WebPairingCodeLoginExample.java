@@ -1,15 +1,15 @@
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
-import com.github.auties00.cobalt.api.WhatsappWebHistoryPolicy;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
+import com.github.auties00.cobalt.client.WhatsAppWebClientHistory;
 import com.github.auties00.cobalt.model.proto.info.ChatMessageInfo;
 
 void main() {
     var phoneNumber = promptPhoneNumber();
-    Whatsapp.builder()
+    WhatsAppClient.builder()
             .webClient()
             .createConnection()
-            .historySetting(WhatsappWebHistoryPolicy.standard(true))
-            .unregistered(phoneNumber, WhatsappVerificationHandler.Web.PairingCode.toTerminal())
+            .historySetting(WhatsAppWebClientHistory.standard(true))
+            .unregistered(phoneNumber, WhatsAppClientVerificationHandler.Web.PairingCode.toTerminal())
             .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings()))
             .addWebAppPrimaryFeaturesListener((_, features) -> System.out.printf("Received features: %s%n", features))
             .addNewMessageListener((_, message) -> System.out.println(message))

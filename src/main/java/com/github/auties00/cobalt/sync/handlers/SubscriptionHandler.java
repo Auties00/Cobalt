@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.sync.handlers;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.model.core.sync.DecryptedMutation;
-import com.github.auties00.cobalt.model.proto.sync.RecordSync;
+import com.github.auties00.cobalt.sync.model.DecryptedMutation;
+import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.sync.WebAppStateActionHandler;
 
@@ -33,15 +33,22 @@ public final class SubscriptionHandler implements WebAppStateActionHandler {
 
         var indexArray = JSON.parseArray(mutation.index());
         var subscriptionId = indexArray.getString(1);
+        var subscriptionJid = Jid.of(subscriptionId);
 
-        if (mutation.operation() == RecordSync.Operation.SET) {
-            var subscription = store.findSubscriptionById(subscriptionId)
-                    .orElseGet(() -> store.createSubscription(subscriptionId));
-            action.isDeactivated().ifPresent(subscription::setDeactivated);
-            action.isAutoRenewing().ifPresent(subscription::setAutoRenewing);
-            action.expirationDate().ifPresent(subscription::setExpirationDate);
-        } else {
-            store.findSubscriptionById(subscriptionId).ifPresent(store::deleteSubscription);
+        var newsletter = store.findNewsletterByJid(subscriptionJid);
+        if(newsletter.isEmpty()) {
+            return false;
+        }
+
+        // TODO: Not sure what to do
+        switch (mutation.operation()) {
+            case SET -> {
+
+            }
+
+            case REMOVE -> {
+
+            }
         }
 
         return true;

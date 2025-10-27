@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.proto.message.model;
 
-import com.github.auties00.cobalt.api.WhatsappClientType;
+import com.github.auties00.cobalt.client.WhatsAppClientType;
 import com.github.auties00.cobalt.model.proto.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.util.SecureBytes;
@@ -42,10 +42,10 @@ public final class ChatMessageKey {
      *
      * @return a non-null String
      */
-    public static String randomId(WhatsappClientType clientType) {
+    public static String randomId(WhatsAppClientType clientType) {
         return switch (clientType) {
-            case WhatsappClientType.WEB -> "3EB0" + SecureBytes.randomHex(13);
-            case WhatsappClientType.MOBILE -> SecureBytes.randomHex(16);
+            case WhatsAppClientType.WEB -> "3EB0" + SecureBytes.randomHex(13);
+            case WhatsAppClientType.MOBILE -> SecureBytes.randomHex(16);
         };
     }
     

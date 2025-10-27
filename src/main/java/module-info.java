@@ -27,16 +27,18 @@ module com.github.auties00.cobalt {
     requires net.dongliu.apkparser;
     requires com.google.i18n.phonenumbers.libphonenumber;
 
-    // API
-    exports com.github.auties00.cobalt.api;
+    // Client
+    exports com.github.auties00.cobalt.client;
+    exports com.github.auties00.cobalt.client.handler;
+    exports com.github.auties00.cobalt.client.listener;
 
     // Don't expose ARGO models - they are for internal use only
 
     // Core - Node
-    exports com.github.auties00.cobalt.model.core.node;
+    exports com.github.auties00.cobalt.model.node;
 
     // Core - Web app state sync
-    exports com.github.auties00.cobalt.model.core.sync;
+    exports com.github.auties00.cobalt.sync.model;
 
     // Don't expose JSON models - they are for internal use only
 

@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.proto.message.standard;
 
-import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.proto.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.proto.info.ContextInfo;
 import com.github.auties00.cobalt.model.proto.jid.JidProvider;
@@ -57,7 +57,7 @@ public final class PollCreationMessage implements ContextualMessage {
 
     /**
      * Constructs a new builder to create a PollCreationMessage The newsletters can be later sent using
-     * {@link Whatsapp#sendChatMessage(ChatMessageInfo)}
+     * {@link WhatsAppClient#sendChatMessage(ChatMessageInfo)}
      *
      * @param title             the non-null title of the poll
      * @param selectableOptions the null-null non-empty options of the poll

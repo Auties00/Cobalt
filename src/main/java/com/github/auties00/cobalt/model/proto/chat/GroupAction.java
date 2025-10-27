@@ -1,13 +1,13 @@
 package com.github.auties00.cobalt.model.proto.chat;
 
-import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.proto.contact.Contact;
 import it.auties.protobuf.annotation.ProtobufEnum;
 
 /**
  * The constants of this enumerated type describe the various actions that can be executed on a
  * {@link Contact} in a {@link Chat}. Said chat should be a group: {@link Chat#isGroupOrCommunity()}. Said
- * actions can be executed using various methods in {@link Whatsapp}.
+ * actions can be executed using various methods in {@link WhatsAppClient}.
  */
 @ProtobufEnum
 public enum GroupAction {

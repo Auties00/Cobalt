@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.socket.state;
 
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.model.core.node.Node;
-import com.github.auties00.cobalt.model.core.node.NodeBuilder;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.model.proto.jid.JidServer;
@@ -18,15 +18,15 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.AUTH;
-import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.MEDIA_CONNECTION;
+import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.AUTH;
+import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.MEDIA_CONNECTION;
 
 // TODO: Orchestrate a platform specific login flow in separate classes that can be auto updated
 public final class SuccessStreamNodeHandler extends SocketStream.Handler {
     private static final int PRE_KEYS_UPLOAD_CHUNK = 10;
     private static final int DEFAULT_MEDIA_CONNECTION_TTL = 300;
 
-    public SuccessStreamNodeHandler(Whatsapp whatsapp) {
+    public SuccessStreamNodeHandler(WhatsAppClient whatsapp) {
         super(whatsapp, "success");
     }
 

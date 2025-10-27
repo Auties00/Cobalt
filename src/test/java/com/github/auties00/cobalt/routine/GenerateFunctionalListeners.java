@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.routine;
 
-import com.github.auties00.cobalt.api.WhatsappListener;
+import com.github.auties00.cobalt.client.listener.WhatsAppClientListener;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -27,7 +27,7 @@ public class GenerateFunctionalListeners {
     }
 
     public static void main(String[] args) {
-        for(var method : WhatsappListener.class.getMethods()) {
+        for(var method : WhatsAppClientListener.class.getMethods()) {
             printFunctionalMethod(method);
         }
     }

@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.socket.message;
 
-import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.proto.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.proto.info.ContextInfo;
 import com.github.auties00.cobalt.model.proto.info.DeviceContextInfo;
@@ -17,7 +17,7 @@ import com.github.auties00.cobalt.model.proto.sync.HistorySyncNotification;
 import com.github.auties00.cobalt.model.proto.sync.PatchType;
 import com.github.auties00.cobalt.model.proto.sync.PushName;
 import com.github.auties00.cobalt.exception.MediaDownloadException;
-import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.model.node.Node;
 import com.github.auties00.cobalt.io.message.MessageDecoder;
 import com.github.auties00.cobalt.model.proto.action.ContactActionBuilder;
 import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameCertificateSpec;
@@ -62,8 +62,8 @@ import java.util.stream.IntStream;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
-import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.HISTORY_SYNC;
-import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.MESSAGE;
+import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.HISTORY_SYNC;
+import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.MESSAGE;
 
 public final class MessageStreamNodeHandler extends SocketStream.Handler {
     private static final int HISTORY_SYNC_MAX_TIMEOUT = 25;
@@ -76,7 +76,7 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
     private final Set<HistorySync.Type> historySyncTypes;
     private CompletableFuture<Void> historySyncTask;
 
-    public MessageStreamNodeHandler(Whatsapp whatsapp) {
+    public MessageStreamNodeHandler(WhatsAppClient whatsapp) {
         super(whatsapp, "message");
         this.messageDecoder = new MessageDecoder(whatsapp.store());
         this.historyCache = new HashSet<>();

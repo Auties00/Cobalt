@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.proto.chat;
 
-import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 
@@ -10,7 +10,7 @@ import java.util.Objects;
 
 /**
  * The constants of this enumerated type describe the various roles that a {@link ChatParticipant}
- * can have in a group. Said roles can be changed using various methods in {@link Whatsapp}.
+ * can have in a group. Said roles can be changed using various methods in {@link WhatsAppClient}.
  */
 @ProtobufEnum(name = "GroupParticipant.Rank")
 public enum ChatRole {

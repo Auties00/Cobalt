@@ -1,7 +1,9 @@
 package com.github.auties00.cobalt.model.proto.message.model;
 
 import com.github.auties00.cobalt.model.proto.button.template.highlyStructured.HighlyStructuredMessage;
+import com.github.auties00.cobalt.model.core.proto.message.button.*;
 import com.github.auties00.cobalt.model.proto.message.button.*;
+import com.github.auties00.cobalt.model.support.proto.message.button.*;
 import com.github.auties00.cobalt.model.proto.message.standard.ProductMessage;
 
 /**

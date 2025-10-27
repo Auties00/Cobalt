@@ -1,12 +1,12 @@
 package com.github.auties00.cobalt.socket.notification;
 
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.model.json.response.NewsletterLeaveResponse;
-import com.github.auties00.cobalt.model.json.response.NewsletterMuteResponse;
-import com.github.auties00.cobalt.model.json.response.NewsletterResponse;
-import com.github.auties00.cobalt.model.json.response.NewsletterStateResponse;
-import com.github.auties00.cobalt.model.core.node.Node;
-import com.github.auties00.cobalt.model.core.node.NodeBuilder;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.model.support.json.response.NewsletterLeaveResponse;
+import com.github.auties00.cobalt.model.support.json.response.NewsletterMuteResponse;
+import com.github.auties00.cobalt.model.support.json.response.NewsletterResponse;
+import com.github.auties00.cobalt.model.support.json.response.NewsletterStateResponse;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.chat.Chat;
 import com.github.auties00.cobalt.model.proto.chat.ChatEphemeralTimer;
 import com.github.auties00.cobalt.model.proto.info.ChatMessageInfoBuilder;
@@ -51,7 +51,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     private static final byte[] SIGNAL_KEY_TYPE = {SignalIdentityPublicKey.type()};
 
     private final SocketPhonePairing pairingCode;
-    public NotificationStreamNodeHandler(Whatsapp whatsapp, SocketPhonePairing pairingCode) {
+    public NotificationStreamNodeHandler(WhatsAppClient whatsapp, SocketPhonePairing pairingCode) {
         super(whatsapp, "notification");
         this.pairingCode = pairingCode;
     }

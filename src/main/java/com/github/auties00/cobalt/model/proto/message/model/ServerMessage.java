@@ -1,6 +1,8 @@
 package com.github.auties00.cobalt.model.proto.message.model;
 
+import com.github.auties00.cobalt.model.core.proto.message.server.*;
 import com.github.auties00.cobalt.model.proto.message.server.*;
+import com.github.auties00.cobalt.model.support.proto.message.server.*;
 import com.github.auties00.cobalt.model.proto.message.standard.EncryptedReactionMessage;
 
 /**

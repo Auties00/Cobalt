@@ -1,13 +1,13 @@
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.api.WhatsappSixPartsKeys;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.client.WhatsAppClientSixPartsKeys;
 import com.github.auties00.cobalt.model.proto.jid.JidDevice;
 
 void main() {
     var sixParts = promptSixParts();
     var business = promptBusiness();
-    Whatsapp.builder()
+    WhatsAppClient.builder()
             .mobileClient()
-            .loadConnection(WhatsappSixPartsKeys.of(sixParts))
+            .loadConnection(WhatsAppClientSixPartsKeys.of(sixParts))
             // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
             .device(JidDevice.ios(business)) // Make sure to select the correct account type(business or personal) or you'll get error 401
             .registered()

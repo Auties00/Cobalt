@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.exception;
 
-import com.github.auties00.cobalt.api.WhatsappErrorHandler;
+import com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler;
 
 /**
  * A runtime exception that is thrown when a malformed or invalid node is encountered in the WhatsApp protocol stream.
@@ -12,7 +12,7 @@ import com.github.auties00.cobalt.api.WhatsappErrorHandler;
  *     <li>The node structure is corrupted or incomplete</li>
  * </ul>
  *
- * @see WhatsappErrorHandler
+ * @see WhatsAppClientErrorHandler
  */
 public class MalformedNodeException extends RuntimeException {
     /**

@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync.handlers;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.model.core.sync.DecryptedMutation;
+import com.github.auties00.cobalt.sync.model.DecryptedMutation;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.model.proto.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;

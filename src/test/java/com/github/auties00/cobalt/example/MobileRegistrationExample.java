@@ -1,17 +1,17 @@
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
 import com.github.auties00.cobalt.model.proto.jid.JidDevice;
 
 void main() {
     var phoneNumber = promptPhoneNumber();
     System.out.println("Select if the account is business or personal:\n(1) Business (2) Personal");
     var business = promptBusiness();
-    Whatsapp.builder()
+    WhatsAppClient.builder()
             .mobileClient()
             .createConnection()
             // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
             .device(JidDevice.ios(business)) // Make sure to select the correct account type(business or personal) or you'll get error 401
-            .register(phoneNumber, WhatsappVerificationHandler.Mobile.sms(this::promptVerificationCode))
+            .register(phoneNumber, WhatsAppClientVerificationHandler.Mobile.sms(this::promptVerificationCode))
             .addNodeReceivedListener((_, incoming) -> System.out.printf("Received node %s%n", incoming))
             .addNodeSentListener((_, outgoing) -> System.out.printf("Sent node %s%n", outgoing))
             .addLoggedInListener(_ -> System.out.println("Logged in"))

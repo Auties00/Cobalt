@@ -1,10 +1,12 @@
 package com.github.auties00.cobalt.model.proto.message.model;
 
-import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.proto.media.MediaPath;
 import com.github.auties00.cobalt.model.proto.media.MediaProvider;
 import com.github.auties00.cobalt.model.proto.message.payment.PaymentInvoiceMessage;
+import com.github.auties00.cobalt.model.core.proto.message.standard.*;
 import com.github.auties00.cobalt.model.proto.message.standard.*;
+import com.github.auties00.cobalt.model.support.proto.message.standard.*;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -12,7 +14,7 @@ import java.util.OptionalLong;
 
 /**
  * A media message
- * Read its content using {@link Whatsapp#downloadMedia(MediaMessage)}
+ * Read its content using {@link WhatsAppClient#downloadMedia(MediaMessage)}
  */
 public sealed interface MediaMessage
         extends ContextualMessage, MediaProvider

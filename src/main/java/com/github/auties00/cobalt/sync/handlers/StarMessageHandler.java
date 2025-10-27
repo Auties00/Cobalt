@@ -1,9 +1,8 @@
 package com.github.auties00.cobalt.sync.handlers;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.model.core.sync.DecryptedMutation;
+import com.github.auties00.cobalt.sync.model.DecryptedMutation;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.model.proto.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.sync.WebAppStateActionHandler;
 
@@ -43,10 +42,9 @@ public final class StarMessageHandler implements WebAppStateActionHandler {
             return false;
         }
 
-        if (mutation.operation() == RecordSync.Operation.SET) {
-            message.get().setStarred(action.starred());
-        } else {
-            message.get().setStarred(false);
+        switch (mutation.operation()) {
+            case SET -> message.get().setStarred(action.starred());
+            case REMOVE -> message.get().setStarred(false);
         }
 
         return true;

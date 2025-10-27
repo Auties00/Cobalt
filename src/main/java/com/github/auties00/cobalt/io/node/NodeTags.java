@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.io.node;
 
-import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.model.node.Node;
 
 /**
  * A utility class that defines binary tag constants used in WhatsApp's node serialization protocol.

@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.io.sync;
 
 import com.github.auties00.cobalt.exception.WebAppStateSyncFatalException;
-import com.github.auties00.cobalt.model.core.sync.DecryptedMutation;
+import com.github.auties00.cobalt.sync.model.DecryptedMutation;
 import com.github.auties00.cobalt.model.proto.sync.ActionDataSyncSpec;
 import com.github.auties00.cobalt.model.proto.sync.RecordSync;
 import com.github.auties00.cobalt.sync.WebAppStateSyncKeys;

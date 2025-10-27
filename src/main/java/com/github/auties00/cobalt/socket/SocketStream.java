@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.socket;
 
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
-import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
+import com.github.auties00.cobalt.model.node.Node;
 import com.github.auties00.cobalt.socket.call.CallAckStreamNodeHandler;
 import com.github.auties00.cobalt.socket.call.CallStreamNodeHandler;
 import com.github.auties00.cobalt.socket.error.ErrorStreamNodeHandler;
@@ -21,8 +21,8 @@ import java.util.*;
 
 public final class SocketStream {
     private final Map<String, SequencedCollection<Handler>> handlers;
-    public SocketStream(Whatsapp whatsapp, WhatsappVerificationHandler.Web webVerificationHandler) {
-        var pairingCode = webVerificationHandler instanceof WhatsappVerificationHandler.Web.PairingCode
+    public SocketStream(WhatsAppClient whatsapp, WhatsAppClientVerificationHandler.Web webVerificationHandler) {
+        var pairingCode = webVerificationHandler instanceof WhatsAppClientVerificationHandler.Web.PairingCode
                 ? new SocketPhonePairing()
                 : null;
         this.handlers = withHandlers(
@@ -76,10 +76,10 @@ public final class SocketStream {
     }
 
     public abstract static class Handler {
-        protected final Whatsapp whatsapp;
+        protected final WhatsAppClient whatsapp;
         protected final Set<String> descriptions;
 
-        public Handler(Whatsapp whatsapp, String... descriptions) {
+        public Handler(WhatsAppClient whatsapp, String... descriptions) {
             this.whatsapp = whatsapp;
             this.descriptions = Set.of(descriptions);
         }

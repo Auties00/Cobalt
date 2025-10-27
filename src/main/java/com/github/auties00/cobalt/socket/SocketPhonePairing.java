@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.socket;
 
-import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
+import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
 import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
 
@@ -31,7 +31,7 @@ public final class SocketPhonePairing {
         }
     }
 
-    public void accept(WhatsappVerificationHandler.Web.PairingCode handler) {
+    public void accept(WhatsAppClientVerificationHandler.Web.PairingCode handler) {
         Objects.requireNonNull(handler, "handler cannot be null");
         handler.handle(pairingKey);
     }

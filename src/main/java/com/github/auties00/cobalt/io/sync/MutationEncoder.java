@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.io.sync;
 
-import com.github.auties00.cobalt.model.core.sync.PendingMutation;
+import com.github.auties00.cobalt.sync.model.PendingMutation;
 import com.github.auties00.cobalt.model.proto.sync.ActionDataSyncBuilder;
 import com.github.auties00.cobalt.model.proto.sync.ActionDataSyncSpec;
 import com.github.auties00.cobalt.sync.WebAppStateSyncKeys;
-import com.github.auties00.cobalt.model.core.sync.EncryptedMutation;
+import com.github.auties00.cobalt.sync.model.EncryptedMutation;
 import com.github.auties00.cobalt.util.SecureBytes;
 
 import javax.crypto.Cipher;

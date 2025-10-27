@@ -1,12 +1,12 @@
 package com.github.auties00.cobalt.model.proto.chat;
 
-import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 
 /**
  * The constants of this enumerated type describe the various settings that can be toggled for a
- * group. Said settings can be changed using various methods in {@link Whatsapp}.
+ * group. Said settings can be changed using various methods in {@link WhatsAppClient}.
  */
 @ProtobufEnum
 public enum GroupSetting implements ChatSetting {

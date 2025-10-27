@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.store;
 
-import com.github.auties00.cobalt.api.WhatsappClientType;
+import com.github.auties00.cobalt.client.WhatsAppClientType;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,12 +15,12 @@ final class DiscardingStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public SequencedCollection<UUID> listIds(WhatsappClientType type) {
+    public SequencedCollection<UUID> listIds(WhatsAppClientType type) {
         return List.of();
     }
 
     @Override
-    public SequencedCollection<Long> listPhoneNumbers(WhatsappClientType type) {
+    public SequencedCollection<Long> listPhoneNumbers(WhatsAppClientType type) {
         return List.of();
     }
 
@@ -30,17 +30,17 @@ final class DiscardingStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public Optional<WhatsappStore> startDeserialize(WhatsappClientType type, UUID id) {
+    public Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, UUID id) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<WhatsappStore> startDeserialize(WhatsappClientType type, Long phoneNumber) {
+    public Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, Long phoneNumber) {
         return Optional.empty();
     }
 
     @Override
-    public void deleteSession(WhatsappClientType type, UUID uuid) {
+    public void deleteSession(WhatsAppClientType type, UUID uuid) {
 
     }
 

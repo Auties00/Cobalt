@@ -1,7 +1,7 @@
 
 package com.github.auties00.cobalt.store;
 
-import com.github.auties00.cobalt.api.WhatsappClientType;
+import com.github.auties00.cobalt.client.WhatsAppClientType;
 
 import java.nio.file.*;
 import java.util.*;
@@ -11,7 +11,7 @@ import java.util.*;
  * <p>
  * This interface provides a standardized mechanism for serializing and deserializing ({@link WhatsappStore}).
  * <p>
- * The interface supports multiple client types ({@link WhatsappClientType#WEB} and {@link WhatsappClientType#MOBILE})
+ * The interface supports multiple client types ({@link WhatsAppClientType#WEB} and {@link WhatsAppClientType#MOBILE})
  * and can be implemented to provide different storage backends. Two built-in implementations are provided:
  * <ul>
  *     <li>{@link WhatsappStoreSerializer#toProtobuf()} - Persists sessions as Protocol Buffer files on disk</li>
@@ -81,7 +81,7 @@ public interface WhatsappStoreSerializer {
      * @param phoneNumber the phone number associated with the session; may be null
      * @return an {@link Optional} containing the session if found, or empty if no matching session exists
      */
-    default Optional<WhatsappStore> startDeserialize(WhatsappClientType clientType, UUID id, Long phoneNumber) {
+    default Optional<WhatsappStore> startDeserialize(WhatsAppClientType clientType, UUID id, Long phoneNumber) {
         if (id != null) {
             var store = startDeserialize(clientType, id);
             if(store.isPresent()) {
@@ -109,7 +109,7 @@ public interface WhatsappStoreSerializer {
      * @param type the WhatsApp client type to query; must not be null
      * @return a sequenced collection of UUIDs, never null but may be empty if no sessions exist
      */
-    SequencedCollection<UUID> listIds(WhatsappClientType type);
+    SequencedCollection<UUID> listIds(WhatsAppClientType type);
 
     /**
      * Lists all session phone numbers stored for a specific client type.
@@ -120,12 +120,12 @@ public interface WhatsappStoreSerializer {
      * <p>
      * Note: Not all sessions have associated phone numbers (particularly web sessions
      * that haven't completed pairing), so this list may be smaller than the list
-     * returned by {@link #listIds(WhatsappClientType)}.
+     * returned by {@link #listIds(WhatsAppClientType)}.
      *
      * @param type the WhatsApp client type to query; must not be null
      * @return a sequenced collection of phone numbers, never null but may be empty
      */
-    SequencedCollection<Long> listPhoneNumbers(WhatsappClientType type);
+    SequencedCollection<Long> listPhoneNumbers(WhatsAppClientType type);
 
     /**
      * Persists session state to storage.
@@ -154,7 +154,7 @@ public interface WhatsappStoreSerializer {
      * @return an {@link Optional} containing the store if found, or empty if no store exists for this UUID
      * @see #finishDeserialize(WhatsappStore)
      */
-    Optional<WhatsappStore> startDeserialize(WhatsappClientType type, UUID id);
+    Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, UUID id);
 
     /**
      * Retrieves session state from storage by phone number.
@@ -172,13 +172,13 @@ public interface WhatsappStoreSerializer {
      * @return an {@link Optional} containing the store if found, or empty if no store exists for this phone number
      * @see #finishDeserialize(WhatsappStore)
      */
-    Optional<WhatsappStore> startDeserialize(WhatsappClientType type, Long phoneNumber);
+    Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, Long phoneNumber);
 
     /**
      * Blocks until all asynchronous deserialization operations for a store are complete.
      * <p>
-     * This method should be called after {@link #startDeserialize(WhatsappClientType, UUID)} or
-     * {@link #startDeserialize(WhatsappClientType, Long)} when the caller needs to ensure that
+     * This method should be called after {@link #startDeserialize(WhatsAppClientType, UUID)} or
+     * {@link #startDeserialize(WhatsAppClientType, Long)} when the caller needs to ensure that
      * all session data (including large collections like chats and newsletters) has been fully
      * loaded into memory.
      * <p>
@@ -201,5 +201,5 @@ public interface WhatsappStoreSerializer {
      * @param type the WhatsApp client type; must not be null
      * @param uuid the UUID of the session to delete; must not be null
      */
-    void deleteSession(WhatsappClientType type, UUID uuid);
+    void deleteSession(WhatsAppClientType type, UUID uuid);
 }

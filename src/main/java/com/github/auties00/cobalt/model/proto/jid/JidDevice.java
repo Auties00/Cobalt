@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.model.proto.jid;
 
-import com.github.auties00.cobalt.api.WhatsappClientType;
-import com.github.auties00.cobalt.client.WhatsappClientInfo;
+import com.github.auties00.cobalt.client.WhatsAppClientType;
+import com.github.auties00.cobalt.client.version.WhatsAppClientVersion;
 import com.github.auties00.cobalt.model.proto.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.proto.auth.Version;
 import it.auties.protobuf.annotation.ProtobufMessage;
@@ -23,7 +23,7 @@ public final class JidDevice {
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone9,3",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone 7",
@@ -32,7 +32,7 @@ public final class JidDevice {
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone9,3",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
 
             // --- iPhone 7 Plus --- (Supports iOS 10-15)
@@ -43,7 +43,7 @@ public final class JidDevice {
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone9,4",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone 7 Plus",
@@ -52,7 +52,7 @@ public final class JidDevice {
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone9,4",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
 
             // --- iPhone 8 --- (Supports iOS 11-16)
@@ -63,7 +63,7 @@ public final class JidDevice {
                     Version.of("13.7"),
                     "17H35",
                     "iPhone10,4",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone 8",
@@ -72,7 +72,7 @@ public final class JidDevice {
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone10,4",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone 8",
@@ -81,7 +81,7 @@ public final class JidDevice {
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone10,4",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone 8",
@@ -90,7 +90,7 @@ public final class JidDevice {
                     Version.of("16.7.7"),
                     "20H330",
                     "iPhone10,4",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
 
             // --- iPhone 8 Plus --- (Supports iOS 11-16)
@@ -101,7 +101,7 @@ public final class JidDevice {
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone10,5",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone 8 Plus",
@@ -110,7 +110,7 @@ public final class JidDevice {
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone10,5",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone 8 Plus",
@@ -119,7 +119,7 @@ public final class JidDevice {
                     Version.of("16.7.7"),
                     "20H330",
                     "iPhone10,5",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
 
             // --- iPhone X --- (Supports iOS 11-16)
@@ -130,7 +130,7 @@ public final class JidDevice {
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone10,6",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone X",
@@ -139,7 +139,7 @@ public final class JidDevice {
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone10,6",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone X",
@@ -148,7 +148,7 @@ public final class JidDevice {
                     Version.of("16.7.7"),
                     "20H330",
                     "iPhone10,6",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
 
             // --- iPhone XR --- (Supports iOS 12-17)
@@ -159,7 +159,7 @@ public final class JidDevice {
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone11,8",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone XR",
@@ -168,7 +168,7 @@ public final class JidDevice {
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone11,8",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone XR",
@@ -177,7 +177,7 @@ public final class JidDevice {
                     Version.of("16.7.7"),
                     "20H330",
                     "iPhone11,8",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone XR",
@@ -186,7 +186,7 @@ public final class JidDevice {
                     Version.of("17.4.1"),
                     "21E236",
                     "iPhone11,8",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
 
             // --- iPhone XS --- (Supports iOS 12-17)
@@ -197,7 +197,7 @@ public final class JidDevice {
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone11,2",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone XS",
@@ -206,7 +206,7 @@ public final class JidDevice {
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone11,2",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone XS",
@@ -215,7 +215,7 @@ public final class JidDevice {
                     Version.of("16.7.7"),
                     "20H330",
                     "iPhone11,2",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone XS",
@@ -224,7 +224,7 @@ public final class JidDevice {
                     Version.of("17.4.1"),
                     "21E236",
                     "iPhone11,2",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
 
             // --- iPhone XS Max --- (Supports iOS 12-17)
@@ -235,7 +235,7 @@ public final class JidDevice {
                     Version.of("14.8.1"),
                     "18H107",
                     "iPhone11,6",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone XS Max",
@@ -244,7 +244,7 @@ public final class JidDevice {
                     Version.of("15.8.2"),
                     "19H384",
                     "iPhone11,6",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone XS Max",
@@ -253,7 +253,7 @@ public final class JidDevice {
                     Version.of("16.7.7"),
                     "20H330",
                     "iPhone11,6",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             ),
             new JidDevice(
                     "iPhone XS Max",
@@ -262,7 +262,7 @@ public final class JidDevice {
                     Version.of("17.4.1"),
                     "21E236",
                     "iPhone11,6",
-                    WhatsappClientType.MOBILE
+                    WhatsAppClientType.MOBILE
             )
     );
 
@@ -285,7 +285,7 @@ public final class JidDevice {
     final String modelId;
 
     @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
-    final WhatsappClientType clientType;
+    final WhatsAppClientType clientType;
 
     JidDevice(
             String model,
@@ -294,7 +294,7 @@ public final class JidDevice {
             Version osVersion,
             String osBuildNumber,
             String modelId,
-            WhatsappClientType clientType
+            WhatsAppClientType clientType
     ) {
         this.model = model;
         this.modelId = modelId;
@@ -313,7 +313,7 @@ public final class JidDevice {
                 Version.of("10.0"),
                 null,
                 null,
-                WhatsappClientType.WEB
+                WhatsAppClientType.WEB
         );
     }
 
@@ -326,7 +326,7 @@ public final class JidDevice {
                 device.osVersion,
                 device.osBuildNumber,
                 device.modelId,
-                WhatsappClientType.MOBILE
+                WhatsAppClientType.MOBILE
         );
     }
 
@@ -339,7 +339,7 @@ public final class JidDevice {
                 Version.of(String.valueOf(ThreadLocalRandom.current().nextInt(11, 16))),
                 null,
                 model,
-                WhatsappClientType.MOBILE
+                WhatsAppClientType.MOBILE
         );
     }
 
@@ -351,7 +351,7 @@ public final class JidDevice {
         if(platform == PlatformType.WINDOWS || platform == PlatformType.MACOS) {
             return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
         }else {
-            var clientInfo = WhatsappClientInfo.of(platform);
+            var clientInfo = WhatsAppClientVersion.of(platform);
             var platformName = switch (platform) {
                 case ANDROID -> "Android";
                 case ANDROID_BUSINESS -> "SMBA";
@@ -366,7 +366,7 @@ public final class JidDevice {
             };
             var deviceVersion = osVersion.toString();
             return "WhatsApp/%s %s/%s Device/%s".formatted(
-                    clientInfo.version(),
+                    clientInfo.latest(),
                     platformName,
                     deviceVersion,
                     deviceName
@@ -422,7 +422,7 @@ public final class JidDevice {
         return osVersion;
     }
 
-    public WhatsappClientType clientType() {
+    public WhatsAppClientType clientType() {
         return clientType;
     }
 

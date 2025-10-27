@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.io.node;
 
-import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.model.node.Node;
 
 import java.util.Collections;
 import java.util.HashMap;

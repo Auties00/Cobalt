@@ -1,21 +1,21 @@
 package com.github.auties00.cobalt.socket.error;
 
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.client.WhatsAppClientDisconnectReason;
 import com.github.auties00.cobalt.exception.MalformedNodeException;
 import com.github.auties00.cobalt.exception.SessionBadMacException;
 import com.github.auties00.cobalt.exception.SessionConflictException;
-import com.github.auties00.cobalt.model.core.node.Node;
+import com.github.auties00.cobalt.model.node.Node;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.STREAM;
+import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.STREAM;
 
 public final class ErrorStreamNodeHandler extends SocketStream.Handler {
     private final AtomicBoolean retriedConnection;
 
-    public ErrorStreamNodeHandler(Whatsapp whatsapp) {
+    public ErrorStreamNodeHandler(WhatsAppClient whatsapp) {
         super(whatsapp, "stream:error");
         this.retriedConnection = new AtomicBoolean(false);
     }
@@ -41,18 +41,18 @@ public final class ErrorStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void handleReconnect() {
-        whatsapp.disconnect(WhatsappDisconnectReason.RECONNECTING);
+        whatsapp.disconnect(WhatsAppClientDisconnectReason.RECONNECTING);
     }
 
     private void handleBan() {
         var reason = retriedConnection.getAndSet(true)
-                ? WhatsappDisconnectReason.BANNED
-                : WhatsappDisconnectReason.RECONNECTING;
+                ? WhatsAppClientDisconnectReason.BANNED
+                : WhatsAppClientDisconnectReason.RECONNECTING;
         whatsapp.disconnect(reason);
     }
 
     private void handleLogout() {
-        whatsapp.disconnect(WhatsappDisconnectReason.LOGGED_OUT);
+        whatsapp.disconnect(WhatsAppClientDisconnectReason.LOGGED_OUT);
     }
 
     private void handleConflict(Node node) {

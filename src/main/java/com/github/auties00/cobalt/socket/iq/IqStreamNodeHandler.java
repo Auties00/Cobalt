@@ -1,13 +1,13 @@
 package com.github.auties00.cobalt.socket.iq;
 
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.api.WhatsappDisconnectReason;
-import com.github.auties00.cobalt.api.WhatsappVerificationHandler;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.client.WhatsAppClientDisconnectReason;
+import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
 import com.github.auties00.cobalt.model.proto.auth.SignedDeviceIdentity;
 import com.github.auties00.cobalt.model.proto.auth.SignedDeviceIdentityHMAC;
 import com.github.auties00.cobalt.exception.HmacValidationException;
-import com.github.auties00.cobalt.model.core.node.Node;
-import com.github.auties00.cobalt.model.core.node.NodeBuilder;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.auth.*;
 import com.github.auties00.cobalt.model.proto.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.proto.contact.ContactBuilder;
@@ -32,17 +32,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.AUTH;
+import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.AUTH;
 
 public final class IqStreamNodeHandler extends SocketStream.Handler {
     private static final int PING_INTERVAL = 30;
     private static final byte[] DEVICE_WEB_SIGNATURE_HEADER = {6, 1};
     private static final byte[] ACCOUNT_SIGNATURE_HEADER = {6, 0};
 
-    private final WhatsappVerificationHandler.Web webVerificationHandler;
+    private final WhatsAppClientVerificationHandler.Web webVerificationHandler;
     private final SocketPhonePairing pairingCode;
     private final Executor pingExecutor;
-    public IqStreamNodeHandler(Whatsapp whatsapp, WhatsappVerificationHandler.Web webVerificationHandler, SocketPhonePairing pairingCode) {
+    public IqStreamNodeHandler(WhatsAppClient whatsapp, WhatsAppClientVerificationHandler.Web webVerificationHandler, SocketPhonePairing pairingCode) {
         super(whatsapp, "iq");
         this.webVerificationHandler = webVerificationHandler;
         this.pairingCode = pairingCode;
@@ -85,12 +85,12 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
 
     private void handlePairInit(Node node, Node container) {
         switch (webVerificationHandler) {
-            case WhatsappVerificationHandler.Web.QrCode qrHandler -> {
+            case WhatsAppClientVerificationHandler.Web.QrCode qrHandler -> {
                 printQrCode(qrHandler, container);
                 sendConfirmNode(node, null);
                 schedulePing();
             }
-            case WhatsappVerificationHandler.Web.PairingCode codeHandler -> {
+            case WhatsAppClientVerificationHandler.Web.PairingCode codeHandler -> {
                 askPairingCode(codeHandler);
                 schedulePing();
             }
@@ -98,7 +98,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
         }
     }
 
-    private void printQrCode(WhatsappVerificationHandler.Web.QrCode qrHandler, Node container) {
+    private void printQrCode(WhatsAppClientVerificationHandler.Web.QrCode qrHandler, Node container) {
         var ref = container.getChild("ref")
                 .flatMap(Node::toContentString)
                 .orElseThrow(() -> new NoSuchElementException("Missing ref"));
@@ -131,7 +131,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
         pingExecutor.execute(() -> {
             var result = sendPing();
             if(result == Node.empty()) {
-                whatsapp.disconnect(WhatsappDisconnectReason.RECONNECTING);
+                whatsapp.disconnect(WhatsAppClientDisconnectReason.RECONNECTING);
             }else {
                 var store = whatsapp.store();
                 store.serialize();
@@ -157,7 +157,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
         }
     }
 
-    private void askPairingCode(WhatsappVerificationHandler.Web.PairingCode codeHandler) {
+    private void askPairingCode(WhatsAppClientVerificationHandler.Web.PairingCode codeHandler) {
         var phoneNumber = whatsapp.store()
                 .phoneNumber()
                 .orElseThrow(() -> new InternalError("Phone number was not set"));

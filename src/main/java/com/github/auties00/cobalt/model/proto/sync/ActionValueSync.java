@@ -1,7 +1,11 @@
 package com.github.auties00.cobalt.model.proto.sync;
 
+import com.github.auties00.cobalt.model.core.proto.action.*;
+import com.github.auties00.cobalt.model.core.proto.setting.*;
 import com.github.auties00.cobalt.model.proto.action.*;
 import com.github.auties00.cobalt.model.proto.setting.*;
+import com.github.auties00.cobalt.model.support.proto.action.*;
+import com.github.auties00.cobalt.model.support.proto.setting.*;
 import com.github.auties00.cobalt.util.Clock;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;

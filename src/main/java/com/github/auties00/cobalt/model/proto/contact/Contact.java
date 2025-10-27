@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.model.proto.contact;
 
-import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.proto.chat.Chat;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
 import com.github.auties00.cobalt.model.proto.jid.JidProvider;
@@ -52,7 +52,7 @@ public final class Contact implements JidProvider {
      * composing, recording or paused in a group this field will not be affected. Instead,
      * {@link Chat#getPresence(JidProvider)} should be used. By default, Whatsapp will not send updates about a
      * contact's status unless they send a message or are in the recent contacts. To force Whatsapp to
-     * send updates, use {@link Whatsapp#subscribeToPresence(JidProvider)}.
+     * send updates, use {@link WhatsAppClient#subscribeToPresence(JidProvider)}.
      */
     @ProtobufProperty(index = 5, type = ProtobufType.ENUM)
     ContactStatus lastKnownPresence;
@@ -70,7 +70,13 @@ public final class Contact implements JidProvider {
     @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
     boolean blocked;
 
-    Contact(Jid jid, String chosenName, String fullName, String shortName, ContactStatus lastKnownPresence, long lastSeenSeconds, boolean blocked) {
+    /**
+     * Whether the status updates of the contact are muted
+     */
+    @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
+    boolean statusMuted;
+
+    Contact(Jid jid, String chosenName, String fullName, String shortName, ContactStatus lastKnownPresence, long lastSeenSeconds, boolean blocked, boolean statusMuted) {
         this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.chosenName = chosenName;
         this.fullName = fullName;
@@ -78,6 +84,7 @@ public final class Contact implements JidProvider {
         this.lastKnownPresence = Objects.requireNonNullElse(lastKnownPresence, ContactStatus.UNAVAILABLE);
         this.lastSeenSeconds = lastSeenSeconds;
         this.blocked = blocked;
+        this.statusMuted = statusMuted;
     }
 
     public Jid jid() {
@@ -150,6 +157,14 @@ public final class Contact implements JidProvider {
 
     public void setBlocked(boolean blocked) {
         this.blocked = blocked;
+    }
+
+    public boolean statusMuted() {
+        return statusMuted;
+    }
+
+    public void setStatusMuted(boolean statusMuted) {
+        this.statusMuted = statusMuted;
     }
 
     @Override

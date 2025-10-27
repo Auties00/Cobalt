@@ -1,8 +1,9 @@
 package com.github.auties00.cobalt.model.proto.message.button;
 
 import com.github.auties00.cobalt.model.proto.button.base.TemplateFormatter;
+import com.github.auties00.cobalt.model.core.proto.button.interactive.*;
 import com.github.auties00.cobalt.model.proto.button.interactive.*;
-import com.github.auties00.cobalt.model.proto.button.interactive.*;
+import com.github.auties00.cobalt.model.support.proto.button.interactive.*;
 import com.github.auties00.cobalt.model.proto.info.ContextInfo;
 import com.github.auties00.cobalt.model.proto.message.model.ButtonMessage;
 import com.github.auties00.cobalt.model.proto.message.model.ContextualMessage;

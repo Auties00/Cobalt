@@ -1,13 +1,13 @@
 package com.github.auties00.cobalt.sync;
 
-import com.github.auties00.cobalt.api.Whatsapp;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.exception.*;
 import com.github.auties00.cobalt.io.sync.LTHash;
 import com.github.auties00.cobalt.io.sync.MutationDecoder;
-import com.github.auties00.cobalt.model.core.sync.CollectionState;
-import com.github.auties00.cobalt.model.core.sync.PendingMutation;
-import com.github.auties00.cobalt.model.core.sync.DecryptedMutation;
-import com.github.auties00.cobalt.model.core.sync.SyncResponse;
+import com.github.auties00.cobalt.sync.model.CollectionState;
+import com.github.auties00.cobalt.sync.model.PendingMutation;
+import com.github.auties00.cobalt.sync.model.DecryptedMutation;
+import com.github.auties00.cobalt.sync.model.SyncResponse;
 import com.github.auties00.cobalt.model.proto.sync.*;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.util.SecureBytes;
@@ -20,7 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.WEB_APP_STATE;
+import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.WEB_APP_STATE;
 
 /**
  * Main coordinator for WhatsApp Web App State synchronization.
@@ -39,7 +39,7 @@ import static com.github.auties00.cobalt.api.WhatsappErrorHandler.Location.WEB_A
  * </ul>
  */
 public final class WebAppState implements Closeable {
-    private final Whatsapp whatsapp;
+    private final WhatsAppClient whatsapp;
     private final WhatsappStore store;
     private final WebAppStateRequestBuilder requestBuilder;
     private final WebAppStateResponseParser responseParser;
@@ -52,7 +52,7 @@ public final class WebAppState implements Closeable {
      *
      * @param whatsapp the Whatsapp instance to use for store access and node sending
      */
-    public WebAppState(Whatsapp whatsapp) {
+    public WebAppState(WhatsAppClient whatsapp) {
         this.whatsapp = whatsapp;
         this.store = whatsapp.store();
         this.requestBuilder = new WebAppStateRequestBuilder(whatsapp);

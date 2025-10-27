@@ -1,13 +1,13 @@
 package com.github.auties00.cobalt.socket.ib;
 
-import com.github.auties00.cobalt.api.Whatsapp;
-import com.github.auties00.cobalt.model.core.node.Node;
-import com.github.auties00.cobalt.model.core.node.NodeBuilder;
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.model.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.jid.JidServer;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 public final class IbStreamNodeHandler extends SocketStream.Handler {
-    public IbStreamNodeHandler(Whatsapp whatsapp) {
+    public IbStreamNodeHandler(WhatsAppClient whatsapp) {
         super(whatsapp, "ib");
     }
 

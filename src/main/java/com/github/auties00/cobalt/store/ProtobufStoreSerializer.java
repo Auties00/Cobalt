@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.store;
 
-import com.github.auties00.cobalt.api.WhatsappClientType;
+import com.github.auties00.cobalt.client.WhatsAppClientType;
 import com.github.auties00.cobalt.model.proto.chat.Chat;
 import com.github.auties00.cobalt.model.proto.chat.ChatSpec;
 import com.github.auties00.cobalt.model.proto.info.ContextInfo;
@@ -53,7 +53,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public SequencedCollection<UUID> listIds(WhatsappClientType type) {
+    public SequencedCollection<UUID> listIds(WhatsAppClientType type) {
         return list(type, file -> {
             try {
                 var fileName = file.getFileName().toString();
@@ -66,7 +66,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public SequencedCollection<Long> listPhoneNumbers(WhatsappClientType type) {
+    public SequencedCollection<Long> listPhoneNumbers(WhatsAppClientType type) {
         return list(type, file -> {
             try {
                 var fileName = file.getFileName().toString();
@@ -81,7 +81,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         });
     }
 
-    private <T> SequencedCollection<T> list(WhatsappClientType type, Function<Path, Optional<T>> adapter) {
+    private <T> SequencedCollection<T> list(WhatsAppClientType type, Function<Path, Optional<T>> adapter) {
         Objects.requireNonNull(type, "type cannot be null");
 
         var directory = getHome(type);
@@ -206,7 +206,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public Optional<WhatsappStore> startDeserialize(WhatsappClientType type, UUID id) {
+    public Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, UUID id) {
         Objects.requireNonNull(type, "type cannot be null");
         Objects.requireNonNull(id, "id cannot be null");
 
@@ -214,7 +214,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public Optional<WhatsappStore> startDeserialize(WhatsappClientType type, Long phoneNumber) {
+    public Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, Long phoneNumber) {
         Objects.requireNonNull(type, "type cannot be null");
         Objects.requireNonNull(phoneNumber, "phoneNumber cannot be null");
 
@@ -230,7 +230,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private Optional<WhatsappStore> deserializeStoreFromId(WhatsappClientType type, String id) {
+    private Optional<WhatsappStore> deserializeStoreFromId(WhatsAppClientType type, String id) {
         var path = getSessionFile(type, id, "store.proto");
         if (Files.notExists(path)) {
             return Optional.empty();
@@ -362,7 +362,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public void deleteSession(WhatsappClientType type, UUID uuid) {
+    public void deleteSession(WhatsAppClientType type, UUID uuid) {
         Objects.requireNonNull(type, "type cannot be null");
         Objects.requireNonNull(uuid, "uuid cannot be null");
 
@@ -394,7 +394,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         });
     }
 
-    private Object linkPhoneNumber(WhatsappClientType type, UUID uuid, long phoneNumber) {
+    private Object linkPhoneNumber(WhatsAppClientType type, UUID uuid, long phoneNumber) {
         try {
             var link = getSessionDirectory(type, String.valueOf(phoneNumber));
             Files.writeString(link, uuid.toString(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
@@ -404,11 +404,11 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         return null;
     }
 
-    private Path getHome(WhatsappClientType type) {
-        return baseDirectory.resolve(type == WhatsappClientType.MOBILE ? "mobile" : "web");
+    private Path getHome(WhatsAppClientType type) {
+        return baseDirectory.resolve(type == WhatsAppClientType.MOBILE ? "mobile" : "web");
     }
 
-    private Path getSessionDirectory(WhatsappClientType clientType, String path) {
+    private Path getSessionDirectory(WhatsAppClientType clientType, String path) {
         try {
             var result = getHome(clientType).resolve(path);
             Files.createDirectories(result.getParent());
@@ -428,7 +428,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private Path getSessionFile(WhatsappClientType clientType, String uuid, String fileName) {
+    private Path getSessionFile(WhatsAppClientType clientType, String uuid, String fileName) {
         try {
             var result = getSessionDirectory(clientType, uuid).resolve(fileName);
             Files.createDirectories(result.getParent());

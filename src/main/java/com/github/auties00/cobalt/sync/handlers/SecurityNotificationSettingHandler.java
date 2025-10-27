@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.sync.handlers;
 
-import com.github.auties00.cobalt.model.core.sync.DecryptedMutation;
+import com.github.auties00.cobalt.sync.model.DecryptedMutation;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.sync.WebAppStateActionHandler;
 
@@ -28,7 +28,6 @@ public final class SecurityNotificationSettingHandler implements WebAppStateActi
                 .securityNotificationSetting()
                 .orElseThrow(() -> new IllegalArgumentException("Missing securityNotificationSetting"));
 
-        // Update the security notification setting in the store
         store.setShowSecurityNotifications(setting.showNotification());
 
         return true;

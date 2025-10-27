@@ -1,9 +1,8 @@
 package com.github.auties00.cobalt.sync.handlers;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.model.core.sync.DecryptedMutation;
+import com.github.auties00.cobalt.sync.model.DecryptedMutation;
 import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.model.proto.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.sync.WebAppStateActionHandler;
 
@@ -39,10 +38,9 @@ public final class UserStatusMuteHandler implements WebAppStateActionHandler {
         var contact = store.findContactByJid(userJid)
                 .orElseGet(() -> store.addNewContact(userJid));
 
-        if (mutation.operation() == RecordSync.Operation.SET) {
-            action.muted().ifPresent(contact::setStatusMuted);
-        } else {
-            contact.setStatusMuted(false);
+        switch (mutation.operation()) {
+            case SET -> contact.setStatusMuted(action.muted());
+            case REMOVE -> contact.setStatusMuted(false);
         }
 
         return true;

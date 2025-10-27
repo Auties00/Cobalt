@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync;
 
 import com.github.auties00.cobalt.exception.WebAppStateSyncFatalException;
-import com.github.auties00.cobalt.model.core.sync.SyncResponse;
+import com.github.auties00.cobalt.sync.model.SyncResponse;
 import com.github.auties00.cobalt.model.proto.sync.PatchSync;
 import com.github.auties00.cobalt.model.proto.sync.PatchType;
 import com.github.auties00.cobalt.store.WhatsappStore;

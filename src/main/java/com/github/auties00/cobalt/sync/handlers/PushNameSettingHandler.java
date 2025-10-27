@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.sync.handlers;
 
-import com.github.auties00.cobalt.model.core.sync.DecryptedMutation;
+import com.github.auties00.cobalt.sync.model.DecryptedMutation;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.sync.WebAppStateActionHandler;
 
