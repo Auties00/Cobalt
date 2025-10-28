@@ -5,12 +5,12 @@ import com.github.auties00.cobalt.client.WhatsAppClientDisconnectReason;
 import com.github.auties00.cobalt.exception.MalformedNodeException;
 import com.github.auties00.cobalt.exception.SessionBadMacException;
 import com.github.auties00.cobalt.exception.SessionConflictException;
-import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.STREAM;
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.STREAM;
 
 public final class ErrorStreamNodeHandler extends SocketStream.Handler {
     private final AtomicBoolean retriedConnection;

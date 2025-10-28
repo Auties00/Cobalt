@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.socket;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
-import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
+import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.socket.call.CallAckStreamNodeHandler;
 import com.github.auties00.cobalt.socket.call.CallStreamNodeHandler;
 import com.github.auties00.cobalt.socket.error.ErrorStreamNodeHandler;

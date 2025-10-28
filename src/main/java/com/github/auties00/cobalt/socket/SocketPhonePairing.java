@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.socket;
 
-import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
+import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
 import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
 

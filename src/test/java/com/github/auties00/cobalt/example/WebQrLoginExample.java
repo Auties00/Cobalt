@@ -1,7 +1,7 @@
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
+import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
 import com.github.auties00.cobalt.client.WhatsAppWebClientHistory;
-import com.github.auties00.cobalt.model.proto.info.ChatMessageInfo;
+import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 
 void main(String[] args) {
     WhatsAppClient.builder()

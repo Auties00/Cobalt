@@ -2,18 +2,18 @@ package com.github.auties00.cobalt.socket.iq;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.client.WhatsAppClientDisconnectReason;
-import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
-import com.github.auties00.cobalt.model.proto.auth.SignedDeviceIdentity;
-import com.github.auties00.cobalt.model.proto.auth.SignedDeviceIdentityHMAC;
+import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
+import com.github.auties00.cobalt.model.auth.SignedDeviceIdentity;
+import com.github.auties00.cobalt.model.auth.SignedDeviceIdentityHMAC;
 import com.github.auties00.cobalt.exception.HmacValidationException;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.node.NodeBuilder;
+import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.node.NodeBuilder;
 import com.github.auties00.cobalt.model.proto.auth.*;
-import com.github.auties00.cobalt.model.proto.auth.UserAgent.PlatformType;
+import com.github.auties00.cobalt.model.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.proto.contact.ContactBuilder;
-import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
-import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.model.proto.jid.JidServer;
+import com.github.auties00.cobalt.model.contact.ContactStatus;
+import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.cobalt.util.Clock;
@@ -32,7 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.AUTH;
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.AUTH;
 
 public final class IqStreamNodeHandler extends SocketStream.Handler {
     private static final int PING_INTERVAL = 30;

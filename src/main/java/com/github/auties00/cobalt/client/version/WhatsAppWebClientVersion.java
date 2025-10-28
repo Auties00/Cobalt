@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.client.version;
 
-import com.github.auties00.cobalt.model.proto.auth.Version;
+import com.github.auties00.cobalt.model.auth.Version;
 
 import java.io.IOException;
 import java.net.URI;

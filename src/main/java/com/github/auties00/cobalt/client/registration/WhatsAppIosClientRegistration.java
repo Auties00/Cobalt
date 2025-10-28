@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.client.registration;
 
-import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
+import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
 import com.github.auties00.cobalt.store.WhatsappStore;
 
 import java.net.URI;

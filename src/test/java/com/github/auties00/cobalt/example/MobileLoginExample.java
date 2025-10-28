@@ -1,6 +1,6 @@
 import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.client.WhatsAppClientSixPartsKeys;
-import com.github.auties00.cobalt.model.proto.jid.JidDevice;
+import com.github.auties00.cobalt.model.jid.JidDevice;
 
 void main() {
     var sixParts = promptSixParts();

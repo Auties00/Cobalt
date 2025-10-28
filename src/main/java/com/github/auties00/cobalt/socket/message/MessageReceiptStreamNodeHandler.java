@@ -1,12 +1,12 @@
 package com.github.auties00.cobalt.socket.message;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.proto.info.ChatMessageInfo;
-import com.github.auties00.cobalt.model.proto.info.MessageInfo;
-import com.github.auties00.cobalt.model.proto.info.NewsletterMessageInfo;
-import com.github.auties00.cobalt.model.proto.jid.JidServer;
-import com.github.auties00.cobalt.model.proto.message.model.MessageStatus;
+import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.model.info.ChatMessageInfo;
+import com.github.auties00.cobalt.model.info.MessageInfo;
+import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
+import com.github.auties00.cobalt.model.jid.JidServer;
+import com.github.auties00.cobalt.model.message.model.MessageStatus;
 import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.Clock;
 

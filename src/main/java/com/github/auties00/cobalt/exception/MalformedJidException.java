@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.exception;
 
-import com.github.auties00.cobalt.model.proto.jid.Jid;
+import com.github.auties00.cobalt.model.jid.Jid;
 
 /**
  * Signals that an attempt to parse or construct a JID  has failed

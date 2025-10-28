@@ -1,37 +1,36 @@
 package com.github.auties00.cobalt.socket.message;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.model.proto.info.ChatMessageInfo;
-import com.github.auties00.cobalt.model.proto.info.ContextInfo;
-import com.github.auties00.cobalt.model.proto.info.DeviceContextInfo;
-import com.github.auties00.cobalt.model.proto.info.MessageInfo;
-import com.github.auties00.cobalt.model.proto.message.model.ChatMessageKey;
-import com.github.auties00.cobalt.model.proto.message.model.Message;
-import com.github.auties00.cobalt.model.proto.message.model.MessageContainer;
-import com.github.auties00.cobalt.model.proto.message.model.MessageStatus;
-import com.github.auties00.cobalt.model.proto.message.standard.PollCreationMessage;
-import com.github.auties00.cobalt.model.proto.message.standard.PollUpdateMessage;
-import com.github.auties00.cobalt.model.proto.message.standard.ReactionMessage;
-import com.github.auties00.cobalt.model.proto.sync.HistorySync;
-import com.github.auties00.cobalt.model.proto.sync.HistorySyncNotification;
-import com.github.auties00.cobalt.model.proto.sync.PatchType;
-import com.github.auties00.cobalt.model.proto.sync.PushName;
+import com.github.auties00.cobalt.model.info.ChatMessageInfo;
+import com.github.auties00.cobalt.model.info.ContextInfo;
+import com.github.auties00.cobalt.model.info.DeviceContextInfo;
+import com.github.auties00.cobalt.model.info.MessageInfo;
+import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
+import com.github.auties00.cobalt.model.message.model.Message;
+import com.github.auties00.cobalt.model.message.model.MessageContainer;
+import com.github.auties00.cobalt.model.message.model.MessageStatus;
+import com.github.auties00.cobalt.model.message.standard.PollCreationMessage;
+import com.github.auties00.cobalt.model.message.standard.PollUpdateMessage;
+import com.github.auties00.cobalt.model.message.standard.ReactionMessage;
+import com.github.auties00.cobalt.model.sync.HistorySync;
+import com.github.auties00.cobalt.model.sync.HistorySyncNotification;
+import com.github.auties00.cobalt.model.sync.PatchType;
+import com.github.auties00.cobalt.model.sync.PushName;
 import com.github.auties00.cobalt.exception.MediaDownloadException;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.io.message.MessageDecoder;
+import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.model.proto.action.ContactActionBuilder;
 import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameCertificateSpec;
-import com.github.auties00.cobalt.model.proto.chat.Chat;
-import com.github.auties00.cobalt.model.proto.chat.ChatEphemeralTimer;
-import com.github.auties00.cobalt.model.proto.contact.Contact;
-import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
+import com.github.auties00.cobalt.model.chat.Chat;
+import com.github.auties00.cobalt.model.chat.ChatEphemeralTimer;
+import com.github.auties00.cobalt.model.contact.Contact;
+import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.model.proto.info.*;
-import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.model.proto.jid.JidServer;
+import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.proto.message.model.*;
-import com.github.auties00.cobalt.model.proto.message.server.ProtocolMessage;
-import com.github.auties00.cobalt.model.proto.message.server.SenderKeyDistributionMessage;
-import com.github.auties00.cobalt.model.proto.newsletter.NewsletterReaction;
+import com.github.auties00.cobalt.model.message.server.ProtocolMessage;
+import com.github.auties00.cobalt.model.message.server.SenderKeyDistributionMessage;
+import com.github.auties00.cobalt.model.newsletter.NewsletterReaction;
 import com.github.auties00.cobalt.model.proto.poll.PollUpdateBuilder;
 import com.github.auties00.cobalt.model.proto.poll.PollUpdateEncryptedOptionsSpec;
 import com.github.auties00.cobalt.model.proto.setting.EphemeralSettingsBuilder;
@@ -62,8 +61,8 @@ import java.util.stream.IntStream;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
-import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.HISTORY_SYNC;
-import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.MESSAGE;
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.HISTORY_SYNC;
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.MESSAGE;
 
 public final class MessageStreamNodeHandler extends SocketStream.Handler {
     private static final int HISTORY_SYNC_MAX_TIMEOUT = 25;
@@ -440,8 +439,8 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
     }
 
     private HistorySync downloadHistorySync(ProtocolMessage protocolMessage) {
-        if ((whatsapp.store().webHistoryPolicy().isEmpty() || whatsapp.store().webHistoryPolicy().get().isZero())
-            && historySyncTypes.containsAll(REQUIRED_HISTORY_SYNC_TYPES)) {
+        if (historySyncTypes.containsAll(REQUIRED_HISTORY_SYNC_TYPES) &&
+             (whatsapp.store().webHistoryPolicy().isEmpty() || whatsapp.store().webHistoryPolicy().get().isZero())) {
             return null;
         }
 
@@ -463,7 +462,7 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
                 var mediaConnection = whatsapp.store()
                         .mediaConnection()
                         .orElseThrow(() -> new InternalError("Missing media connection"));
-                try(var mediaStream = ProtobufInputStream.fromStream(notification.download(mediaConnection))) {
+                try(var mediaStream = ProtobufInputStream.fromStream(mediaConnection.download(notification))) {
                     return HistorySyncSpec.decode(mediaStream);
                 }
             }

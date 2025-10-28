@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.socket.call;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.node.NodeBuilder;
-import com.github.auties00.cobalt.model.proto.jid.Jid;
+import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.node.NodeBuilder;
+import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 public final class CallAckStreamNodeHandler extends SocketStream.Handler {

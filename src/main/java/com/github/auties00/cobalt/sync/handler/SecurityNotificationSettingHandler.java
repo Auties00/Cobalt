@@ -1,0 +1,34 @@
+package com.github.auties00.cobalt.sync.handler;
+
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
+import com.github.auties00.cobalt.store.WhatsappStore;
+
+/**
+ * Handles security notification setting changes.
+ *
+ * <p>This handler processes mutations that control whether to show security
+ * code change notifications when chatting with a contact.
+ */
+public final class SecurityNotificationSettingHandler implements WebAppStateActionHandler {
+    public static final SecurityNotificationSettingHandler INSTANCE = new SecurityNotificationSettingHandler();
+
+    private SecurityNotificationSettingHandler() {
+
+    }
+
+    @Override
+    public String actionName() {
+        return "security";
+    }
+
+    @Override
+    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+        var setting = mutation.value()
+                .securityNotificationSetting()
+                .orElseThrow(() -> new IllegalArgumentException("Missing securityNotificationSetting"));
+
+        store.setShowSecurityNotifications(setting.showNotification());
+
+        return true;
+    }
+}

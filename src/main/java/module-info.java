@@ -29,78 +29,73 @@ module com.github.auties00.cobalt {
 
     // Client
     exports com.github.auties00.cobalt.client;
-    exports com.github.auties00.cobalt.client.handler;
-    exports com.github.auties00.cobalt.client.listener;
 
     // Don't expose ARGO models - they are for internal use only
 
     // Core - Node
-    exports com.github.auties00.cobalt.model.node;
-
-    // Core - Web app state sync
-    exports com.github.auties00.cobalt.sync.model;
+    exports com.github.auties00.cobalt.node;
 
     // Don't expose JSON models - they are for internal use only
 
     // Proto models - action
-    exports com.github.auties00.cobalt.model.proto.action;
+    exports com.github.auties00.cobalt.model.action;
 
     // Don't expose auth proto models
 
     // Proto models - business
-    exports com.github.auties00.cobalt.model.proto.business;
+    exports com.github.auties00.cobalt.model.business;
 
     // Proto models - button
-    exports com.github.auties00.cobalt.model.proto.button.interactive;
-    exports com.github.auties00.cobalt.model.proto.button.base;
-    exports com.github.auties00.cobalt.model.proto.button.template.hydrated;
-    exports com.github.auties00.cobalt.model.proto.button.template.highlyStructured;
+    exports com.github.auties00.cobalt.model.button.interactive;
+    exports com.github.auties00.cobalt.model.button.base;
+    exports com.github.auties00.cobalt.model.button.template.hydrated;
+    exports com.github.auties00.cobalt.model.button.template.highlyStructured;
 
     // Proto models - call
-    exports com.github.auties00.cobalt.model.proto.call;
+    exports com.github.auties00.cobalt.model.call;
 
     // Proto models - chat
-    exports com.github.auties00.cobalt.model.proto.chat;
+    exports com.github.auties00.cobalt.model.chat;
 
     // Proto models - contact
-    exports com.github.auties00.cobalt.model.proto.contact;
+    exports com.github.auties00.cobalt.model.contact;
 
     // Proto models - info
-    exports com.github.auties00.cobalt.model.proto.info;
+    exports com.github.auties00.cobalt.model.info;
 
     // Proto models - jid
-    exports com.github.auties00.cobalt.model.proto.jid;
+    exports com.github.auties00.cobalt.model.jid;
 
     // Proto models - media
-    exports com.github.auties00.cobalt.model.proto.media;
+    exports com.github.auties00.cobalt.model.media;
 
     // Proto models - message
-    exports com.github.auties00.cobalt.model.proto.message.button;
-    exports com.github.auties00.cobalt.model.proto.message.server;
-    exports com.github.auties00.cobalt.model.proto.message.model;
-    exports com.github.auties00.cobalt.model.proto.message.payment;
-    exports com.github.auties00.cobalt.model.proto.message.standard;
+    exports com.github.auties00.cobalt.model.message.button;
+    exports com.github.auties00.cobalt.model.message.server;
+    exports com.github.auties00.cobalt.model.message.model;
+    exports com.github.auties00.cobalt.model.message.payment;
+    exports com.github.auties00.cobalt.model.message.standard;
 
     // Proto models - newsletters
-    exports com.github.auties00.cobalt.model.proto.newsletter;
+    exports com.github.auties00.cobalt.model.newsletter;
 
     // Proto models - payment
-    exports com.github.auties00.cobalt.model.proto.payment;
+    exports com.github.auties00.cobalt.model.payment;
 
     // Proto models - poll
-    exports com.github.auties00.cobalt.model.proto.poll;
+    exports com.github.auties00.cobalt.model.poll;
 
     // Proto models - privacy
-    exports com.github.auties00.cobalt.model.proto.privacy;
+    exports com.github.auties00.cobalt.model.privacy;
 
     // Proto models - product
-    exports com.github.auties00.cobalt.model.proto.product;
+    exports com.github.auties00.cobalt.model.product;
 
     // Proto models - setting
-    exports com.github.auties00.cobalt.model.proto.setting;
+    exports com.github.auties00.cobalt.model.setting;
 
     // Proto models - sync
-    exports com.github.auties00.cobalt.model.proto.sync;
+    exports com.github.auties00.cobalt.model.sync;
 
     // Store
     exports com.github.auties00.cobalt.store;

@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.socket.message;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.proto.message.model.MessageStatus;
+import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.model.message.model.MessageStatus;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 public final class MessageAckStreamNodeHandler extends SocketStream.Handler {

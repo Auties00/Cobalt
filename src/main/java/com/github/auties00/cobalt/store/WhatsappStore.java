@@ -4,38 +4,38 @@ package com.github.auties00.cobalt.store;
 import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.client.WhatsAppClientType;
 import com.github.auties00.cobalt.client.WhatsAppWebClientHistory;
-import com.github.auties00.cobalt.client.listener.WhatsAppClientListener;
-import com.github.auties00.cobalt.io.media.MediaConnection;
-import com.github.auties00.cobalt.io.sync.LTHash;
-import com.github.auties00.cobalt.sync.model.CollectionMetadata;
-import com.github.auties00.cobalt.sync.model.CollectionState;
-import com.github.auties00.cobalt.sync.model.PendingMutation;
-import com.github.auties00.cobalt.model.proto.auth.SignedDeviceIdentity;
-import com.github.auties00.cobalt.model.proto.auth.UserAgent.ReleaseChannel;
-import com.github.auties00.cobalt.model.proto.business.BusinessCategory;
-import com.github.auties00.cobalt.model.proto.call.Call;
-import com.github.auties00.cobalt.model.proto.chat.Chat;
+import com.github.auties00.cobalt.client.WhatsAppClientListener;
+import com.github.auties00.cobalt.media.MediaConnection;
+import com.github.auties00.cobalt.sync.crypto.MutationLTHash;
+import com.github.auties00.cobalt.model.sync.CollectionMetadata;
+import com.github.auties00.cobalt.model.sync.CollectionState;
+import com.github.auties00.cobalt.model.sync.PendingMutation;
+import com.github.auties00.cobalt.model.auth.SignedDeviceIdentity;
+import com.github.auties00.cobalt.model.auth.UserAgent.ReleaseChannel;
+import com.github.auties00.cobalt.model.business.BusinessCategory;
+import com.github.auties00.cobalt.model.call.Call;
+import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.proto.chat.ChatBuilder;
-import com.github.auties00.cobalt.model.proto.chat.ChatEphemeralTimer;
-import com.github.auties00.cobalt.model.proto.contact.Contact;
+import com.github.auties00.cobalt.model.chat.ChatEphemeralTimer;
+import com.github.auties00.cobalt.model.contact.Contact;
 import com.github.auties00.cobalt.model.proto.contact.ContactBuilder;
-import com.github.auties00.cobalt.model.proto.info.ChatMessageInfo;
-import com.github.auties00.cobalt.model.proto.info.MessageInfo;
-import com.github.auties00.cobalt.model.proto.info.NewsletterMessageInfo;
-import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.model.proto.jid.JidDevice;
-import com.github.auties00.cobalt.model.proto.jid.JidProvider;
-import com.github.auties00.cobalt.model.proto.jid.JidServer;
-import com.github.auties00.cobalt.model.proto.media.MediaProvider;
-import com.github.auties00.cobalt.model.proto.message.model.ChatMessageKey;
-import com.github.auties00.cobalt.model.proto.newsletter.Newsletter;
+import com.github.auties00.cobalt.model.info.ChatMessageInfo;
+import com.github.auties00.cobalt.model.info.MessageInfo;
+import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
+import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.jid.JidDevice;
+import com.github.auties00.cobalt.model.jid.JidProvider;
+import com.github.auties00.cobalt.model.jid.JidServer;
+import com.github.auties00.cobalt.model.media.MediaProvider;
+import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
+import com.github.auties00.cobalt.model.newsletter.Newsletter;
 import com.github.auties00.cobalt.model.proto.newsletter.NewsletterBuilder;
-import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingEntry;
-import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingType;
-import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
-import com.github.auties00.cobalt.model.proto.sync.AppStateSyncHash;
-import com.github.auties00.cobalt.model.proto.sync.AppStateSyncKey;
-import com.github.auties00.cobalt.model.proto.sync.PatchType;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
+import com.github.auties00.cobalt.model.sync.AppStateSyncHash;
+import com.github.auties00.cobalt.model.sync.AppStateSyncKey;
+import com.github.auties00.cobalt.model.sync.PatchType;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.libsignal.SignalProtocolAddress;
@@ -2531,7 +2531,7 @@ public final class WhatsappStore implements SignalProtocolStore {
                 return new CollectionMetadata(
                         collectionName,
                         current != null ? current.version() : 0,
-                        current != null ? LTHash.copy(current.ltHash()) : LTHash.copy(LTHash.EMPTY_HASH),
+                        current != null ? MutationLTHash.copy(current.ltHash()) : MutationLTHash.copy(MutationLTHash.EMPTY_HASH),
                         System.currentTimeMillis(),
                         CollectionState.DIRTY,
                         0,  // Reset retry count
@@ -2667,7 +2667,7 @@ public final class WhatsappStore implements SignalProtocolStore {
                 new CollectionMetadata(
                         key,
                         0,
-                        LTHash.copy(LTHash.EMPTY_HASH),
+                        MutationLTHash.copy(MutationLTHash.EMPTY_HASH),
                         0,
                         CollectionState.UP_TO_DATE,
                         0,
@@ -2688,7 +2688,7 @@ public final class WhatsappStore implements SignalProtocolStore {
                 new CollectionMetadata(
                         collectionName,
                         newVersion,
-                        LTHash.copy(newLtHash),
+                        MutationLTHash.copy(newLtHash),
                         System.currentTimeMillis(),
                         current != null ? current.state() : CollectionState.UP_TO_DATE,
                         0,  // Reset retry count on successful update

@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.socket.call;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.model.node.Node;
+import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.model.proto.call.CallBuilder;
-import com.github.auties00.cobalt.model.proto.call.CallStatus;
+import com.github.auties00.cobalt.model.call.CallStatus;
 import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.Clock;
 

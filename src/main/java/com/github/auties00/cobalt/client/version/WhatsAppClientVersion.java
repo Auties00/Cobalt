@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.client.version;
 
-import com.github.auties00.cobalt.model.proto.auth.UserAgent;
-import com.github.auties00.cobalt.model.proto.auth.Version;
+import com.github.auties00.cobalt.model.auth.UserAgent;
+import com.github.auties00.cobalt.model.auth.Version;
 
 public sealed interface WhatsAppClientVersion
         permits WhatsAppWebClientVersion, WhatsAppMobileClientVersion {

@@ -2,8 +2,8 @@ package com.github.auties00.cobalt.test;
 
 import it.auties.protobuf.model.ProtobufString;
 import com.github.auties00.cobalt.exception.MalformedJidException;
-import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.model.proto.jid.JidServer;
+import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.jid.JidServer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

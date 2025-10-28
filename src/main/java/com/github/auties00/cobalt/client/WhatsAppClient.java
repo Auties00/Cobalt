@@ -1,55 +1,57 @@
 package com.github.auties00.cobalt.client;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler;
-import com.github.auties00.cobalt.client.handler.WhatsAppClientMessagePreviewHandler;
-import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
-import com.github.auties00.cobalt.client.listener.WhatsAppClientListener;
-import com.github.auties00.cobalt.client.listener.WhatsappClientListenerConsumer;
-import com.github.auties00.cobalt.model.proto.newsletter.*;
-import com.github.auties00.cobalt.sync.model.PendingMutation;
-import com.github.auties00.cobalt.model.support.json.response.*;
-import com.github.auties00.cobalt.sync.WebAppState;
-import com.github.auties00.cobalt.model.support.json.request.CommunityRequests;
-import com.github.auties00.cobalt.model.support.json.request.NewsletterRequests;
-import com.github.auties00.cobalt.model.support.json.request.UserRequests;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.node.NodeAttribute;
-import com.github.auties00.cobalt.model.node.NodeBuilder;
-import com.github.auties00.cobalt.model.proto.action.Action;
-import com.github.auties00.cobalt.model.proto.business.*;
-import com.github.auties00.cobalt.model.proto.chat.*;
-import com.github.auties00.cobalt.model.proto.info.*;
-import com.github.auties00.cobalt.model.proto.message.model.*;
-import com.github.auties00.cobalt.model.proto.sync.ActionMessageRangeSync;
-import com.github.auties00.cobalt.model.proto.sync.ActionValueSync;
-import com.github.auties00.cobalt.model.proto.sync.PatchType;
-import com.github.auties00.cobalt.model.proto.sync.ServerErrorReceipt;
-import com.github.auties00.cobalt.io.node.NodeDecoder;
-import com.github.auties00.cobalt.model.proto.call.Call;
+import com.github.auties00.cobalt.client.json.request.CommunityRequests;
+import com.github.auties00.cobalt.client.json.request.NewsletterRequests;
+import com.github.auties00.cobalt.client.json.request.UserRequests;
+import com.github.auties00.cobalt.client.json.response.*;
+import com.github.auties00.cobalt.model.action.Action;
+import com.github.auties00.cobalt.model.business.*;
+import com.github.auties00.cobalt.model.call.Call;
+import com.github.auties00.cobalt.model.call.CallStatus;
+import com.github.auties00.cobalt.model.chat.*;
+import com.github.auties00.cobalt.model.contact.Contact;
+import com.github.auties00.cobalt.model.contact.ContactStatus;
+import com.github.auties00.cobalt.model.info.*;
+import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.jid.JidProvider;
+import com.github.auties00.cobalt.model.jid.JidServer;
+import com.github.auties00.cobalt.model.media.MediaProvider;
+import com.github.auties00.cobalt.model.message.model.*;
+import com.github.auties00.cobalt.model.message.server.ProtocolMessage;
+import com.github.auties00.cobalt.model.message.standard.TextMessage;
+import com.github.auties00.cobalt.model.newsletter.*;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
+import com.github.auties00.cobalt.model.proto.action.*;
+import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameCertificateSpec;
 import com.github.auties00.cobalt.model.proto.call.CallBuilder;
-import com.github.auties00.cobalt.model.proto.call.CallStatus;
-import com.github.auties00.cobalt.model.proto.contact.Contact;
-import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
-import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.model.proto.jid.JidProvider;
-import com.github.auties00.cobalt.model.proto.jid.JidServer;
-import com.github.auties00.cobalt.model.proto.media.MediaProvider;
-import com.github.auties00.cobalt.model.proto.message.server.ProtocolMessage;
+import com.github.auties00.cobalt.model.proto.chat.GroupOrCommunityMetadataBuilder;
+import com.github.auties00.cobalt.model.proto.info.ChatMessageInfoBuilder;
+import com.github.auties00.cobalt.model.proto.info.ContextInfoBuilder;
+import com.github.auties00.cobalt.model.proto.info.DeviceContextInfoBuilder;
+import com.github.auties00.cobalt.model.proto.info.NewsletterMessageInfoBuilder;
+import com.github.auties00.cobalt.model.proto.message.model.ChatMessageKeyBuilder;
 import com.github.auties00.cobalt.model.proto.message.server.ProtocolMessageBuilder;
 import com.github.auties00.cobalt.model.proto.message.standard.NewsletterAdminInviteMessageBuilder;
 import com.github.auties00.cobalt.model.proto.message.standard.ReactionMessageBuilder;
-import com.github.auties00.cobalt.model.proto.message.standard.TextMessage;
-import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingEntry;
 import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingEntryBuilder;
-import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingType;
-import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
-import com.github.auties00.cobalt.model.proto.setting.Setting;
-import com.github.auties00.cobalt.model.proto.sync.RecordSync.Operation;
+import com.github.auties00.cobalt.model.proto.sync.DeviceListMetadataBuilder;
+import com.github.auties00.cobalt.model.proto.sync.MediaRetryNotificationSpec;
+import com.github.auties00.cobalt.model.proto.sync.ServerErrorReceiptSpec;
+import com.github.auties00.cobalt.model.setting.Setting;
+import com.github.auties00.cobalt.model.sync.*;
+import com.github.auties00.cobalt.model.sync.RecordSync.Operation;
+import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.node.NodeAttribute;
+import com.github.auties00.cobalt.node.NodeBuilder;
+import com.github.auties00.cobalt.node.NodeDecoder;
 import com.github.auties00.cobalt.socket.*;
 import com.github.auties00.cobalt.store.WhatsappStore;
-import com.github.auties00.cobalt.util.SecureBytes;
+import com.github.auties00.cobalt.sync.WebAppState;
 import com.github.auties00.cobalt.util.Clock;
+import com.github.auties00.cobalt.util.SecureBytes;
 
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
@@ -81,7 +83,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.*;
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.*;
+import static com.github.auties00.cobalt.model.contact.ContactStatus.*;
 
 /**
  * A class used to interface a user to Whatsapp
@@ -2259,7 +2262,8 @@ public final class WhatsAppClient {
 
 
     private ActionMessageRangeSync createRange(JidProvider chat, boolean allMessages) {
-        var known = store.findChatByJid(chat.toJid()).orElseGet(() -> store.addNewChat(chat.toJid()));
+        var known = store.findChatByJid(chat.toJid())
+                .orElseGet(() -> store.addNewChat(chat.toJid()));
         return new ActionMessageRangeSync(known, allMessages);
     }
 

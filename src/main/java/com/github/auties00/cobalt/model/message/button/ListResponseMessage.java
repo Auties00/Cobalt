@@ -1,0 +1,109 @@
+package com.github.auties00.cobalt.model.message.button;
+
+import com.github.auties00.cobalt.model.button.base.SingleSelectReplyButton;
+import com.github.auties00.cobalt.model.info.ContextInfo;
+import com.github.auties00.cobalt.model.message.model.ButtonReplyMessage;
+import com.github.auties00.cobalt.model.message.model.Message;
+import it.auties.protobuf.annotation.ProtobufEnum;
+import it.auties.protobuf.annotation.ProtobufEnumIndex;
+import it.auties.protobuf.annotation.ProtobufMessage;
+import it.auties.protobuf.annotation.ProtobufProperty;
+import it.auties.protobuf.model.ProtobufType;
+
+import java.util.Optional;
+
+/**
+ * A model class that represents a message that contains a newsletters to a previous
+ * {@link ListMessage}
+ */
+@ProtobufMessage(name = "Message.ListResponseMessage")
+public final class ListResponseMessage implements ButtonReplyMessage<ListResponseMessage> {
+    @ProtobufProperty(index = 1, type = ProtobufType.STRING)
+    final String title;
+
+    @ProtobufProperty(index = 2, type = ProtobufType.ENUM)
+    final Type listType;
+
+    @ProtobufProperty(index = 3, type = ProtobufType.MESSAGE)
+    final SingleSelectReplyButton reply;
+
+    @ProtobufProperty(index = 4, type = ProtobufType.MESSAGE)
+    ContextInfo contextInfo;
+
+    @ProtobufProperty(index = 5, type = ProtobufType.STRING)
+    final String description;
+
+    ListResponseMessage(String title, Type listType, SingleSelectReplyButton reply, ContextInfo contextInfo, String description) {
+        this.title = title;
+        this.listType = listType;
+        this.reply = reply;
+        this.contextInfo = contextInfo;
+        this.description = description;
+    }
+
+    @Override
+    public Message.Type type() {
+        return Message.Type.LIST_RESPONSE;
+    }
+
+    public String title() {
+        return title;
+    }
+
+    public SingleSelectReplyButton reply() {
+        return reply;
+    }
+
+    @Override
+    public Optional<ContextInfo> contextInfo() {
+        return Optional.ofNullable(contextInfo);
+    }
+
+    @Override
+    public void setContextInfo(ContextInfo contextInfo) {
+        this.contextInfo = contextInfo;
+    }
+
+    public Optional<String> description() {
+        return Optional.ofNullable(description);
+    }
+
+    public Type listType() {
+        return listType;
+    }
+
+    @Override
+    public String toString() {
+        return "ListResponseMessage[" +
+                "title=" + title + ", " +
+                "reply=" + reply + ", " +
+                "contextInfo=" + contextInfo + ", " +
+                "description=" + description + ", " +
+                "listType=" + listType + ']';
+    }
+
+    /**
+     * The constants of this enumerated type describe the various types of {@link ListMessage}
+     */
+    @ProtobufEnum(name = "Message.ListResponseMessage.Type")
+    public enum Type {
+        /**
+         * Unknown
+         */
+        UNKNOWN(0),
+        /**
+         * Only one option can be selected
+         */
+        SINGLE_SELECT(1),
+        /**
+         * A list of products
+         */
+        PRODUCT_LIST(2);
+
+        final int index;
+
+        Type(@ProtobufEnumIndex int index) {
+            this.index = index;
+        }
+    }
+}

@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.util;
 
-import com.github.auties00.cobalt.model.proto.info.MessageInfo;
+import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.collections.ConcurrentLinkedHashMap;
 
 import java.util.*;

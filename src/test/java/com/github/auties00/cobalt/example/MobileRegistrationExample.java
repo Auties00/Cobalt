@@ -1,6 +1,6 @@
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
-import com.github.auties00.cobalt.model.proto.jid.JidDevice;
+import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
+import com.github.auties00.cobalt.model.jid.JidDevice;
 
 void main() {
     var phoneNumber = promptPhoneNumber();

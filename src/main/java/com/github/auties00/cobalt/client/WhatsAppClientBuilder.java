@@ -1,11 +1,8 @@
 package com.github.auties00.cobalt.client;
 
-import com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler;
-import com.github.auties00.cobalt.client.handler.WhatsAppClientMessagePreviewHandler;
-import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
 import com.github.auties00.cobalt.client.registration.WhatsAppMobileClientRegistration;
-import com.github.auties00.cobalt.model.proto.business.BusinessCategory;
-import com.github.auties00.cobalt.model.proto.jid.JidDevice;
+import com.github.auties00.cobalt.model.business.BusinessCategory;
+import com.github.auties00.cobalt.model.jid.JidDevice;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.store.WhatsappStoreBuilder;
 import com.github.auties00.cobalt.store.WhatsappStoreSerializer;
@@ -782,8 +779,8 @@ public sealed class WhatsAppClientBuilder {
                 }
 
                 if (!store.registered()) {
-                    try(var activator = new WhatsAppMobileClientRegistration(store, verification)) {
-                        activator.register();
+                    try(var registration = WhatsAppMobileClientRegistration.of(store, verification)) {
+                        registration.register();
                     }
                 }
 

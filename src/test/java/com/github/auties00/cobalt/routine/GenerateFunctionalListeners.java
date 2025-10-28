@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.routine;
 
-import com.github.auties00.cobalt.client.listener.WhatsAppClientListener;
+import com.github.auties00.cobalt.client.WhatsAppClientListener;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;

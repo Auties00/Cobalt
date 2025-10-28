@@ -1,16 +1,16 @@
 package com.github.auties00.cobalt.socket.state;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.node.NodeBuilder;
-import com.github.auties00.cobalt.model.proto.contact.ContactStatus;
-import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.model.proto.jid.JidServer;
-import com.github.auties00.cobalt.io.media.MediaConnection;
+import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.node.NodeBuilder;
+import com.github.auties00.cobalt.model.contact.ContactStatus;
+import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.jid.JidServer;
+import com.github.auties00.cobalt.media.MediaConnection;
 import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingEntryBuilder;
-import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingType;
-import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingValue;
-import com.github.auties00.cobalt.model.proto.sync.PatchType;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
+import com.github.auties00.cobalt.model.sync.PatchType;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 import java.time.ZonedDateTime;
@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.AUTH;
-import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.MEDIA_CONNECTION;
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.AUTH;
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.MEDIA_CONNECTION;
 
 // TODO: Orchestrate a platform specific login flow in separate classes that can be auto updated
 public final class SuccessStreamNodeHandler extends SocketStream.Handler {

@@ -2,14 +2,19 @@ package com.github.auties00.cobalt.sync;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.exception.*;
-import com.github.auties00.cobalt.io.sync.LTHash;
-import com.github.auties00.cobalt.io.sync.MutationDecoder;
-import com.github.auties00.cobalt.sync.model.CollectionState;
-import com.github.auties00.cobalt.sync.model.PendingMutation;
-import com.github.auties00.cobalt.sync.model.DecryptedMutation;
-import com.github.auties00.cobalt.sync.model.SyncResponse;
+import com.github.auties00.cobalt.sync.crypto.MutationKeys;
+import com.github.auties00.cobalt.sync.error.ExponentialBackoffScheduler;
+import com.github.auties00.cobalt.sync.crypto.MutationLTHash;
+import com.github.auties00.cobalt.model.sync.*;
+import com.github.auties00.cobalt.sync.crypto.MutationIntegrityVerifier;
+import com.github.auties00.cobalt.model.sync.CollectionState;
+import com.github.auties00.cobalt.model.sync.PendingMutation;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
+import com.github.auties00.cobalt.sync.exchange.MutationSyncResponse;
 import com.github.auties00.cobalt.model.proto.sync.*;
 import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.exchange.MutationRequestBuilder;
+import com.github.auties00.cobalt.sync.exchange.MutationResponseParser;
 import com.github.auties00.cobalt.util.SecureBytes;
 import it.auties.protobuf.stream.ProtobufInputStream;
 
@@ -20,7 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler.Location.WEB_APP_STATE;
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.WEB_APP_STATE;
 
 /**
  * Main coordinator for WhatsApp Web App State synchronization.
@@ -41,11 +46,11 @@ import static com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandl
 public final class WebAppState implements Closeable {
     private final WhatsAppClient whatsapp;
     private final WhatsappStore store;
-    private final WebAppStateRequestBuilder requestBuilder;
-    private final WebAppStateResponseParser responseParser;
-    private final WebAppStateIntegrityVerifier integrityVerifier;
-    private final WebAppStateActionHandlerRegistry handlerRegistry;
-    private final WebAppStateRetryScheduler retryScheduler;
+    private final MutationRequestBuilder requestBuilder;
+    private final MutationResponseParser responseParser;
+    private final MutationIntegrityVerifier integrityVerifier;
+    private final WebAppStateHandlerRegistry handlerRegistry;
+    private final ExponentialBackoffScheduler retryScheduler;
 
     /**
      * Creates a new WebAppStateManager instance.
@@ -55,11 +60,11 @@ public final class WebAppState implements Closeable {
     public WebAppState(WhatsAppClient whatsapp) {
         this.whatsapp = whatsapp;
         this.store = whatsapp.store();
-        this.requestBuilder = new WebAppStateRequestBuilder(whatsapp);
-        this.responseParser = new WebAppStateResponseParser();
-        this.handlerRegistry = new WebAppStateActionHandlerRegistry(store);
-        this.integrityVerifier = new WebAppStateIntegrityVerifier(store);
-        this.retryScheduler = new WebAppStateRetryScheduler();
+        this.requestBuilder = new MutationRequestBuilder(whatsapp);
+        this.responseParser = new MutationResponseParser();
+        this.handlerRegistry = new WebAppStateHandlerRegistry();
+        this.integrityVerifier = new MutationIntegrityVerifier(store);
+        this.retryScheduler = new ExponentialBackoffScheduler();
     }
 
     /**
@@ -134,7 +139,7 @@ public final class WebAppState implements Closeable {
         }
     }
 
-    private Optional<SyncResponse> sendSyncRequest(PatchType patchType) {
+    private Optional<MutationSyncResponse> sendSyncRequest(PatchType patchType) {
         try {
             // 1. Get pending mutations
             var pending = whatsapp.store()
@@ -158,7 +163,7 @@ public final class WebAppState implements Closeable {
         }
     }
 
-    private SequencedCollection<DecryptedMutation.Trusted> handleSyncResponse(SyncResponse syncResponse) {
+    private SequencedCollection<DecryptedMutation.Trusted> handleSyncResponse(MutationSyncResponse syncResponse) {
         try {
             // 1. Get all mutations from patches or snapshot
             var mutations = getOrDownloadMutations(syncResponse);
@@ -197,7 +202,7 @@ public final class WebAppState implements Closeable {
         }
     }
 
-    private SequencedCollection<MutationSync> getOrDownloadMutations(SyncResponse response) {
+    private SequencedCollection<MutationSync> getOrDownloadMutations(MutationSyncResponse response) {
         var result = new ArrayList<MutationSync>();
         if(response.snapshot() != null) {
             for (var record : response.snapshot().records()) {
@@ -267,8 +272,8 @@ public final class WebAppState implements Closeable {
             }
 
             // Derive keys and decrypt
-            try (var keys = WebAppStateSyncKeys.ofSyncKey(keyData.keyData())) {
-                var decryptedMutation = MutationDecoder.decryptMutation(
+            try (var keys = MutationKeys.ofSyncKey(keyData.keyData())) {
+                var decryptedMutation = DecryptedMutation.Untrusted.of(
                         record.value().blob(),
                         record.index().blob(),
                         keys,
@@ -356,7 +361,7 @@ public final class WebAppState implements Closeable {
         var currentHashState = whatsapp.store().findWebAppHashStateByName(patchType)
                 .orElseGet(() -> new AppStateSyncHash(patchType));
 
-        var currentHash = currentHashState.hash() != null ? currentHashState.hash() : LTHash.EMPTY_HASH;
+        var currentHash = currentHashState.hash() != null ? currentHashState.hash() : MutationLTHash.EMPTY_HASH;
 
         // Separate SET and REMOVE operations
         var toAdd = new ArrayList<byte[]>();
@@ -374,7 +379,7 @@ public final class WebAppState implements Closeable {
         }
 
         // Compute new hash
-        return LTHash.subtractThenAdd(currentHash, toAdd, toRemove);
+        return MutationLTHash.subtractThenAdd(currentHash, toAdd, toRemove);
     }
 
     private void updateCollectionState(PatchType collectionName, long version, byte[] ltHash) {

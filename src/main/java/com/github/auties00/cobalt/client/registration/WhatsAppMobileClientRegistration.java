@@ -1,14 +1,14 @@
 package com.github.auties00.cobalt.client.registration;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.client.handler.WhatsAppClientVerificationHandler;
+import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
 import com.github.auties00.cobalt.client.version.WhatsAppMobileClientVersion;
 import com.github.auties00.cobalt.exception.MobileRegistrationException;
 import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameCertificateBuilder;
 import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameCertificateSpec;
 import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameDetailsBuilder;
 import com.github.auties00.cobalt.model.proto.business.BusinessVerifiedNameDetailsSpec;
-import com.github.auties00.cobalt.model.proto.jid.Jid;
+import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.curve25519.Curve25519;
@@ -48,6 +48,14 @@ public abstract sealed class WhatsAppMobileClientRegistration implements AutoClo
         this.httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
+    }
+
+    public static WhatsAppMobileClientRegistration of(WhatsappStore store, WhatsAppClientVerificationHandler.Mobile verification) {
+        return switch (store.device().platform()) {
+            case ANDROID -> new WhatsAppAndroidClientRegistration(store, verification);
+            case IOS -> new WhatsAppIosClientRegistration(store, verification);
+            default -> throw new IllegalArgumentException("Unsupported platform: " + store.device().platform());
+        };
     }
 
     protected abstract String[] getRequestVerificationCodeParameters(String method);

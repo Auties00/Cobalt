@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.socket.message;
 
-import com.github.auties00.cobalt.model.proto.jid.Jid;
-import com.github.auties00.cobalt.model.proto.jid.JidServer;
+import com.github.auties00.cobalt.model.jid.Jid;
+import com.github.auties00.cobalt.model.jid.JidServer;
 
 import java.util.HashMap;
 import java.util.Map;

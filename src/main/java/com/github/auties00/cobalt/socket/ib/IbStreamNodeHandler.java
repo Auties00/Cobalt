@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.socket.ib;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.model.node.Node;
-import com.github.auties00.cobalt.model.node.NodeBuilder;
-import com.github.auties00.cobalt.model.proto.jid.JidServer;
+import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.node.NodeBuilder;
+import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.socket.SocketStream;
 
 public final class IbStreamNodeHandler extends SocketStream.Handler {

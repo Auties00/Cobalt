@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.exception;
 
-import com.github.auties00.cobalt.client.handler.WhatsAppClientErrorHandler;
+import com.github.auties00.cobalt.client.WhatsAppClientErrorHandler;
 
 /**
  * A runtime exception that is thrown when a malformed or invalid node is encountered in the WhatsApp protocol stream.
