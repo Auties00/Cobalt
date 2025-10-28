@@ -30,7 +30,6 @@ public record UserAgent(@ProtobufProperty(index = 1, type = ENUM) PlatformType p
         IOS("iOS", 1),
         ANDROID_BUSINESS("Android", 10),
         IOS_BUSINESS("iOS", 12),
-        // Windows does not support newsletters, better choose Mac
         WINDOWS("Windows", 13),
         MACOS("MacOS", 24);
 

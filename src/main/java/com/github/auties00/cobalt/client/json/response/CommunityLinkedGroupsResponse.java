@@ -2,7 +2,7 @@ package com.github.auties00.cobalt.client.json.response;
 
 import com.alibaba.fastjson2.JSON;
 import com.github.auties00.cobalt.model.chat.CommunityLinkedGroup;
-import com.github.auties00.cobalt.model.proto.chat.CommunityLinkedGroupBuilder;
+import com.github.auties00.cobalt.model.chat.CommunityLinkedGroupBuilder;
 import com.github.auties00.cobalt.model.jid.Jid;
 
 import java.util.Collections;

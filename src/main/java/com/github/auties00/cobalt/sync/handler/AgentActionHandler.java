@@ -1,9 +1,7 @@
 package com.github.auties00.cobalt.sync.handler;
 
-import com.alibaba.fastjson2.JSONArray;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.model.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles agent actions.
@@ -27,23 +25,7 @@ public final class AgentActionHandler implements WebAppStateActionHandler {
 
     @Override
     public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
-        var action = mutation.value().agentAction()
-                .orElseThrow(() -> new IllegalArgumentException("Missing agentAction"));
-
-        var agentId = JSONArray.parseArray(mutation.index())
-                .getString(1);
-
-        if (mutation.operation() == RecordSync.Operation.SET) {
-            var agent = store.findAgentById(agentId)
-                    .orElseGet(() -> store.createAgent(agentId));
-            action.name().ifPresent(agent::setName);
-            action.deviceId().ifPresent(agent::setDeviceId);
-            action.isDeleted().ifPresent(agent::setDeleted);
-        } else {
-            store.findAgentById(agentId)
-                    .ifPresent(store::deleteAgent);
-        }
-
+        // Not handled
         return true;
     }
 }

@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync.exchange;
 
-import com.github.auties00.cobalt.model.proto.sync.PatchSyncSpec;
-import com.github.auties00.cobalt.model.proto.sync.SnapshotSyncSpec;
+import com.github.auties00.cobalt.model.sync.PatchSyncSpec;
+import com.github.auties00.cobalt.model.sync.SnapshotSyncSpec;
 import com.github.auties00.cobalt.model.sync.PatchSync;
 import com.github.auties00.cobalt.model.sync.PatchType;
 import com.github.auties00.cobalt.model.sync.SnapshotSync;

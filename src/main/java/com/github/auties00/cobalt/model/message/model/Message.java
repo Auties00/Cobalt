@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.model.message.model;
 
-import com.github.auties00.cobalt.model.core.proto.message.standard.*;
 import com.github.auties00.cobalt.model.message.standard.*;
-import com.github.auties00.cobalt.model.support.proto.message.standard.*;
+import com.github.auties00.cobalt.model.message.standard.*;
+import com.github.auties00.cobalt.model.message.standard.*;
 
 /**
  * A model interface that represents a message sent by a contact or by Whatsapp.

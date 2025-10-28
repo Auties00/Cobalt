@@ -1,21 +1,15 @@
-package com.github.auties00.cobalt.model.action;
+package com.github.auties00.cobalt.model.preferences;
 
 import com.github.auties00.cobalt.model.media.MediaPath;
 import com.github.auties00.cobalt.model.media.MediaProvider;
-import com.github.auties00.cobalt.model.preferences.Sticker;
-import com.github.auties00.cobalt.model.preferences.StickerBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.util.*;
 
-
-/**
- * A model clas that represents a sticker
- */
-@ProtobufMessage(name = "SyncActionValue.StickerAction")
-public final class StickerAction implements Action, MediaProvider {
+@ProtobufMessage
+public final class Sticker implements MediaProvider {
     @ProtobufProperty(index = 1, type = ProtobufType.STRING)
     String mediaUrl;
 
@@ -46,7 +40,7 @@ public final class StickerAction implements Action, MediaProvider {
     @ProtobufProperty(index = 10, type = ProtobufType.UINT32)
     final Integer deviceIdHint;
 
-    StickerAction(String mediaUrl, byte[] fileEncSha256, byte[] mediaKey, String mimetype, Integer height, Integer width, String mediaDirectPath, Long mediaSize, boolean favorite, Integer deviceIdHint) {
+    Sticker(String mediaUrl, byte[] fileEncSha256, byte[] mediaKey, String mimetype, Integer height, Integer width, String mediaDirectPath, Long mediaSize, boolean favorite, Integer deviceIdHint) {
         this.mediaUrl = mediaUrl;
         this.fileEncSha256 = fileEncSha256;
         this.mediaKey = mediaKey;
@@ -57,17 +51,6 @@ public final class StickerAction implements Action, MediaProvider {
         this.mediaSize = mediaSize;
         this.favorite = favorite;
         this.deviceIdHint = deviceIdHint;
-    }
-
-
-    @Override
-    public String indexName() {
-        throw new UnsupportedOperationException("Cannot send action");
-    }
-
-    @Override
-    public int actionVersion() {
-        throw new UnsupportedOperationException("Cannot send action");
     }
 
     @Override
@@ -158,35 +141,19 @@ public final class StickerAction implements Action, MediaProvider {
         return deviceIdHint == null ? OptionalInt.empty() : OptionalInt.of(deviceIdHint);
     }
 
-    public Sticker toSticker() {
-        return new StickerBuilder()
-                .mediaUrl(mediaUrl)
-                .fileEncSha256(fileEncSha256)
-                .mediaKey(mediaKey)
-                .mediaKey(mediaKey)
-                .mimetype(mimetype)
-                .height(height)
-                .width(width)
-                .mediaDirectPath(mediaDirectPath)
-                .mediaSize(mediaSize)
-                .favorite(favorite)
-                .deviceIdHint(deviceIdHint)
-                .build();
-    }
-
     @Override
     public boolean equals(Object o) {
-        return o instanceof StickerAction that
-                && Objects.equals(height, that.height)
-                && Objects.equals(width, that.width)
-                && Objects.equals(mediaSize, that.mediaSize)
-                && favorite == that.favorite
-                && Objects.equals(mediaUrl, that.mediaUrl)
-                && Objects.deepEquals(fileEncSha256, that.fileEncSha256)
-                && Objects.deepEquals(mediaKey, that.mediaKey)
-                && Objects.equals(mimetype, that.mimetype)
-                && Objects.equals(mediaDirectPath, that.mediaDirectPath)
-                && Objects.equals(deviceIdHint, that.deviceIdHint);
+        return o instanceof Sticker that
+               && Objects.equals(height, that.height)
+               && Objects.equals(width, that.width)
+               && Objects.equals(mediaSize, that.mediaSize)
+               && favorite == that.favorite
+               && Objects.equals(mediaUrl, that.mediaUrl)
+               && Objects.deepEquals(fileEncSha256, that.fileEncSha256)
+               && Objects.deepEquals(mediaKey, that.mediaKey)
+               && Objects.equals(mimetype, that.mimetype)
+               && Objects.equals(mediaDirectPath, that.mediaDirectPath)
+               && Objects.equals(deviceIdHint, that.deviceIdHint);
     }
 
     @Override
@@ -196,16 +163,16 @@ public final class StickerAction implements Action, MediaProvider {
 
     @Override
     public String toString() {
-        return "StickerAction[" +
-                "url=" + mediaUrl + ", " +
-                "fileEncSha256=" + Arrays.toString(fileEncSha256) + ", " +
-                "mediaKey=" + Arrays.toString(mediaKey) + ", " +
-                "mimetype=" + mimetype + ", " +
-                "height=" + height + ", " +
-                "width=" + width + ", " +
-                "directPath=" + mediaDirectPath + ", " +
-                "mediaSize=" + mediaSize + ", " +
-                "favorite=" + favorite + ", " +
-                "deviceIdHint=" + deviceIdHint + ']';
+        return "Sticker[" +
+               "url=" + mediaUrl + ", " +
+               "fileEncSha256=" + Arrays.toString(fileEncSha256) + ", " +
+               "mediaKey=" + Arrays.toString(mediaKey) + ", " +
+               "mimetype=" + mimetype + ", " +
+               "height=" + height + ", " +
+               "width=" + width + ", " +
+               "directPath=" + mediaDirectPath + ", " +
+               "mediaSize=" + mediaSize + ", " +
+               "favorite=" + favorite + ", " +
+               "deviceIdHint=" + deviceIdHint + ']';
     }
 }

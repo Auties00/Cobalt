@@ -33,7 +33,7 @@ public final class StickerHandler implements WebAppStateActionHandler {
         var stickerHash = indexArray.getString(1);
 
         switch (mutation.operation()) {
-            case SET -> store.addRecentSticker(stickerHash, action);
+            case SET -> store.addRecentSticker(stickerHash, action.toSticker());
             case REMOVE -> store.removeRecentSticker(stickerHash);
         }
 

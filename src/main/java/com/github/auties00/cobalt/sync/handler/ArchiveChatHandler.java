@@ -1,10 +1,9 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles archive chat actions.
@@ -40,10 +39,9 @@ public final class ArchiveChatHandler implements WebAppStateActionHandler {
             return false;
         }
 
-        if (mutation.operation() == RecordSync.Operation.SET) {
-            chat.get().setArchived(action.archived());
-        } else {
-            chat.get().setArchived(false);
+        switch (mutation.operation()) {
+            case SET -> chat.get().setArchived(action.archived());
+            case REMOVE -> chat.get().setArchived(false);
         }
 
         return true;

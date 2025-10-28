@@ -22,21 +22,7 @@ public final class RecentEmojiWeightsHandler implements WebAppStateActionHandler
 
     @Override
     public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
-        var action = mutation.value()
-                .recentEmojiWeightsAction()
-                .orElseThrow(() -> new IllegalArgumentException("Missing recentEmojiWeightsAction"));
-
-        // Update recent emoji weights in the store
-        action.weights().ifPresent(weights -> {
-            weights.forEach(weight -> {
-                weight.emoji().ifPresent(emoji -> {
-                    weight.weight().ifPresent(w -> {
-                        store.updateEmojiWeight(emoji, w);
-                    });
-                });
-            });
-        });
-
+        // Not handled
         return true;
     }
 }

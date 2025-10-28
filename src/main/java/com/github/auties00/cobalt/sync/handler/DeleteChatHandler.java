@@ -1,10 +1,9 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles delete chat actions.
@@ -31,21 +30,14 @@ public final class DeleteChatHandler implements WebAppStateActionHandler {
                 .deleteChatAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing deleteChatAction"));
 
-        var chatJidString = extractChatIdFromIndex(mutation.index());
+        var chatJidString = JSON.parseArray(mutation.index())
+                .getString(1);
         var chatJid = Jid.of(chatJidString);
 
         var chat = store.findChatByJid(chatJid);
-        if (chat.isPresent()) {
-            if (mutation.operation() == RecordSync.Operation.SET) {
-                store.removeChat(chatJid);
-            }
-        }
+        chat.ifPresent(store::removeChat);
 
         return true;
     }
 
-    private String extractChatIdFromIndex(String index) {
-        // Index format: ["deleteChatAction", "chatJid"]
-        return JSON.parseArray(index).getString(1);
-    }
 }

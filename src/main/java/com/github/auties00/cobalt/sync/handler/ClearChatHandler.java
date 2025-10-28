@@ -1,10 +1,9 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles clear chat actions.
@@ -41,9 +40,7 @@ public final class ClearChatHandler implements WebAppStateActionHandler {
             return false;
         }
 
-        if (mutation.operation() == RecordSync.Operation.SET) {
-            chat.get().removeMessages();;
-        }
+        chat.get().removeMessages();
 
         return true;
     }

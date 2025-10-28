@@ -2,7 +2,7 @@ package com.github.auties00.cobalt.socket.message;
 
 import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
-import com.github.auties00.cobalt.model.proto.message.model.MessageContainerSpec;
+import com.github.auties00.cobalt.model.message.model.MessageContainerSpec;
 import com.github.auties00.libsignal.SignalProtocolStore;
 import com.github.auties00.libsignal.SignalSessionCipher;
 import com.github.auties00.libsignal.groups.SignalGroupCipher;

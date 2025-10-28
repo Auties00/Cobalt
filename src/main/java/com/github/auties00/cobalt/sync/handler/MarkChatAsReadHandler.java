@@ -1,10 +1,9 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles mark chat as read actions.
@@ -40,12 +39,15 @@ public final class MarkChatAsReadHandler implements WebAppStateActionHandler {
             return false;
         }
 
-        if (mutation.operation() == RecordSync.Operation.SET) {
-            chat.get().setMarkedAsUnread(action.read());
-            chat.get().setUnreadMessagesCount(0);
-        }else {
-            chat.get().setMarkedAsUnread(true);
-            chat.get().setUnreadMessagesCount(-1);
+        switch (mutation.operation()) {
+            case SET -> {
+                chat.get().setMarkedAsUnread(action.read());
+                chat.get().setUnreadMessagesCount(0);
+            }
+            case REMOVE -> {
+                chat.get().setMarkedAsUnread(true);
+                chat.get().setUnreadMessagesCount(-1);
+            }
         }
 
         return true;

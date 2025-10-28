@@ -2,7 +2,7 @@ package com.github.auties00.cobalt.model.sync;
 
 import com.alibaba.fastjson2.JSON;
 import com.github.auties00.cobalt.model.info.MessageIndexInfo;
-import com.github.auties00.cobalt.model.proto.info.MessageIndexInfoBuilder;
+import com.github.auties00.cobalt.model.info.MessageIndexInfoBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;

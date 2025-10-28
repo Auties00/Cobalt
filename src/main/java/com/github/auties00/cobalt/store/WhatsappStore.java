@@ -2,23 +2,21 @@
 package com.github.auties00.cobalt.store;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.client.WhatsAppClientListener;
 import com.github.auties00.cobalt.client.WhatsAppClientType;
 import com.github.auties00.cobalt.client.WhatsAppWebClientHistory;
-import com.github.auties00.cobalt.client.WhatsAppClientListener;
+import com.github.auties00.cobalt.client.version.WhatsAppClientVersion;
 import com.github.auties00.cobalt.media.MediaConnection;
-import com.github.auties00.cobalt.sync.crypto.MutationLTHash;
-import com.github.auties00.cobalt.model.sync.CollectionMetadata;
-import com.github.auties00.cobalt.model.sync.CollectionState;
-import com.github.auties00.cobalt.model.sync.PendingMutation;
 import com.github.auties00.cobalt.model.auth.SignedDeviceIdentity;
 import com.github.auties00.cobalt.model.auth.UserAgent.ReleaseChannel;
+import com.github.auties00.cobalt.model.auth.Version;
 import com.github.auties00.cobalt.model.business.BusinessCategory;
 import com.github.auties00.cobalt.model.call.Call;
 import com.github.auties00.cobalt.model.chat.Chat;
-import com.github.auties00.cobalt.model.proto.chat.ChatBuilder;
+import com.github.auties00.cobalt.model.chat.ChatBuilder;
 import com.github.auties00.cobalt.model.chat.ChatEphemeralTimer;
 import com.github.auties00.cobalt.model.contact.Contact;
-import com.github.auties00.cobalt.model.proto.contact.ContactBuilder;
+import com.github.auties00.cobalt.model.contact.ContactBuilder;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
@@ -26,16 +24,17 @@ import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidDevice;
 import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.model.jid.JidServer;
-import com.github.auties00.cobalt.model.media.MediaProvider;
 import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.newsletter.Newsletter;
-import com.github.auties00.cobalt.model.proto.newsletter.NewsletterBuilder;
+import com.github.auties00.cobalt.model.newsletter.NewsletterBuilder;
+import com.github.auties00.cobalt.model.preferences.Label;
+import com.github.auties00.cobalt.model.preferences.QuickReply;
+import com.github.auties00.cobalt.model.preferences.Sticker;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
-import com.github.auties00.cobalt.model.sync.AppStateSyncHash;
-import com.github.auties00.cobalt.model.sync.AppStateSyncKey;
-import com.github.auties00.cobalt.model.sync.PatchType;
+import com.github.auties00.cobalt.model.sync.*;
+import com.github.auties00.cobalt.sync.crypto.MutationLTHash;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.libsignal.SignalProtocolAddress;
@@ -775,8 +774,36 @@ public final class WhatsappStore implements SignalProtocolStore {
     @ProtobufProperty(index = 59, type = ProtobufType.BOOL)
     boolean showSecurityNotifications;
 
+    /**
+     * Recent stickers
+     */
     @ProtobufProperty(index = 60, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
-    final ConcurrentMap<String, MediaProvider> recentStickers;
+    final ConcurrentMap<String, Sticker> recentStickers;
+
+    /**
+     * Favorite stickers
+     */
+    @ProtobufProperty(index = 61, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
+    final ConcurrentMap<String, Sticker> favouriteStickers;
+
+    /**
+     * Quick replies
+     */
+    @ProtobufProperty(index = 62, type = ProtobufType.MAP, mapKeyType = ProtobufType.STRING, mapValueType = ProtobufType.MESSAGE)
+    final ConcurrentMap<String, QuickReply> quickReplies;
+
+    /**
+     * Labels
+     */
+    @ProtobufProperty(index = 63, type = ProtobufType.MAP, mapKeyType = ProtobufType.INT32, mapValueType = ProtobufType.MESSAGE)
+    final ConcurrentMap<Integer, Label> labels;
+
+    @ProtobufProperty(index = 64, type = ProtobufType.MESSAGE)
+    volatile
+    Version clientVersion;
+
+    @ProtobufProperty(index = 65, type = ProtobufType.MESSAGE)
+    Version companionVersion;
 
     // =====================================================
     // SECTION: Runtime State (Non-Serialized)
@@ -801,7 +828,6 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Default: true
      */
     private boolean serializable;
-
 
     /**
      * Registered event listeners for this session.
@@ -833,6 +859,8 @@ public final class WhatsappStore implements SignalProtocolStore {
     private final ConcurrentMap<PatchType, SequencedCollection<PendingMutation>> pendingMutations;
 
     private final ConcurrentMap<PatchType, CollectionMetadata> collections;
+
+    private final Object clientVersionLock;
 
     // =====================================================
     // SECTION: Constructor & Factory Methods
@@ -900,7 +928,12 @@ public final class WhatsappStore implements SignalProtocolStore {
             ConcurrentMap<PatchType, AppStateSyncHash> hashStates,
             boolean registered,
             boolean showSecurityNotifications,
-            ConcurrentMap<String, MediaProvider> recentStickers
+            ConcurrentMap<String, Sticker> recentStickers,
+            ConcurrentMap<String, Sticker> favouriteStickers,
+            ConcurrentMap<String, QuickReply> quickReplies,
+            ConcurrentMap<Integer, Label> labels,
+            Version clientVersion,
+            Version companionVersion
     ) {
         this.uuid = Objects.requireNonNull(uuid, "uuid cannot be null");
         this.phoneNumber = phoneNumber; 
@@ -941,6 +974,9 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.syncedStatus = syncedStatus;
         this.syncedWebAppState = syncedWebAppState;
         this.syncedBusinessCertificate = syncedBusinessCertificate;
+        this.favouriteStickers = favouriteStickers;
+        this.quickReplies = quickReplies;
+        this.labels = labels;
         this.chats = new ConcurrentHashMap<>();
         this.newsletters = new ConcurrentHashMap<>();
         this.status = new ConcurrentHashMap<>();
@@ -964,6 +1000,9 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.registered = registered;
         this.showSecurityNotifications = showSecurityNotifications;
         this.recentStickers = recentStickers;
+        this.clientVersion = clientVersion;
+        this.clientVersionLock = new Object();
+        this.companionVersion = companionVersion;
         this.pendingMutations = new ConcurrentHashMap<>();
         this.collections = new ConcurrentHashMap<>();
         this.serializable = true;
@@ -2525,7 +2564,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @param collectionName the collection name
      */
-    public void markDirty(PatchType collectionName) {
+    public void markWebAppStateDirty(PatchType collectionName) {
         collections.compute(collectionName, (_, current) -> {
             if (current == null || current.state() == CollectionState.UP_TO_DATE) {
                 return new CollectionMetadata(
@@ -2547,7 +2586,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @param collectionName the collection name
      */
-    public void markInFlight(PatchType collectionName) {
+    public void markWebAppStateInFlight(PatchType collectionName) {
         collections.computeIfPresent(collectionName, (_, current) ->
                 new CollectionMetadata(
                         current.name(),
@@ -2566,7 +2605,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @param collectionName the collection name
      */
-    public void markUpToDate(PatchType collectionName) {
+    public void markWebAppStateUpToDate(PatchType collectionName) {
         collections.computeIfPresent(collectionName, (_, current) ->
                 new CollectionMetadata(
                         current.name(),
@@ -2585,7 +2624,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @param collectionName the collection name
      */
-    public void markPending(PatchType collectionName) {
+    public void markWebAppStatePending(PatchType collectionName) {
         collections.computeIfPresent(collectionName, (_, current) ->
                 new CollectionMetadata(
                         current.name(),
@@ -2604,7 +2643,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @param collectionName the collection name
      */
-    public void markBlocked(PatchType collectionName) {
+    public void markWebAppStateBlocked(PatchType collectionName) {
         collections.computeIfPresent(collectionName, (_, current) ->
                 new CollectionMetadata(
                         current.name(),
@@ -2623,7 +2662,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @param collectionName the collection name
      */
-    public void markErrorRetry(PatchType collectionName) {
+    public void markWebAppStateErrorRetry(PatchType collectionName) {
         collections.computeIfPresent(collectionName, (_, current) ->
                 new CollectionMetadata(
                         current.name(),
@@ -2642,7 +2681,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @param collectionName the collection name
      */
-    public void markErrorFatal(PatchType collectionName) {
+    public void markWebAppStateErrorFatal(PatchType collectionName) {
         collections.computeIfPresent(collectionName, (_, current) ->
                 new CollectionMetadata(
                         current.name(),
@@ -2662,7 +2701,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param collectionName the collection name
      * @return the collection metadata
      */
-    public CollectionMetadata getMetadata(PatchType collectionName) {
+    public CollectionMetadata findWebAppState(PatchType collectionName) {
         return collections.computeIfAbsent(collectionName, key ->
                 new CollectionMetadata(
                         key,
@@ -2683,7 +2722,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param newVersion the new version
      * @param newLtHash the new LT-Hash
      */
-    public void updateVersion(PatchType collectionName, long newVersion, byte[] newLtHash) {
+    public void updateWebAppStateVersion(PatchType collectionName, long newVersion, byte[] newLtHash) {
         collections.compute(collectionName, (_, current) ->
                 new CollectionMetadata(
                         collectionName,
@@ -2824,17 +2863,85 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.showSecurityNotifications = showSecurityNotifications;
     }
 
-    public void addRecentSticker(String stickerHash, MediaProvider action) {
-        Objects.requireNonNull(stickerHash, "stickerHash cannot be null");
-        Objects.requireNonNull(action, "action cannot be null");
-        recentStickers.put(stickerHash, action);
+    public Optional<Sticker> findRecentSticker(String stickerHash) {
+        return Optional.ofNullable(recentStickers.get(stickerHash));
     }
 
-    public Optional<MediaProvider> removeRecentSticker(String stickerHash) {
+    public void addRecentSticker(String stickerHash, Sticker sticker) {
+        Objects.requireNonNull(stickerHash, "stickerHash cannot be null");
+        Objects.requireNonNull(sticker, "sticker cannot be null");
+        recentStickers.put(stickerHash, sticker);
+    }
+
+    public Optional<Sticker> removeRecentSticker(String stickerHash) {
         return Optional.ofNullable(recentStickers.remove(stickerHash));
     }
 
-    public void removeQuickReply(String shortcut) {
+    public Optional<Sticker> findFavouriteSticker(String stickerHash) {
+        return Optional.ofNullable(favouriteStickers.get(stickerHash));
+    }
 
+    public void addFavouriteSticker(String stickerHash, Sticker sticker) {
+        Objects.requireNonNull(stickerHash, "stickerHash cannot be null");
+        Objects.requireNonNull(sticker, "sticker cannot be null");
+        favouriteStickers.put(stickerHash, sticker);
+    }
+
+    public Optional<Sticker> removeFavouriteSticker(String stickerHash) {
+        return Optional.ofNullable(favouriteStickers.remove(stickerHash));
+    }
+
+    public Optional<QuickReply> findQuickReply(String shortcut) {
+        return Optional.ofNullable(quickReplies.get(shortcut));
+    }
+
+    public void addQuickReply(QuickReply action) {
+        Objects.requireNonNull(action, "action cannot be null");
+        quickReplies.put(action.shortcut(), action);
+    }
+
+    public Optional<Label> findLabel(String label) {
+        return Optional.ofNullable(labels.get(label));
+    }
+
+    public Optional<Label> removeLabel(String label) {
+        return Optional.ofNullable(labels.remove(label));
+    }
+
+    public void addLabel(Label label) {
+        Objects.requireNonNull(label, "label cannot be null");
+        labels.put(label.id(), label);
+    }
+
+    public Optional<QuickReply> removeQuickReply(String shortcut) {
+        return shortcut == null
+                ? Optional.empty()
+                : Optional.ofNullable(quickReplies.remove(shortcut));
+    }
+
+    public Version clientVersion() {
+        if(clientVersion == null) {
+            synchronized (clientVersionLock) {
+                if(clientVersion == null) {
+                    clientVersion = WhatsAppClientVersion.of(device.platform())
+                            .latest();
+                }
+            }
+        }
+        return clientVersion;
+    }
+
+    public void setClientVersion(Version clientVersion) {
+        Objects.requireNonNull(clientVersion, "clientVersion cannot be null");
+        this.clientVersion = clientVersion;
+    }
+
+    public Optional<Version> companionVersion() {
+        return Optional.ofNullable(companionVersion);
+    }
+
+    public void setCompanionVersion(Version companionVersion) {
+        Objects.requireNonNull(companionVersion, "companionVersion cannot be null");
+        this.companionVersion = companionVersion;
     }
 }

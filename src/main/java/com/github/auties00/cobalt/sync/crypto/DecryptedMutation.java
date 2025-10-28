@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync.crypto;
 
 import com.github.auties00.cobalt.exception.WebAppStateSyncFatalException;
-import com.github.auties00.cobalt.model.proto.sync.ActionDataSyncSpec;
+import com.github.auties00.cobalt.model.sync.ActionDataSyncSpec;
 import com.github.auties00.cobalt.model.sync.ActionValueSync;
 import com.github.auties00.cobalt.model.sync.RecordSync;
 import it.auties.protobuf.stream.ProtobufInputStream;

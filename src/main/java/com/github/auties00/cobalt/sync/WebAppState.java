@@ -11,7 +11,6 @@ import com.github.auties00.cobalt.model.sync.CollectionState;
 import com.github.auties00.cobalt.model.sync.PendingMutation;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.sync.exchange.MutationSyncResponse;
-import com.github.auties00.cobalt.model.proto.sync.*;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.sync.exchange.MutationRequestBuilder;
 import com.github.auties00.cobalt.sync.exchange.MutationResponseParser;
@@ -76,7 +75,7 @@ public final class WebAppState implements Closeable {
      */
     public void pushPatches(PatchType patchType, SequencedCollection<PendingMutation> patches) {
         // 1. Mark collection as dirty
-        store.markDirty(patchType);
+        store.markWebAppStateDirty(patchType);
 
         // 2. Store patches as pending mutations
         whatsapp.store().addPendingMutations(patchType, patches);
@@ -123,7 +122,7 @@ public final class WebAppState implements Closeable {
 
     private void syncCollection(PatchType patchType) {
         var remoteMutations = new ArrayList<DecryptedMutation.Trusted>();
-        while(store.getMetadata(patchType).state() != CollectionState.UP_TO_DATE) {
+        while(store.findWebAppState(patchType).state() != CollectionState.UP_TO_DATE) {
             // 1. Get the sync response
             var syncResponse = sendSyncRequest(patchType);
             if(syncResponse.isEmpty()) {
@@ -149,7 +148,7 @@ public final class WebAppState implements Closeable {
             var request = requestBuilder.buildSyncRequest(patchType, pending);
 
             // 3. Mark as in-flight
-            store.markInFlight(patchType);
+            store.markWebAppStateInFlight(patchType);
 
             // 4. Send a request and get a response (synchronous)
             var response = whatsapp.sendNode(request);
@@ -169,7 +168,7 @@ public final class WebAppState implements Closeable {
             var mutations = getOrDownloadMutations(syncResponse);
             if (mutations.isEmpty()) {
                 // No updates - mark as up-to-date
-                store.markUpToDate(syncResponse.collectionName());
+                store.markWebAppStateUpToDate(syncResponse.collectionName());
                 return List.of();
             }
 
@@ -187,9 +186,9 @@ public final class WebAppState implements Closeable {
 
             // 6. Check if more data available
             if (syncResponse.hasMore()) {
-                store.markPending(syncResponse.collectionName());
+                store.markWebAppStatePending(syncResponse.collectionName());
             } else {
-                store.markUpToDate(syncResponse.collectionName());
+                store.markWebAppStateUpToDate(syncResponse.collectionName());
             }
 
             // Return result
@@ -388,7 +387,7 @@ public final class WebAppState implements Closeable {
         hashState.setVersion(version);
         whatsapp.store()
                 .addWebAppHashState(hashState);
-        store.updateVersion(collectionName, version, ltHash);
+        store.updateWebAppStateVersion(collectionName, version, ltHash);
     }
 
     private void handleSyncError(Throwable error, PatchType collectionName) {
@@ -396,10 +395,10 @@ public final class WebAppState implements Closeable {
             return;
         }
 
-        var metadata = store.getMetadata(collectionName);
+        var metadata = store.findWebAppState(collectionName);
         switch (error) {
             case WebAppStateSyncMissingKeyException missingKeyEx -> {
-                store.markBlocked(collectionName);
+                store.markWebAppStateBlocked(collectionName);
                 var keyId = missingKeyEx.keyId();
                 // TODO: Request missing key with peer message
             }
@@ -410,17 +409,17 @@ public final class WebAppState implements Closeable {
                         () -> syncCollection(collectionName)
                 );
                 if(result) {
-                    store.markErrorRetry(collectionName);
+                    store.markWebAppStateErrorRetry(collectionName);
                 }else {
-                    store.markErrorFatal(collectionName);
+                    store.markWebAppStateErrorFatal(collectionName);
                 }
             }
             case WebAppStateSyncFatalException fatalException -> {
-                store.markErrorFatal(collectionName);
+                store.markWebAppStateErrorFatal(collectionName);
                 throw fatalException;
             }
             default -> {
-                store.markErrorFatal(collectionName);
+                store.markWebAppStateErrorFatal(collectionName);
                 throw new WebAppStateSyncFatalException(error);
             }
         }

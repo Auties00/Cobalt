@@ -2,6 +2,7 @@ package com.github.auties00.cobalt.model.media;
 
 import com.github.auties00.cobalt.model.action.StickerAction;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
+import com.github.auties00.cobalt.model.preferences.Sticker;
 import com.github.auties00.cobalt.model.sync.ExternalBlobReference;
 import com.github.auties00.cobalt.model.sync.HistorySyncNotification;
 
@@ -12,7 +13,7 @@ import java.util.OptionalLong;
  * A sealed interface that represents a class that can provide data about a media
  */
 public sealed interface MediaProvider
-        permits StickerAction, MediaMessage, ExternalBlobReference, HistorySyncNotification {
+        permits StickerAction, MediaMessage, Sticker, ExternalBlobReference, HistorySyncNotification {
     /**
      * Returns the url to the media
      *

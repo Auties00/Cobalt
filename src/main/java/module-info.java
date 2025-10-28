@@ -30,17 +30,14 @@ module com.github.auties00.cobalt {
     // Client
     exports com.github.auties00.cobalt.client;
 
-    // Don't expose ARGO models - they are for internal use only
-
-    // Core - Node
+    // Node
     exports com.github.auties00.cobalt.node;
-
-    // Don't expose JSON models - they are for internal use only
 
     // Proto models - action
     exports com.github.auties00.cobalt.model.action;
 
-    // Don't expose auth proto models
+    // Proto models - auth
+    exports com.github.auties00.cobalt.model.auth;
 
     // Proto models - business
     exports com.github.auties00.cobalt.model.business;
@@ -85,6 +82,9 @@ module com.github.auties00.cobalt {
     // Proto models - poll
     exports com.github.auties00.cobalt.model.poll;
 
+    // Proto models - preferences
+    exports com.github.auties00.cobalt.model.preferences;
+
     // Proto models - privacy
     exports com.github.auties00.cobalt.model.privacy;
 
@@ -99,4 +99,7 @@ module com.github.auties00.cobalt {
 
     // Store
     exports com.github.auties00.cobalt.store;
+
+    // Media
+    exports com.github.auties00.cobalt.media;
 }

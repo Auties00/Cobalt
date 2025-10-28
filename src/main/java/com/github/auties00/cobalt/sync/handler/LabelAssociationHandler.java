@@ -39,14 +39,8 @@ public final class LabelAssociationHandler implements WebAppStateActionHandler {
         var targetJid = Jid.of(targetJidString);
 
         // Find label
-        var label = store.findLabelById(labelId);
+        var label = store.findLabel(labelId);
         if (label.isEmpty()) {
-            return false;
-        }
-
-        // Check if target is chat or message
-        var chat = store.findChatByJid(targetJid);
-        if (chat.isEmpty()) {
             return false;
         }
 
@@ -54,13 +48,13 @@ public final class LabelAssociationHandler implements WebAppStateActionHandler {
         if (mutation.operation() == RecordSync.Operation.SET) {
             // Associate label
             if (action.labeled()) {
-                chat.get().addLabel(label.get());
+                label.get().addAssignment(targetJid);
             } else {
-                chat.get().removeLabel(label.get());
+                label.get().removeAssignment(targetJid);
             }
         } else {
-            // REMOVE operation - remove label association
-            chat.get().removeLabel(label.get());
+            // Remove association
+            label.get().removeAssignment(targetJid);
         }
 
         return true;

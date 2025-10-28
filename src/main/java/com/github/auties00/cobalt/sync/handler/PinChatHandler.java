@@ -1,10 +1,9 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.util.Clock;
 
 /**
@@ -40,14 +39,15 @@ public final class PinChatHandler implements WebAppStateActionHandler {
             return false;
         }
 
-        if (mutation.operation() == RecordSync.Operation.SET) {
-            if(action.pinned()) {
-                chat.get().setPinnedTimestampSeconds((int) Clock.nowSeconds());
-            }else {
-                chat.get().setPinnedTimestampSeconds(0);
+        switch (mutation.operation()) {
+            case SET -> {
+                if (action.pinned()) {
+                    chat.get().setPinnedTimestampSeconds((int) Clock.nowSeconds());
+                } else {
+                    chat.get().setPinnedTimestampSeconds(0);
+                }
             }
-        } else {
-            chat.get().setPinnedTimestampSeconds(0);
+            case REMOVE -> chat.get().setPinnedTimestampSeconds(0);
         }
 
         return true;

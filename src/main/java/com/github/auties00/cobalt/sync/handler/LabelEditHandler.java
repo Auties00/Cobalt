@@ -34,16 +34,23 @@ public final class LabelEditHandler implements WebAppStateActionHandler {
         var labelId = indexArray.getString(1);
 
         if (mutation.operation() == RecordSync.Operation.SET) {
-            var label = store.findLabelById(labelId)
-                    .orElseGet(() -> store.createLabel(labelId));
-
-            action.name().ifPresent(label::setName);
-            action.color().ifPresent(label::setColor);
-            action.predefinedId().ifPresent(label::setPredefinedId);
-            action.deleted().ifPresent(label::setDeleted);
-
+            if(action.deleted()) {
+                store.removeLabel(labelId);
+            }else {
+                var label = store.findLabel(labelId);
+                if(label.isPresent()) {
+                    if(action.name().isPresent()) {
+                        label.get().setName(action.name().get());
+                    }
+                    if(action.color().isPresent()) {
+                        label.get().setColor(action.color().getAsInt());
+                    }
+                }else {
+                    store.addLabel(action.toLabel());
+                }
+            }
         } else {
-            store.findLabelById(labelId).ifPresent(store::deleteLabel);
+            store.removeLabel(labelId);
         }
 
         return true;

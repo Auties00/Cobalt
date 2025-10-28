@@ -7,7 +7,7 @@ import com.github.auties00.cobalt.model.jid.JidProvider;
 import com.github.auties00.cobalt.model.message.model.ContextualMessage;
 import com.github.auties00.cobalt.model.poll.PollOption;
 import com.github.auties00.cobalt.model.poll.SelectedPollOption;
-import com.github.auties00.cobalt.model.proto.poll.SelectedPollOptionBuilder;
+import com.github.auties00.cobalt.model.poll.SelectedPollOptionBuilder;
 import com.github.auties00.cobalt.util.SecureBytes;
 import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;

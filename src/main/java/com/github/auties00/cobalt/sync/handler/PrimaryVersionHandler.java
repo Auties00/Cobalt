@@ -1,5 +1,6 @@
 package com.github.auties00.cobalt.sync.handler;
 
+import com.github.auties00.cobalt.model.auth.Version;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.store.WhatsappStore;
 
@@ -26,8 +27,9 @@ public final class PrimaryVersionHandler implements WebAppStateActionHandler {
                 .primaryVersionAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing primaryVersionAction"));
 
-        // Update primary version in the store
-        action.version().ifPresent(store::setPrimaryVersion);
+        action.version()
+                .map(Version::of)
+                .ifPresent(store::setCompanionVersion);
 
         return true;
     }

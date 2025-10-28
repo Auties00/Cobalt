@@ -1,10 +1,9 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles contact actions.
@@ -38,12 +37,15 @@ public final class ContactActionHandler implements WebAppStateActionHandler {
         var contact = store.findContactByJid(contactJid)
                 .orElseGet(() -> store.addNewContact(contactJid));
 
-        if (mutation.operation() == RecordSync.Operation.SET) {
-            action.fullName().ifPresent(contact::setFullName);
-            action.firstName().ifPresent(contact::setShortName);
-        } else {
-            contact.setFullName(null);
-            contact.setShortName(null);
+        switch (mutation.operation()) {
+            case SET -> {
+                action.fullName().ifPresent(contact::setFullName);
+                action.firstName().ifPresent(contact::setShortName);
+            }
+            case REMOVE -> {
+                contact.setFullName(null);
+                contact.setShortName(null);
+            }
         }
 
         return true;

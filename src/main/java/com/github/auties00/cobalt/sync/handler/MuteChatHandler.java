@@ -1,11 +1,10 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.model.chat.ChatMute;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles mute chat actions.
@@ -41,10 +40,9 @@ public final class MuteChatHandler implements WebAppStateActionHandler {
             return false;
         }
 
-        if (mutation.operation() == RecordSync.Operation.SET) {
-            chat.get().setMute(ChatMute.muted(action.muteEndTimestampSeconds()));
-        } else {
-            chat.get().setMute(ChatMute.notMuted());
+        switch (mutation.operation()) {
+            case SET -> chat.get().setMute(ChatMute.muted(action.muteEndTimestampSeconds()));
+            case REMOVE -> chat.get().setMute(ChatMute.notMuted());
         }
 
         return true;

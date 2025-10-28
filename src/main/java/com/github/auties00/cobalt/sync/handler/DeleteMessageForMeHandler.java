@@ -1,10 +1,9 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.sync.RecordSync;
 import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles delete message for me actions.
@@ -45,11 +44,7 @@ public final class DeleteMessageForMeHandler implements WebAppStateActionHandler
         }
 
         var message = store.findMessageById(chat.get(), messageId);
-        if(message.isPresent()) {
-            if(mutation.operation() == RecordSync.Operation.SET) {
-                chat.get().removeMessage(message.get().id());
-            }
-        }
+        message.ifPresent(chatMessageInfo -> chat.get().removeMessage(chatMessageInfo.id()));
 
         return true;
     }

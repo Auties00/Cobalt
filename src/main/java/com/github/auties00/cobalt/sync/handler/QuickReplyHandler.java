@@ -35,15 +35,13 @@ public final class QuickReplyHandler implements WebAppStateActionHandler {
 
         switch (mutation.operation()) {
             case SET -> {
-                var quickReply = store.findQuickReply(shortcut)
-                        .orElseGet(() -> store.createQuickReply(shortcut));
-
-                action.message().ifPresent(quickReply::setMessage);
-                action.keywords().ifPresent(quickReply::setKeywords);
-                action.count().ifPresent(quickReply::setCount);
-                action.deleted().ifPresent(quickReply::setDeleted);
+                if(action.deleted()) {
+                    store.removeQuickReply(shortcut);
+                }else {
+                    store.addQuickReply(action.toQuickReply());
+                }
             }
-            case REMOVE ->  store.removeQuickReply(shortcut);
+            case REMOVE -> store.removeQuickReply(shortcut);
         }
 
         return true;

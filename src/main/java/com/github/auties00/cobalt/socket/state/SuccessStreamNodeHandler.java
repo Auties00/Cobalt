@@ -7,7 +7,7 @@ import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.media.MediaConnection;
-import com.github.auties00.cobalt.model.proto.privacy.PrivacySettingEntryBuilder;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingEntryBuilder;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.sync.PatchType;

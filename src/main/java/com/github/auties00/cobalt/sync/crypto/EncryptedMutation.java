@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync.crypto;
 
-import com.github.auties00.cobalt.model.proto.sync.ActionDataSyncBuilder;
-import com.github.auties00.cobalt.model.proto.sync.ActionDataSyncSpec;
+import com.github.auties00.cobalt.model.sync.ActionDataSyncBuilder;
+import com.github.auties00.cobalt.model.sync.ActionDataSyncSpec;
 import com.github.auties00.cobalt.model.sync.PendingMutation;
 import com.github.auties00.cobalt.model.sync.RecordSync.Operation;
 import com.github.auties00.cobalt.util.SecureBytes;

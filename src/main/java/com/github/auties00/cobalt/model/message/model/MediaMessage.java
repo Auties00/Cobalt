@@ -4,9 +4,9 @@ import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.media.MediaPath;
 import com.github.auties00.cobalt.model.media.MediaProvider;
 import com.github.auties00.cobalt.model.message.payment.PaymentInvoiceMessage;
-import com.github.auties00.cobalt.model.core.proto.message.standard.*;
 import com.github.auties00.cobalt.model.message.standard.*;
-import com.github.auties00.cobalt.model.support.proto.message.standard.*;
+import com.github.auties00.cobalt.model.message.standard.*;
+import com.github.auties00.cobalt.model.message.standard.*;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
