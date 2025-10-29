@@ -2,12 +2,11 @@ package com.github.auties00.cobalt.socket;
 
 import com.github.auties00.cobalt.client.WhatsAppClientType;
 import com.github.auties00.cobalt.client.WhatsAppWebClientHistory;
-import com.github.auties00.cobalt.client.version.WhatsAppClientVersion;
+import com.github.auties00.cobalt.client.info.WhatsAppClientInfo;
 import com.github.auties00.cobalt.node.NodeEncoder;
 import com.github.auties00.cobalt.node.NodeTokens;
 import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.node.Node;
-import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.sync.HistorySyncConfigBuilder;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.util.SecureBytes;
@@ -219,7 +218,7 @@ public final class SocketEncryption {
     }
 
     private UserAgent createUserAgent() {
-        var clientInfo = WhatsAppClientVersion.of(store.device().platform());
+        var clientInfo = WhatsAppClientInfo.of(store.device().platform());
         var mobile = store.clientType() == WhatsAppClientType.MOBILE;
         return new UserAgentBuilder()
                 .platform(store.device().platform())
@@ -286,7 +285,7 @@ public final class SocketEncryption {
     }
 
     private CompanionRegistrationData createRegisterData() {
-        var clientInfo = WhatsAppClientVersion.of(store.device().platform());
+        var clientInfo = WhatsAppClientInfo.of(store.device().platform());
         var companion = new CompanionRegistrationDataBuilder()
                 .buildHash(clientInfo.latest().toHash())
                 .eRegid(SecureBytes.intToBytes(store.registrationId(), 4))

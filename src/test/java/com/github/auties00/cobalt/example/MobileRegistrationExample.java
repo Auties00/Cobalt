@@ -20,11 +20,11 @@ void main() {
 }
 
 // You can get a value from https://daisysms.com, do not spam registrations, or you'll get banned
-long promptPhoneNumber() {
+private long promptPhoneNumber() {
     return Long.parseUnsignedLong(IO.readln("Enter the phone value: "));
 }
 
-boolean promptBusiness() {
+private boolean promptBusiness() {
     while (true) {
         var type = IO.readln("Select if the account is business or personal:\n(1) Business (2) Personal")
                 .trim();
@@ -38,7 +38,7 @@ boolean promptBusiness() {
     }
 }
 
-String promptVerificationCode() {
+private String promptVerificationCode() {
     return IO.readln("Enter the verification code: ")
             .trim()
             .replace("-", "");

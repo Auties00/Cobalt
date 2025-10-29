@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.client.version;
+package com.github.auties00.cobalt.client.info;
 
 import com.github.auties00.cobalt.model.auth.Version;
 import net.dongliu.apk.parser.ByteArrayApkFile;
@@ -21,15 +21,15 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
-final class WhatsAppAndroidClientVersion implements WhatsAppMobileClientVersion {
+final class WhatsAppAndroidClientInfo implements WhatsAppMobileClientInfo {
     private static final byte[] MOBILE_ANDROID_SALT = Base64.getDecoder().decode("PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN");
     private static final URI MOBILE_PERSONAL_ANDROID_URL = URI.create("https://www.whatsapp.com/android/current/WhatsApp.apk");
     private static final URI MOBILE_BUSINESS_ANDROID_URL = URI.create("https://d.cdnpure.com/b/APK/com.whatsapp.w4b?version=latest");
     private static final String MOBILE_ANDROID_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
 
-    private static volatile WhatsAppAndroidClientVersion personalApkInfo;
+    private static volatile WhatsAppAndroidClientInfo personalApkInfo;
     private static final Object personalApkInfoLock = new Object();
-    private static volatile WhatsAppAndroidClientVersion businessApkInfo;
+    private static volatile WhatsAppAndroidClientInfo businessApkInfo;
     private static final Object businessApkInfoLock = new Object();
 
     private final Version version;
@@ -38,7 +38,7 @@ final class WhatsAppAndroidClientVersion implements WhatsAppMobileClientVersion 
     private final byte[][] certificates;
     private final boolean business;
 
-    private WhatsAppAndroidClientVersion(Version version, byte[] md5Hash, SecretKeySpec secretKey, byte[][] certificates, boolean business) {
+    private WhatsAppAndroidClientInfo(Version version, byte[] md5Hash, SecretKeySpec secretKey, byte[][] certificates, boolean business) {
         this.version = version;
         this.md5Hash = md5Hash;
         this.secretKey = secretKey;
@@ -46,7 +46,7 @@ final class WhatsAppAndroidClientVersion implements WhatsAppMobileClientVersion 
         this.business = business;
     }
 
-    public static WhatsAppAndroidClientVersion ofPersonal() {
+    public static WhatsAppAndroidClientInfo ofPersonal() {
         if (personalApkInfo == null) {
             synchronized (personalApkInfoLock) {
                 if(personalApkInfo == null) {
@@ -57,7 +57,7 @@ final class WhatsAppAndroidClientVersion implements WhatsAppMobileClientVersion 
         return personalApkInfo;
     }
 
-    public static WhatsAppAndroidClientVersion ofBusiness() {
+    public static WhatsAppAndroidClientInfo ofBusiness() {
         if (businessApkInfo == null) {
             synchronized (businessApkInfoLock) {
                 if(businessApkInfo == null) {
@@ -68,7 +68,7 @@ final class WhatsAppAndroidClientVersion implements WhatsAppMobileClientVersion 
         return businessApkInfo;
     }
 
-    private static WhatsAppAndroidClientVersion queryApkInfo(boolean business) {
+    private static WhatsAppAndroidClientInfo queryApkInfo(boolean business) {
         try(var httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build()) {
@@ -95,7 +95,7 @@ final class WhatsAppAndroidClientVersion implements WhatsAppMobileClientVersion 
                 var md5Hash = digest.digest();
                 var secretKey = getSecretKey(apkFile.getApkMeta().getPackageName(), getAboutLogo(apkFile));
                 var certificates = getCertificates(apkFile);
-                return new WhatsAppAndroidClientVersion(version, md5Hash, secretKey, certificates, business);
+                return new WhatsAppAndroidClientInfo(version, md5Hash, secretKey, certificates, business);
             }
         } catch (IOException | GeneralSecurityException | InterruptedException exception) {
             throw new RuntimeException("Cannot extract data from APK", exception);

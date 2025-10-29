@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.test;
 
-import com.github.auties00.cobalt.version.WhatsAppAndroidClientInfo;
-import com.github.auties00.cobalt.version.WhatsAppIosClientInfo;
-import com.github.auties00.cobalt.version.WhatsAppWebClientInfo;
+import com.github.auties00.cobalt.client.info.WhatsAppClientInfo;
+import com.github.auties00.cobalt.client.info.WhatsAppMobileClientInfo;
 import org.junit.jupiter.api.Test;
 
+import static com.github.auties00.cobalt.model.auth.UserAgent.PlatformType.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class ClientsTests {
@@ -12,46 +12,47 @@ public class ClientsTests {
 
     @Test
     public void testWebVersion() {
-        assertDoesNotThrow(() -> WhatsAppWebClientInfo.of().version());
+        assertDoesNotThrow(() -> WhatsAppClientInfo.of(MACOS).latest());
+        assertDoesNotThrow(() -> WhatsAppClientInfo.of(WINDOWS).latest());
     }
     
     @Test
     public void testPersonalIosVersion() {
-        assertDoesNotThrow(() -> WhatsAppIosClientInfo.ofPersonal().version());
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(IOS).latest());
     }
     
     @Test
     public void testBusinessIosVersion() {
-        assertDoesNotThrow(() -> WhatsAppIosClientInfo.ofBusiness().version());
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(IOS_BUSINESS).latest());
     }
     
     @Test
     public void testPersonalAndroidVersion() {
-        assertDoesNotThrow(() -> WhatsAppAndroidClientInfo.ofPersonal().version());
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(ANDROID).latest());
     }
     
     @Test
     public void testBusinessAndroidVersion() {
-        assertDoesNotThrow(() -> WhatsAppAndroidClientInfo.ofBusiness().version());
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(ANDROID_BUSINESS).latest());
     }
 
     @Test
     public void testPersonalIosToken() {
-        assertDoesNotThrow(() -> WhatsAppIosClientInfo.ofPersonal().computeRegistrationToken(PHONE_NUMBER_MOCK));
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(IOS).computeRegistrationToken(PHONE_NUMBER_MOCK));
     }
 
     @Test
     public void testBusinessIosToken() {
-        assertDoesNotThrow(() -> WhatsAppIosClientInfo.ofBusiness().computeRegistrationToken(PHONE_NUMBER_MOCK));
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(IOS_BUSINESS).computeRegistrationToken(PHONE_NUMBER_MOCK));
     }
 
     @Test
     public void testPersonalAndroidToken() {
-        assertDoesNotThrow(() -> WhatsAppAndroidClientInfo.ofPersonal().computeRegistrationToken(PHONE_NUMBER_MOCK));
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(ANDROID).computeRegistrationToken(PHONE_NUMBER_MOCK));
     }
 
     @Test
     public void testBusinessAndroidToken() {
-        assertDoesNotThrow(() -> WhatsAppAndroidClientInfo.ofBusiness().computeRegistrationToken(PHONE_NUMBER_MOCK));
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(ANDROID_BUSINESS).computeRegistrationToken(PHONE_NUMBER_MOCK));
     }
 }

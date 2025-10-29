@@ -8,7 +8,6 @@ import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.message.button.ButtonsMessageHeader;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;
-import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
@@ -16,9 +15,6 @@ import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.*;
-
-import static com.github.auties00.cobalt.model.message.model.MediaMessage.Type.VIDEO;
-import static java.util.Objects.requireNonNullElse;
 
 /**
  * A model class that represents a message holding a video inside
@@ -119,47 +115,6 @@ public final class VideoOrGifMessage
         this.thumbnailSha256 = thumbnailSha256;
         this.thumbnailEncSha256 = thumbnailEncSha256;
         this.staticUrl = staticUrl;
-    }
-
-    @ProtobufBuilder(className = "VideoMessageSimpleBuilder")
-    static VideoOrGifMessage videoBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
-        var dimensions = Medias.getDimensions(media, true);
-        var duration = Medias.getDuration(media);
-        return new VideoOrGifMessageBuilder()
-                .mimetype(requireNonNullElse(mimeType, VIDEO.mimeType()))
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media))
-                .caption(caption)
-                .width(dimensions.width())
-                .height(dimensions.height())
-                .duration(duration)
-                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build();
-    }
-
-    @ProtobufBuilder(className = "GifMessageSimpleBuilder")
-    static VideoOrGifMessage gifBuilder(byte[] media, String mimeType, String caption, Attribution gifAttribution, byte[] thumbnail, ContextInfo contextInfo) {
-        if (!isNotGif(media, mimeType)) {
-            throw new IllegalArgumentException("Cannot create a VideoMessage with mime type image/gif: gif messages on whatsapp are videos played as gifs");
-        }
-        var dimensions = Medias.getDimensions(media, true);
-        var duration = Medias.getDuration(media);
-        return new VideoOrGifMessageBuilder()
-                .mimetype(requireNonNullElse(mimeType, VIDEO.mimeType()))
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getVideoThumbnail(media))
-                .caption(caption)
-                .width(dimensions.width())
-                .height(dimensions.height())
-                .duration(duration)
-                .gifPlayback(true)
-                .gifAttribution(requireNonNullElse(gifAttribution, Attribution.NONE))
-                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build();
-    }
-
-    private static boolean isNotGif(byte[] media, String mimeType) {
-        return Medias.getMimeType(media)
-                .filter("image/gif"::equals)
-                .isEmpty() && (!Objects.equals(mimeType, "image/gif"));
     }
 
     @Override

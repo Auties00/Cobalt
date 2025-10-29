@@ -8,18 +8,14 @@ import com.github.auties00.cobalt.model.media.MediaPath;
 import com.github.auties00.cobalt.model.message.button.ButtonsMessageHeader;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;
-import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
-
-import static com.github.auties00.cobalt.model.message.model.MediaMessage.Type.DOCUMENT;
 
 /**
  * A model class that represents a message holding a document inside
@@ -111,33 +107,6 @@ public final class DocumentMessage
         this.thumbnailHeight = thumbnailHeight;
         this.thumbnailWidth = thumbnailWidth;
         this.caption = caption;
-    }
-
-    @ProtobufBuilder(className = "DocumentMessageSimpleBuilder")
-    static DocumentMessage customBuilder(byte[] media, String fileName, String mimeType, String title, int pageCount, byte[] thumbnail, ContextInfo contextInfo, String caption) {
-        var extensionIndex = fileName.lastIndexOf(".");
-        if (extensionIndex == -1 || extensionIndex + 1 >= fileName.length()) {
-            throw new IllegalArgumentException("Expected fileName to be formatted as name.extension");
-        }
-
-        return new DocumentMessageBuilder()
-                .mimetype(getMimeType(media, fileName, mimeType))
-                .fileName(fileName)
-                .pageCount(pageCount > 0 ? pageCount : Medias.getPagesCount(media))
-                .title(title)
-                .thumbnail(thumbnail != null ? null : Medias.getDocumentThumbnail(media))
-                .thumbnailWidth(THUMBNAIL_WIDTH)
-                .thumbnailHeight(THUMBNAIL_HEIGHT)
-                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .caption(caption)
-                .build();
-    }
-
-    private static String getMimeType(byte[] media, String fileName, String mimeType) {
-        return Optional.ofNullable(mimeType)
-                .or(() -> Medias.getMimeType(fileName))
-                .or(() -> Medias.getMimeType(media))
-                .orElse(DOCUMENT.mimeType());
     }
 
     public OptionalInt pageCount() {

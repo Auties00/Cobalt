@@ -1,6 +1,7 @@
 package com.github.auties00.cobalt.model.action;
 
 import com.github.auties00.cobalt.model.preferences.Label;
+import com.github.auties00.cobalt.model.preferences.LabelBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;

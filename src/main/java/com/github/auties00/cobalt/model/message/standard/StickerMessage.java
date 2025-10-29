@@ -3,19 +3,14 @@ package com.github.auties00.cobalt.model.message.standard;
 import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;
-import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
-
-import static com.github.auties00.cobalt.model.message.model.MediaMessage.Type.STICKER;
-import static java.util.Objects.requireNonNullElse;
 
 /**
  * A model class that represents a message holding a sticker inside
@@ -91,16 +86,6 @@ public final class StickerMessage implements MediaMessage {
         this.contextInfo = contextInfo;
         this.stickerSentTimestamp = stickerSentTimestamp;
         this.avatar = avatar;
-    }
-
-    @ProtobufBuilder(className = "SimpleStickerMessageBuilder")
-    static StickerMessage simpleBuilder(byte[] media, String mimeType, byte[] thumbnail, boolean animated, ContextInfo contextInfo) {
-        return new StickerMessageBuilder()
-                .mimetype(requireNonNullElse(mimeType, STICKER.mimeType()))
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, false))
-                .animated(animated)
-                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build();
     }
 
     public OptionalInt height() {

@@ -34,7 +34,7 @@ public final class LabelAssociationHandler implements WebAppStateActionHandler {
         // Extract info from index
         var indexArray = JSON.parseArray(mutation.index());
         var targetJidString = indexArray.getString(1);
-        var labelId = indexArray.getString(2);
+        var labelId = indexArray.getInteger(2);
 
         var targetJid = Jid.of(targetJidString);
 

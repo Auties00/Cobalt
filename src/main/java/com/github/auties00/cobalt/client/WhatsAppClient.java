@@ -1913,7 +1913,6 @@ public final class WhatsAppClient {
         }else{
             switch (store.clientType()) {
                 case WEB -> {
-                    var range = createRange(info.chatJid(), false);
                     var deleteMessageAction = new DeleteMessageForMeActionBuilder()
                             .deleteMedia(false)
                             .messageTimestampSeconds(info.timestampSeconds().orElse(0L))
@@ -1982,10 +1981,8 @@ public final class WhatsAppClient {
             return;
         }
 
-        var range = createRange(chat, false);
         var markAction = new MarkChatAsReadActionBuilder()
                 .read(read)
-                .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(markAction);
         var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString());
@@ -2241,10 +2238,8 @@ public final class WhatsAppClient {
             return;
         }
 
-        var range = createRange(chat, false);
         var archiveAction = new ArchiveChatActionBuilder()
                 .archived(archive)
-                .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(archiveAction);
         var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString());
@@ -2258,13 +2253,6 @@ public final class WhatsAppClient {
      */
     public void unarchive(JidProvider chat) {
         archiveChat(chat, false);
-    }
-
-
-    private ActionMessageRangeSync createRange(JidProvider chat, boolean allMessages) {
-        var known = store.findChatByJid(chat.toJid())
-                .orElseGet(() -> store.addNewChat(chat.toJid()));
-        return new ActionMessageRangeSync(known, allMessages);
     }
 
     /**
@@ -3005,9 +2993,7 @@ public final class WhatsAppClient {
             return;
         }
 
-        var range = createRange(chat.toJid(), false);
         var deleteChatAction = new DeleteChatActionBuilder()
-                .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(deleteChatAction);
         var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString(), "1");
@@ -3029,9 +3015,7 @@ public final class WhatsAppClient {
         }
 
         var known = store.findChatByJid(chat);
-        var range = createRange(chat.toJid(), true);
         var clearChatAction = new ClearChatActionBuilder()
-                .messageRange(range)
                 .build();
         var syncAction = ActionValueSync.of(clearChatAction);
         var entry = new PendingMutation(syncAction, Operation.SET, chat.toJid().toString(), booleanToInt(keepStarredMessages), "0");

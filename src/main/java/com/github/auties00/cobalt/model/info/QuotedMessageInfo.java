@@ -179,9 +179,4 @@ public final class QuotedMessageInfo implements MessageInfo {
     public OptionalLong timestampSeconds() {
         return OptionalLong.empty();
     }
-
-    @Override
-    public Optional<MessageInfoStubType> stubType() {
-        return Optional.empty();
-    }
 }

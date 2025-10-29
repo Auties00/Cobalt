@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.model.jid;
 
 import com.github.auties00.cobalt.client.WhatsAppClientType;
-import com.github.auties00.cobalt.client.version.WhatsAppClientVersion;
+import com.github.auties00.cobalt.client.info.WhatsAppClientInfo;
 import com.github.auties00.cobalt.model.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.auth.Version;
 import it.auties.protobuf.annotation.ProtobufMessage;
@@ -351,7 +351,7 @@ public final class JidDevice {
         if(platform == PlatformType.WINDOWS || platform == PlatformType.MACOS) {
             return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
         }else {
-            var clientInfo = WhatsAppClientVersion.of(platform);
+            var clientInfo = WhatsAppClientInfo.of(platform);
             var platformName = switch (platform) {
                 case ANDROID -> "Android";
                 case ANDROID_BUSINESS -> "SMBA";

@@ -2,7 +2,7 @@ package com.github.auties00.cobalt.client.registration;
 
 import com.alibaba.fastjson2.JSON;
 import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
-import com.github.auties00.cobalt.client.version.WhatsAppMobileClientVersion;
+import com.github.auties00.cobalt.client.info.WhatsAppMobileClientInfo;
 import com.github.auties00.cobalt.exception.MobileRegistrationException;
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificateBuilder;
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificateSpec;
@@ -252,7 +252,7 @@ public abstract sealed class WhatsAppMobileClientRegistration implements AutoClo
             return null;
         }
 
-        var info = WhatsAppMobileClientVersion.of(store.device().platform());
+        var info = WhatsAppMobileClientInfo.of(store.device().platform());
         return info.computeRegistrationToken(phoneNumber.getNationalNumber());
     }
 

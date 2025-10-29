@@ -1,25 +1,19 @@
 package com.github.auties00.cobalt.model.message.standard;
 
-import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.button.interactive.InteractiveHeaderAttachment;
 import com.github.auties00.cobalt.model.button.interactive.InteractiveLocationAnnotation;
 import com.github.auties00.cobalt.model.button.template.highlyStructured.HighlyStructuredFourRowTemplateTitle;
 import com.github.auties00.cobalt.model.button.template.hydrated.HydratedFourRowTemplateTitle;
-import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.message.button.ButtonsMessageHeader;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;
-import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
 import java.util.*;
-
-import static com.github.auties00.cobalt.model.message.model.MediaMessage.Type.IMAGE;
-import static java.util.Objects.requireNonNullElse;
 
 /**
  * A model class that represents a message holding an image inside
@@ -132,31 +126,6 @@ public final class ImageMessage
         this.thumbnailSha256 = thumbnailSha256;
         this.thumbnailEncSha256 = thumbnailEncSha256;
         this.staticUrl = staticUrl;
-    }
-
-    /**
-     * Constructs a new builder to create a ImageMessage. The newsletters can be later sent using
-     * {@link WhatsAppClient#sendChatMessage(ChatMessageInfo)}
-     *
-     * @param media       the non-null image that the new message wraps
-     * @param mimeType    the mime type of the new message, by default
-     *                    {@link MediaMessage.Type#mimeType()}
-     * @param caption     the caption of the new message
-     * @param thumbnail   the thumbnail of the document that the new message wraps
-     * @param contextInfo the context info that the new message wraps
-     * @return a non-null new message
-     */
-    @ProtobufBuilder(className = "ImageMessageSimpleBuilder")
-    static ImageMessage simpleBuilder(byte[] media, String mimeType, String caption, byte[] thumbnail, ContextInfo contextInfo) {
-        var dimensions = Medias.getDimensions(media, false);
-        return new ImageMessageBuilder()
-                .mimetype(requireNonNullElse(mimeType, IMAGE.mimeType()))
-                .caption(caption)
-                .width(dimensions.width())
-                .height(dimensions.height())
-                .thumbnail(thumbnail != null ? thumbnail : Medias.getImageThumbnail(media, true))
-                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .build();
     }
 
     @Override

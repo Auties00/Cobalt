@@ -31,7 +31,7 @@ public final class LabelEditHandler implements WebAppStateActionHandler {
                 .orElseThrow(() -> new IllegalArgumentException("Missing labelEditAction"));
 
         var indexArray = JSON.parseArray(mutation.index());
-        var labelId = indexArray.getString(1);
+        var labelId = indexArray.getInteger(1);
 
         if (mutation.operation() == RecordSync.Operation.SET) {
             if(action.deleted()) {

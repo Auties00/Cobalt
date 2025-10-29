@@ -4,13 +4,11 @@ import com.github.auties00.cobalt.model.info.ContextInfo;
 import com.github.auties00.cobalt.model.media.MediaPath;
 import com.github.auties00.cobalt.model.message.model.MediaMessage;
 import com.github.auties00.cobalt.util.Clock;
-import it.auties.protobuf.annotation.ProtobufBuilder;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -74,23 +72,6 @@ public final class AudioMessage implements MediaMessage {
         this.streamingSidecar = streamingSidecar;
         this.waveform = waveform;
         this.backgroundArgb = backgroundArgb;
-    }
-
-    @ProtobufBuilder(className = "AudioMessageSimpleBuilder")
-    static AudioMessage customBuilder(byte[] media, ContextInfo contextInfo, String mimeType, boolean voiceMessage) {
-        return new AudioMessageBuilder()
-                .contextInfo(Objects.requireNonNullElseGet(contextInfo, ContextInfo::empty))
-                .duration(Medias.getDuration(media))
-                .mimetype(getMimeType(media, mimeType))
-                .voiceMessage(voiceMessage)
-                .waveform(Medias.getAudioWaveForm(media))
-                .build();
-    }
-
-    private static String getMimeType(byte[] media, String mimeType) {
-        return Optional.ofNullable(mimeType)
-                .or(() -> Medias.getMimeType(media))
-                .orElseGet(Type.AUDIO::mimeType);
     }
 
     public Optional<String> mimetype() {

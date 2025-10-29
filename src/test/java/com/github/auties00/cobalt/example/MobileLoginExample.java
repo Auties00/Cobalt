@@ -19,12 +19,12 @@ void main() {
             .waitForDisconnection();
 }
 
-String promptSixParts() {
+private String promptSixParts() {
     return IO.readln("Enter the six parts segment: ")
             .trim();
 }
 
-boolean promptBusiness() {
+private boolean promptBusiness() {
     while (true) {
         var type = IO.readln("Select if the account is business or personal:\n(1) Business (2) Personal")
                 .trim();

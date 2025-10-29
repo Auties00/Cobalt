@@ -27,6 +27,6 @@ void main() {
             .waitForDisconnection();
 }
 
-long promptPhoneNumber() {
+private long promptPhoneNumber() {
     return Long.parseUnsignedLong(IO.readln("Enter the phone value: "));
 }

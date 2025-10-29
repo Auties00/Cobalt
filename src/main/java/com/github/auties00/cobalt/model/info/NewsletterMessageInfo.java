@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.github.auties00.cobalt.model.contact.Contact;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
+import com.github.auties00.cobalt.model.message.model.MessageReceipt;
 import com.github.auties00.cobalt.model.message.model.MessageStatus;
 import com.github.auties00.cobalt.model.newsletter.Newsletter;
 import com.github.auties00.cobalt.model.newsletter.NewsletterReaction;
@@ -39,9 +40,15 @@ public final class NewsletterMessageInfo implements MessageInfo {
     @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
     MessageStatus status;
 
+    @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
+    boolean starred;
+
+    @ProtobufProperty(index = 9, type = ProtobufType.MESSAGE)
+    final MessageReceipt receipt;
+
     Newsletter newsletter;
 
-    NewsletterMessageInfo(String id, int serverId, Long timestampSeconds, Long views, Map<String, NewsletterReaction> reactions, MessageContainer message, MessageStatus status) {
+    NewsletterMessageInfo(String id, int serverId, Long timestampSeconds, Long views, Map<String, NewsletterReaction> reactions, MessageContainer message, MessageStatus status, boolean starred, MessageReceipt receipt) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
         this.serverId = serverId;
         this.timestampSeconds = timestampSeconds;
@@ -49,6 +56,8 @@ public final class NewsletterMessageInfo implements MessageInfo {
         this.reactions = reactions;
         this.message = message;
         this.status = status;
+        this.starred = starred;
+        this.receipt = receipt;
     }
 
     public static Optional<NewsletterMessageInfo> ofJson(JSONObject jsonObject) {
@@ -75,7 +84,10 @@ public final class NewsletterMessageInfo implements MessageInfo {
                 .orElse(MessageContainer.empty());
         var status = MessageStatus.of(jsonObject.getString("status"))
                 .orElse(MessageStatus.ERROR);
-        return Optional.of(new NewsletterMessageInfo(id, serverId, timestampSeconds, views, reactions, message, status));
+        // TODO
+        var starred = false;
+        var receipt = new MessageReceipt();
+        return Optional.of(new NewsletterMessageInfo(id, serverId, timestampSeconds, views, reactions, message, status, starred, receipt));
     }
 
     public void setNewsletter(Newsletter newsletter) {
@@ -168,11 +180,6 @@ public final class NewsletterMessageInfo implements MessageInfo {
         this.status = status;
     }
 
-    @Override
-    public Optional<MessageInfoStubType> stubType() {
-        return Optional.empty();
-    }
-
     public Collection<NewsletterReaction> reactions() {
         return Collections.unmodifiableCollection(reactions.values());
     }
@@ -211,31 +218,43 @@ public final class NewsletterMessageInfo implements MessageInfo {
         });
     }
 
+    public boolean starred() {
+        return starred;
+    }
+
+    public void setStarred(boolean starred) {
+        this.starred = starred;
+    }
+
+    public MessageReceipt receipt() {
+        return receipt;
+    }
+
     @Override
     public String toString() {
         return "NewsletterMessageInfo{" +
-                "newsletter=" + newsletter +
-                ", id='" + id + '\'' +
-                ", serverId=" + serverId +
-                ", timestampSeconds=" + timestampSeconds +
-                ", views=" + views +
-                ", reactions=" + reactions +
-                ", message=" + message +
-                ", status=" + status +
-                '}';
+               "newsletter=" + newsletter +
+               ", id='" + id + '\'' +
+               ", serverId=" + serverId +
+               ", timestampSeconds=" + timestampSeconds +
+               ", views=" + views +
+               ", reactions=" + reactions +
+               ", message=" + message +
+               ", status=" + status +
+               '}';
     }
 
     @Override
     public boolean equals(Object o) {
         return o instanceof NewsletterMessageInfo that &&
-                serverId == that.serverId &&
-                Objects.equals(id, that.id) &&
-                Objects.equals(timestampSeconds, that.timestampSeconds) &&
-                Objects.equals(views, that.views) &&
-                Objects.equals(reactions, that.reactions) &&
-                Objects.equals(message, that.message) &&
-                Objects.equals(newsletter, that.newsletter) &&
-                status == that.status;
+               serverId == that.serverId &&
+               Objects.equals(id, that.id) &&
+               Objects.equals(timestampSeconds, that.timestampSeconds) &&
+               Objects.equals(views, that.views) &&
+               Objects.equals(reactions, that.reactions) &&
+               Objects.equals(message, that.message) &&
+               Objects.equals(newsletter, that.newsletter) &&
+               status == that.status;
     }
 
     @Override

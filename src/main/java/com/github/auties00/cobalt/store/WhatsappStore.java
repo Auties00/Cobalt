@@ -5,7 +5,7 @@ import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.client.WhatsAppClientListener;
 import com.github.auties00.cobalt.client.WhatsAppClientType;
 import com.github.auties00.cobalt.client.WhatsAppWebClientHistory;
-import com.github.auties00.cobalt.client.version.WhatsAppClientVersion;
+import com.github.auties00.cobalt.client.info.WhatsAppClientInfo;
 import com.github.auties00.cobalt.media.MediaConnection;
 import com.github.auties00.cobalt.model.auth.SignedDeviceIdentity;
 import com.github.auties00.cobalt.model.auth.UserAgent.ReleaseChannel;
@@ -2900,12 +2900,12 @@ public final class WhatsappStore implements SignalProtocolStore {
         quickReplies.put(action.shortcut(), action);
     }
 
-    public Optional<Label> findLabel(String label) {
-        return Optional.ofNullable(labels.get(label));
+    public Optional<Label> findLabel(int labelId) {
+        return Optional.ofNullable(labels.get(labelId));
     }
 
-    public Optional<Label> removeLabel(String label) {
-        return Optional.ofNullable(labels.remove(label));
+    public Optional<Label> removeLabel(int labelId) {
+        return Optional.ofNullable(labels.remove(labelId));
     }
 
     public void addLabel(Label label) {
@@ -2923,7 +2923,7 @@ public final class WhatsappStore implements SignalProtocolStore {
         if(clientVersion == null) {
             synchronized (clientVersionLock) {
                 if(clientVersion == null) {
-                    clientVersion = WhatsAppClientVersion.of(device.platform())
+                    clientVersion = WhatsAppClientInfo.of(device.platform())
                             .latest();
                 }
             }

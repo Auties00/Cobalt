@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.client.version;
+package com.github.auties00.cobalt.client.info;
 
 import com.github.auties00.cobalt.model.auth.Version;
 
@@ -8,8 +8,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-final class WhatsAppWebClientVersion implements WhatsAppClientVersion {
-    private static volatile WhatsAppWebClientVersion webInfo;
+final class WhatsAppWebClientInfo implements WhatsAppClientInfo {
+    private static volatile WhatsAppWebClientInfo webInfo;
     private static final Object webInfoLock = new Object();
 
     private static final String WEB_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
@@ -18,11 +18,11 @@ final class WhatsAppWebClientVersion implements WhatsAppClientVersion {
 
     private final Version version;
 
-    private WhatsAppWebClientVersion(Version version) {
+    private WhatsAppWebClientInfo(Version version) {
         this.version = version;
     }
 
-    public static WhatsAppWebClientVersion of() {
+    public static WhatsAppWebClientInfo of() {
         if (webInfo == null) {
             synchronized (webInfoLock) {
                 if(webInfo == null) {
@@ -33,7 +33,7 @@ final class WhatsAppWebClientVersion implements WhatsAppClientVersion {
         return webInfo;
     }
 
-    private static WhatsAppWebClientVersion queryWebInfo() {
+    private static WhatsAppWebClientInfo queryWebInfo() {
         try(var httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build()) {
@@ -64,7 +64,7 @@ final class WhatsAppWebClientVersion implements WhatsAppClientVersion {
                                 clientVersion += value - '0';
                             }
                             var version = new Version(2, 3000, clientVersion);
-                            return new WhatsAppWebClientVersion(version);
+                            return new WhatsAppWebClientInfo(version);
                         }
                     } else {
                         patternIndex = 0;

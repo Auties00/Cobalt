@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.client.version;
+package com.github.auties00.cobalt.client.info;
 
 import com.alibaba.fastjson2.JSON;
 import com.github.auties00.cobalt.model.auth.Version;
@@ -12,14 +12,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
-final class WhatsAppIosClientVersion implements WhatsAppMobileClientVersion {
+final class WhatsAppIosClientInfo implements WhatsAppMobileClientInfo {
     private static final URI MOBILE_PERSONAL_IOS_URL = URI.create("https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsApp");
     private static final URI MOBILE_BUSINESS_IOS_URL = URI.create("https://itunes.apple.com/lookup?bundleId=net.whatsapp.WhatsAppSMB");
     private static final String MOBILE_IOS_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1";
 
-    private static volatile WhatsAppIosClientVersion personalIpaInfo;
+    private static volatile WhatsAppIosClientInfo personalIpaInfo;
     private static final Object personalIpaInfoLock = new Object();
-    private static volatile WhatsAppIosClientVersion businessIpaInfo;
+    private static volatile WhatsAppIosClientInfo businessIpaInfo;
     private static final Object businessIpaInfoLock = new Object();
 
     private static final String MOBILE_IOS_STATIC = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM";
@@ -28,12 +28,12 @@ final class WhatsAppIosClientVersion implements WhatsAppMobileClientVersion {
     private final Version version;
     private final boolean business;
 
-    private WhatsAppIosClientVersion(Version version, boolean business) {
+    private WhatsAppIosClientInfo(Version version, boolean business) {
         this.version = version;
         this.business = business;
     }
 
-    public static WhatsAppIosClientVersion ofPersonal() {
+    public static WhatsAppIosClientInfo ofPersonal() {
         if (personalIpaInfo == null) {
             synchronized (personalIpaInfoLock) {
                 if(personalIpaInfo == null) {
@@ -44,7 +44,7 @@ final class WhatsAppIosClientVersion implements WhatsAppMobileClientVersion {
         return personalIpaInfo;
     }
 
-    public static WhatsAppIosClientVersion ofBusiness() {
+    public static WhatsAppIosClientInfo ofBusiness() {
         if (businessIpaInfo == null) {
             synchronized (businessIpaInfoLock) {
                 if(businessIpaInfo == null) {
@@ -55,7 +55,7 @@ final class WhatsAppIosClientVersion implements WhatsAppMobileClientVersion {
         return businessIpaInfo;
     }
 
-    private static WhatsAppIosClientVersion queryIpaInfo(boolean business) {
+    private static WhatsAppIosClientInfo queryIpaInfo(boolean business) {
         try(var httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build()) {
@@ -86,7 +86,7 @@ final class WhatsAppIosClientVersion implements WhatsAppMobileClientVersion {
             }
 
             var parsedVersion = Version.of(version);
-            return new WhatsAppIosClientVersion(parsedVersion, business);
+            return new WhatsAppIosClientInfo(parsedVersion, business);
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("Cannot query iOS version", e);
         }
