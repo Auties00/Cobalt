@@ -315,16 +315,26 @@ public final class NodeBuilder {
     /**
      * Sets the children of the node to a collection of child nodes.
      * This method clears any other children previously set (text, JID, bytes, or stream).
+     * If a content of type children was already set, the two values will be merged into a single collection.
      *
-     * @param value the collection of child nodes
+     * @param nodes the collection of child nodes
      * @return this builder for method chaining
      */
-    public NodeBuilder content(SequencedCollection<Node> value) {
+    public NodeBuilder content(SequencedCollection<Node> nodes) {
         this.textContent = null;
         this.jidContent = null;
         this.bytesContent = null;
         this.inputStreamContent = null;
-        this.childrenContent = value;
+        if(childrenContent == null) {
+            this.childrenContent = new ArrayList<>();
+        }
+        if(nodes != null) {
+            for(var node : nodes) {
+                if(node != null) {
+                    this.childrenContent.add(node);
+                }
+            }
+        }
         return this;
     }
 
@@ -344,7 +354,13 @@ public final class NodeBuilder {
         if(childrenContent == null) {
             this.childrenContent = new ArrayList<>();
         }
-        Collections.addAll(childrenContent, nodes);
+        if(nodes != null) {
+            for(var node : nodes) {
+                if(node != null) {
+                    this.childrenContent.add(node);
+                }
+            }
+        }
         return this;
     }
 

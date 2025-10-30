@@ -28,6 +28,10 @@ import java.util.UUID;
  */
 
 public sealed class WhatsAppClientBuilder {
+    private static final WhatsAppClientMessagePreviewHandler DEFAULT_MESSAGE_PREVIEW_HANDLER = WhatsAppClientMessagePreviewHandler.enabled(true);
+    private static final WhatsAppClientErrorHandler DEFAULT_ERROR_HANDLER = WhatsAppClientErrorHandler.toTerminal();
+    private static final WhatsAppClientVerificationHandler.Web DEFAULT_WEB_VERIFICATION_HANDLER = WhatsAppClientVerificationHandler.Web.QrCode.toTerminal();
+    
     static final WhatsAppClientBuilder INSTANCE = new WhatsAppClientBuilder();
 
     private WhatsAppClientBuilder() {
@@ -555,6 +559,8 @@ public sealed class WhatsAppClientBuilder {
              */
             public WhatsAppClient unregistered(WhatsAppClientVerificationHandler.Web.QrCode qrHandler) {
                 Objects.requireNonNull(qrHandler, "qrHandler must not be null");
+                var messagePreviewHandler = Objects.requireNonNullElse(this.messagePreviewHandler, DEFAULT_MESSAGE_PREVIEW_HANDLER);
+                var errorHandler = Objects.requireNonNullElse(this.errorHandler, DEFAULT_ERROR_HANDLER);
                 return new WhatsAppClient(store, qrHandler, messagePreviewHandler, errorHandler);
             }
 
@@ -569,6 +575,8 @@ public sealed class WhatsAppClientBuilder {
             public WhatsAppClient unregistered(long phoneNumber, WhatsAppClientVerificationHandler.Web.PairingCode pairingCodeHandler) {
                 Objects.requireNonNull(pairingCodeHandler, "pairingCodeHandler must not be null");
                 store.setPhoneNumber(phoneNumber);
+                var messagePreviewHandler = Objects.requireNonNullElse(this.messagePreviewHandler, DEFAULT_MESSAGE_PREVIEW_HANDLER);
+                var errorHandler = Objects.requireNonNullElse(this.errorHandler, DEFAULT_ERROR_HANDLER);
                 return new WhatsAppClient(store, pairingCodeHandler, messagePreviewHandler, errorHandler);
             }
 
@@ -584,6 +592,8 @@ public sealed class WhatsAppClientBuilder {
                     return Optional.empty();
                 }
 
+                var messagePreviewHandler = Objects.requireNonNullElse(this.messagePreviewHandler, DEFAULT_MESSAGE_PREVIEW_HANDLER);
+                var errorHandler = Objects.requireNonNullElse(this.errorHandler, DEFAULT_ERROR_HANDLER);
                 var result = new WhatsAppClient(store, null, messagePreviewHandler, errorHandler);
                 return Optional.of(result);
             }
@@ -754,6 +764,8 @@ public sealed class WhatsAppClientBuilder {
                     return Optional.empty();
                 }
 
+                var messagePreviewHandler = Objects.requireNonNullElse(this.messagePreviewHandler, DEFAULT_MESSAGE_PREVIEW_HANDLER);
+                var errorHandler = Objects.requireNonNullElse(this.errorHandler, DEFAULT_ERROR_HANDLER);
                 var result = new WhatsAppClient(store, null, messagePreviewHandler, errorHandler);
                 return Optional.of(result);
             }
@@ -784,16 +796,14 @@ public sealed class WhatsAppClientBuilder {
                     }
                 }
 
+                var messagePreviewHandler = Objects.requireNonNullElse(this.messagePreviewHandler, DEFAULT_MESSAGE_PREVIEW_HANDLER);
+                var errorHandler = Objects.requireNonNullElse(this.errorHandler, DEFAULT_ERROR_HANDLER);
                 return new WhatsAppClient(store, null, messagePreviewHandler, errorHandler);
             }
         }
     }
 
     public static final class Custom extends WhatsAppClientBuilder {
-        private static final WhatsAppClientVerificationHandler.Web DEFAULT_WEB_VERIFICATION_HANDLER = WhatsAppClientVerificationHandler.Web.QrCode.toTerminal();
-        private static final WhatsAppClientMessagePreviewHandler DEFAULT_MESSAGE_PREVIEW_HANDLER = WhatsAppClientMessagePreviewHandler.enabled(true);
-        private static final WhatsAppClientErrorHandler DEFAULT_ERROR_HANDLER = WhatsAppClientErrorHandler.toTerminal();
-
         private WhatsappStore store;
         private WhatsAppClientMessagePreviewHandler messagePreviewHandler;
         private WhatsAppClientErrorHandler errorHandler;

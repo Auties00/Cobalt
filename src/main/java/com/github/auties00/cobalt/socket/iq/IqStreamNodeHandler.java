@@ -287,14 +287,14 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void saveCompanion(Node container) {
-        var node = container.getRequiredChild("device");
-        var companion = node.getRequiredAttributeAsJid("jid");
+        var device = container.getRequiredChild("device");
+        var jid = device.getRequiredAttributeAsJid("jid");
         whatsapp.store()
-                .setJid(companion);
+                .setJid(jid);
         whatsapp.store()
-                .setPhoneNumber(Long.parseUnsignedLong(companion.user()));
+                .setPhoneNumber(Long.parseUnsignedLong(jid.user()));
         var contact = new ContactBuilder()
-                .jid(companion)
+                .jid(jid)
                 .chosenName(whatsapp.store().name())
                 .lastKnownPresence(ContactStatus.AVAILABLE)
                 .lastSeenSeconds(Clock.nowSeconds())
@@ -302,5 +302,8 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
                 .build();
         whatsapp.store()
                 .addContact(contact);
+        var lid = device.getRequiredAttributeAsJid("lid");
+        whatsapp.store()
+                .setLid(lid);
     }
 }

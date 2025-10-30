@@ -338,7 +338,7 @@ public final class SocketEncryption {
     }
 
     private static final class Handshake implements AutoCloseable {
-        public static final SecretKeySpec FINISH_KEY = new SecretKeySpec(new byte[0], "AES");
+        private static final byte[] FINISH_KEY = new byte[0];
 
         private final KDF kdf;
         private final MessageDigest hashDigest;

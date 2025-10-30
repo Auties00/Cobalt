@@ -985,7 +985,7 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.noiseKeyPair = Objects.requireNonNullElseGet(noiseKeyPair, SignalIdentityKeyPair::random);
         this.identityKeyPair = Objects.requireNonNullElseGet(identityKeyPair, SignalIdentityKeyPair::random);
         this.companionKeyPair = companionKeyPair;
-        this.signedKeyPair = Objects.requireNonNullElseGet(signedKeyPair, () -> SignalSignedKeyPair.of(registrationId, identityKeyPair));
+        this.signedKeyPair = Objects.requireNonNullElseGet(signedKeyPair, () -> SignalSignedKeyPair.of(this.registrationId, this.identityKeyPair));
         this.preKeys = Objects.requireNonNull(preKeys, "preKeys cannot be null");
         this.fdid = Objects.requireNonNullElseGet(fdid, UUID::randomUUID);
         this.deviceId = Objects.requireNonNullElseGet(deviceId, () -> HexFormat.of().parseHex(UUID.randomUUID().toString().replace("-", "")));

@@ -71,6 +71,11 @@ public sealed interface NodeAttribute {
             Objects.requireNonNull(value, "value cannot be null");
         }
 
+        @Override
+        public String toString() {
+            return value;
+        }
+
         /**
          * Converts the text value to its UTF-8 byte representation.
          *

@@ -263,14 +263,12 @@ public final class NodeDecoder implements AutoCloseable {
      */
     private Node readNode() throws IOException {
         var size = readNodeSize();
-
-        var description = "";
-        if(size > 0) {
-            size--;
-            description = readString();
+        if(size == 0) {
+            return Node.empty();
         }
 
-        var attrs = readAttributes(size);
+        var description = readString();
+        var attrs = readAttributes(size - 1);
 
         if((size & 1) == 1) {
             return new Node.EmptyNode(description, attrs);
@@ -581,6 +579,8 @@ public final class NodeDecoder implements AutoCloseable {
 
     @Override
     public void close() {
-        inflater.close();
+        if(inflater != null) {
+            inflater.close();
+        }
     }
 }

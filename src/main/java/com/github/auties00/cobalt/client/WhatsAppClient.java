@@ -106,8 +106,11 @@ public final class WhatsAppClient {
     private Thread shutdownHook;
 
     WhatsAppClient(WhatsappStore store, WhatsAppClientVerificationHandler.Web webVerificationHandler, WhatsAppClientMessagePreviewHandler messagePreviewHandler, WhatsAppClientErrorHandler errorHandler) {
-        this.store = store;
-        this.errorHandler = errorHandler;
+        this.store = Objects.requireNonNull(store, "store cannot be null");
+        this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler cannot be null");
+        if((store.clientType() == WhatsAppClientType.WEB) == (webVerificationHandler == null)) {
+            throw new  IllegalArgumentException("webVerificationHandler cannot be null when client type is WEB");
+        }
         this.webAppState = new WebAppState(this);
         this.pendingSocketRequests = new ConcurrentHashMap<>();
         this.socketEncryption = new SocketEncryption(store, this::sendBinary);

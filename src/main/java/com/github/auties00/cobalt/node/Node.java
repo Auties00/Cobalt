@@ -577,6 +577,22 @@ public sealed interface Node {
         public Optional<InputStream> toContentStream() {
             return Optional.empty();
         }
+
+        @Override
+        public String toString() {
+            var result = new StringBuilder();
+            result.append("Node[description=");
+            result.append(description);
+
+            if(!attributes.isEmpty()) {
+                result.append(", attributes=");
+                result.append(attributes);
+            }
+
+            result.append("]");
+
+            return result.toString();
+        }
     }
 
     /**
@@ -633,6 +649,27 @@ public sealed interface Node {
         public SequencedCollection<Node> children() {
             return List.of();
         }
+
+        @Override
+        public String toString() {
+            var result = new StringBuilder();
+            result.append("Node[description=");
+            result.append(description());
+
+            if(!attributes.isEmpty()) {
+                result.append(", attributes=");
+                result.append(attributes);
+            }
+
+            if(content != null) {
+                result.append(", content=");
+                result.append(content);
+            }
+
+            result.append("]");
+
+            return result.toString();
+        }
     }
 
     /**
@@ -683,6 +720,27 @@ public sealed interface Node {
         @Override
         public SequencedCollection<Node> children() {
             return List.of();
+        }
+
+        @Override
+        public String toString() {
+            var result = new StringBuilder();
+            result.append("Node[description=");
+            result.append(description());
+
+            if(!attributes.isEmpty()) {
+                result.append(", attributes=");
+                result.append(attributes);
+            }
+
+            if(content != null) {
+                result.append(", content=");
+                result.append(content);
+            }
+
+            result.append("]");
+
+            return result.toString();
         }
     }
 
@@ -741,6 +799,32 @@ public sealed interface Node {
         @Override
         public SequencedCollection<Node> children() {
             return List.of();
+        }
+
+        @Override
+        public String toString() {
+            var result = new StringBuilder();
+            result.append("Node[description=");
+            result.append(description());
+
+            if(!attributes.isEmpty()) {
+                result.append(", attributes=");
+                result.append(attributes);
+            }
+
+            if(content != null) {
+                if(hasDescription("result") || hasDescription("query") || hasDescription("body")) {
+                    result.append(", content=");
+                    result.append(new String(content));
+                }else {
+                    result.append(", content=");
+                    result.append(Arrays.toString(content));
+                }
+            }
+
+            result.append("]");
+
+            return result.toString();
         }
     }
 
@@ -818,6 +902,28 @@ public sealed interface Node {
         @Override
         public SequencedCollection<Node> children() {
             return List.of();
+        }
+
+        @Override
+        public String toString() {
+            var result = new StringBuilder();
+            result.append("Node[description=");
+            result.append(description());
+
+            if(!attributes.isEmpty()) {
+                result.append(", attributes=");
+                result.append(attributes);
+            }
+
+            if(content != null) {
+                result.append(", content=<stream with ")
+                        .append(contentLength)
+                        .append(" bytes>");
+            }
+
+            result.append("]");
+
+            return result.toString();
         }
 
         private static final class BoundedInputStream extends InputStream {
@@ -999,6 +1105,27 @@ public sealed interface Node {
         @Override
         public Optional<InputStream> toContentStream() {
             return Optional.empty();
+        }
+
+        @Override
+        public String toString() {
+            var result = new StringBuilder();
+            result.append("Node[description=");
+            result.append(description());
+
+            if(!attributes.isEmpty()) {
+                result.append(", attributes=");
+                result.append(attributes);
+            }
+
+            if(!children.isEmpty()) {
+                result.append(", children=");
+                result.append(children);
+            }
+
+            result.append("]");
+
+            return result.toString();
         }
     }
 }
