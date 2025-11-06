@@ -282,9 +282,9 @@ public final class NodeDecoder implements AutoCloseable {
             case LIST_16 -> new Node.ContainerNode(description, attrs, readList16());
             case JID_PAIR -> new Node.JidNode(description, attrs, readJidPair());
             case HEX_8 -> new Node.TextNode(description, attrs, readPacked(HEX_ALPHABET));
-            case BINARY_8 -> new Node.BytesContent(description, attrs, readBinary8());
-            case BINARY_20 -> new Node.BytesContent(description, attrs, readBinary20());
-            case BINARY_32 -> new Node.BytesContent(description, attrs, readBinary32());
+            case BINARY_8 -> new Node.BytesNode(description, attrs, readBinary8());
+            case BINARY_20 -> new Node.BytesNode(description, attrs, readBinary20());
+            case BINARY_32 -> new Node.BytesNode(description, attrs, readBinary32());
             case NIBBLE_8 -> new Node.TextNode(description, attrs, readPacked(NIBBLE_ALPHABET));
             case DICTIONARY_0 -> new Node.TextNode(description, attrs, readDictionaryToken(DICTIONARY_0_TOKENS));
             case DICTIONARY_1 -> new Node.TextNode(description, attrs, readDictionaryToken(DICTIONARY_1_TOKENS));

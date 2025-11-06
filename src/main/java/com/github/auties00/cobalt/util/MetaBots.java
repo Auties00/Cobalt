@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.socket.message;
+package com.github.auties00.cobalt.util;
 
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
@@ -6,7 +6,7 @@ import com.github.auties00.cobalt.model.jid.JidServer;
 import java.util.HashMap;
 import java.util.Map;
 
-final class MessageMetaBots {
+public final class MetaBots {
     private static final Map<String, Jid> botJIDMap;
 
     static {
@@ -222,11 +222,11 @@ final class MessageMetaBots {
         botJIDMap = data;
     }
 
-    private MessageMetaBots() {
+    private MetaBots() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
 
-    static Jid translate(Jid jid) {
+    public static Jid translate(Jid jid) {
         if(!jid.hasServer(JidServer.bot())) {
             throw new IllegalArgumentException("Expected a bot value");
         }

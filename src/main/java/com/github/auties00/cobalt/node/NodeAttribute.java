@@ -4,10 +4,7 @@ import com.github.auties00.cobalt.exception.MalformedJidException;
 import com.github.auties00.cobalt.model.jid.Jid;
 import it.auties.protobuf.model.ProtobufString;
 
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.OptionalLong;
+import java.util.*;
 
 /**
  * A sealed interface representing attribute values within WhatsApp protocol nodes.
@@ -36,25 +33,25 @@ public sealed interface NodeAttribute {
      *
      * @return a non-null string representation of this attribute value
      */
-    String toString();
+    String toValueString();
 
     /**
      * Converts this attribute value to its byte array representation.
      *
      * @return a non-null byte array representing this attribute value
      */
-    byte[] toBytes();
+    byte[] toValueBytes();
 
     /**
      * Converts this attribute value to its jid representation.
      *
      * @return a non-null jid representation of this attribute value
      */
-    Optional<Jid> toJid();
+    Optional<Jid> toValueJid();
 
-    OptionalLong toLong();
+    OptionalLong toValueLong();
 
-    OptionalDouble toDouble();
+    OptionalDouble toValueDouble();
 
     /**
      * A record representing a text-based attribute value.
@@ -76,13 +73,18 @@ public sealed interface NodeAttribute {
             return value;
         }
 
+        @Override
+        public String toValueString() {
+            return value;
+        }
+
         /**
          * Converts the text value to its UTF-8 byte representation.
          *
          * @return a non-null byte array containing the UTF-8 encoded text
          */
         @Override
-        public byte[] toBytes() {
+        public byte[] toValueBytes() {
             return value.getBytes();
         }
 
@@ -93,7 +95,7 @@ public sealed interface NodeAttribute {
          * @throws MalformedJidException if the text value is not a jid
          */
         @Override
-        public Optional<Jid> toJid() {
+        public Optional<Jid> toValueJid() {
             try {
                 var result = Jid.of(value);
                 return Optional.of(result);
@@ -103,7 +105,7 @@ public sealed interface NodeAttribute {
         }
 
         @Override
-        public OptionalLong toLong() {
+        public OptionalLong toValueLong() {
             try {
                 var result = Long.parseLong(value);
                 return OptionalLong.of(result);
@@ -113,7 +115,7 @@ public sealed interface NodeAttribute {
         }
 
         @Override
-        public OptionalDouble toDouble() {
+        public OptionalDouble toValueDouble() {
             try {
                 var result = Double.parseDouble(value);
                 return OptionalDouble.of(result);
@@ -138,13 +140,18 @@ public sealed interface NodeAttribute {
             Objects.requireNonNull(value, "value cannot be null");
         }
 
+        @Override
+        public String toString() {
+            return value.toString();
+        }
+
         /**
          * Converts the Jid to its string representation.
          *
          * @return a non-null string representation of the Jid
          */
         @Override
-        public String toString() {
+        public String toValueString() {
             return value.toString();
         }
 
@@ -157,7 +164,7 @@ public sealed interface NodeAttribute {
          * @return a non-null byte array containing the UTF-8 encoded Jid string
          */
         @Override
-        public byte[] toBytes() {
+        public byte[] toValueBytes() {
             return value.toString().getBytes();
         }
 
@@ -167,17 +174,17 @@ public sealed interface NodeAttribute {
          * @return a non-null {@link Jid}
          */
         @Override
-        public Optional<Jid> toJid() {
+        public Optional<Jid> toValueJid() {
             return Optional.of(value);
         }
 
         @Override
-        public OptionalLong toLong() {
+        public OptionalLong toValueLong() {
             return OptionalLong.empty();
         }
 
         @Override
-        public OptionalDouble toDouble() {
+        public OptionalDouble toValueDouble() {
             return OptionalDouble.empty();
         }
     }
@@ -199,13 +206,18 @@ public sealed interface NodeAttribute {
             Objects.requireNonNull(value, "value cannot be null");
         }
 
+        @Override
+        public String toString() {
+            return Arrays.toString(value);
+        }
+
         /**
          * Converts the binary data to a string representation.
          *
          * @return a non-null string decoded from the binary data
          */
         @Override
-        public String toString() {
+        public String toValueString() {
             return new String(value);
         }
 
@@ -217,7 +229,7 @@ public sealed interface NodeAttribute {
          * @return the original non-null byte array
          */
         @Override
-        public byte[] toBytes() {
+        public byte[] toValueBytes() {
             return value;
         }
 
@@ -227,7 +239,7 @@ public sealed interface NodeAttribute {
          * @return a non-null {@link Jid}
          */
         @Override
-        public Optional<Jid> toJid() {
+        public Optional<Jid> toValueJid() {
             try {
                 var result = Jid.of(ProtobufString.lazy(value));
                 return Optional.of(result);
@@ -237,9 +249,9 @@ public sealed interface NodeAttribute {
         }
 
         @Override
-        public OptionalLong toLong() {
+        public OptionalLong toValueLong() {
             try {
-                var result = Long.parseLong(toString());
+                var result = Long.parseLong(toValueString());
                 return OptionalLong.of(result);
             }catch (NumberFormatException exception) {
                 return OptionalLong.empty();
@@ -247,9 +259,9 @@ public sealed interface NodeAttribute {
         }
 
         @Override
-        public OptionalDouble toDouble() {
+        public OptionalDouble toValueDouble() {
             try {
-                var result = Double.parseDouble(toString());
+                var result = Double.parseDouble(toValueString());
                 return OptionalDouble.of(result);
             }catch (NumberFormatException exception) {
                 return OptionalDouble.empty();

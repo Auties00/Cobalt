@@ -1,13 +1,16 @@
 package com.github.auties00.cobalt.client;
 
 import com.alibaba.fastjson2.JSON;
+import com.github.auties00.cobalt.client.info.WhatsAppClientInfo;
 import com.github.auties00.cobalt.client.json.request.CommunityRequests;
 import com.github.auties00.cobalt.client.json.request.NewsletterRequests;
 import com.github.auties00.cobalt.client.json.request.UserRequests;
 import com.github.auties00.cobalt.client.json.response.*;
-import com.github.auties00.cobalt.model.action.Action;
+import com.github.auties00.cobalt.model.action.*;
+import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.business.*;
 import com.github.auties00.cobalt.model.call.Call;
+import com.github.auties00.cobalt.model.call.CallBuilder;
 import com.github.auties00.cobalt.model.call.CallStatus;
 import com.github.auties00.cobalt.model.chat.*;
 import com.github.auties00.cobalt.model.contact.Contact;
@@ -19,39 +22,30 @@ import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.media.MediaProvider;
 import com.github.auties00.cobalt.model.message.model.*;
 import com.github.auties00.cobalt.model.message.server.ProtocolMessage;
-import com.github.auties00.cobalt.model.message.standard.TextMessage;
-import com.github.auties00.cobalt.model.newsletter.*;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
-import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
-import com.github.auties00.cobalt.model.action.*;
-import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificateSpec;
-import com.github.auties00.cobalt.model.call.CallBuilder;
-import com.github.auties00.cobalt.model.chat.GroupOrCommunityMetadataBuilder;
-import com.github.auties00.cobalt.model.info.ChatMessageInfoBuilder;
-import com.github.auties00.cobalt.model.info.ContextInfoBuilder;
-import com.github.auties00.cobalt.model.info.DeviceContextInfoBuilder;
-import com.github.auties00.cobalt.model.info.NewsletterMessageInfoBuilder;
-import com.github.auties00.cobalt.model.message.model.ChatMessageKeyBuilder;
 import com.github.auties00.cobalt.model.message.server.ProtocolMessageBuilder;
 import com.github.auties00.cobalt.model.message.standard.NewsletterAdminInviteMessageBuilder;
 import com.github.auties00.cobalt.model.message.standard.ReactionMessageBuilder;
+import com.github.auties00.cobalt.model.message.standard.TextMessage;
+import com.github.auties00.cobalt.model.newsletter.*;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingEntry;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingEntryBuilder;
-import com.github.auties00.cobalt.model.sync.DeviceListMetadataBuilder;
-import com.github.auties00.cobalt.model.sync.MediaRetryNotificationSpec;
-import com.github.auties00.cobalt.model.sync.ServerErrorReceiptSpec;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
+import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.setting.Setting;
 import com.github.auties00.cobalt.model.sync.*;
 import com.github.auties00.cobalt.model.sync.RecordSync.Operation;
-import com.github.auties00.cobalt.node.Node;
-import com.github.auties00.cobalt.node.NodeAttribute;
-import com.github.auties00.cobalt.node.NodeBuilder;
-import com.github.auties00.cobalt.node.NodeDecoder;
-import com.github.auties00.cobalt.socket.*;
+import com.github.auties00.cobalt.node.*;
+import com.github.auties00.cobalt.socket.SocketRequest;
+import com.github.auties00.cobalt.socket.SocketSession;
+import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.sync.WebAppState;
 import com.github.auties00.cobalt.util.Clock;
+import com.github.auties00.cobalt.util.MetaBots;
 import com.github.auties00.cobalt.util.SecureBytes;
+import com.github.auties00.curve25519.Curve25519;
+import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
+import com.github.auties00.libsignal.key.SignalPreKeyPair;
 
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
@@ -75,7 +69,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -91,6 +84,14 @@ import static com.github.auties00.cobalt.model.contact.ContactStatus.*;
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public final class WhatsAppClient {
+    private static final byte[] WHATSAPP_VERSION_HEADER = "WA".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] WEB_VERSION = new byte[]{6, NodeTokens.DICTIONARY_VERSION};
+    private static final byte[] WEB_PROLOGUE = SecureBytes.concat(WHATSAPP_VERSION_HEADER, WEB_VERSION);
+    private static final byte[] MOBILE_VERSION = new byte[]{5, NodeTokens.DICTIONARY_VERSION};
+    private static final byte[] MOBILE_PROLOGUE = SecureBytes.concat(WHATSAPP_VERSION_HEADER, MOBILE_VERSION);
+
+    private static final byte[] SIGNAL_KEY_TYPE = {SignalIdentityPublicKey.type()};
+
     private static final int PROFILE_PIC_SIZE = 64;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^(.+)@(\\S+)$");
 
@@ -99,23 +100,19 @@ public final class WhatsAppClient {
     private final WebAppState webAppState;
 
     private SocketSession socketSession;
-    private final SocketEncryption socketEncryption;
     private final SocketStream socketStream;
     private final ConcurrentMap<String, SocketRequest> pendingSocketRequests;
-    private final AtomicReference<SocketState> socketState;
     private Thread shutdownHook;
 
     WhatsAppClient(WhatsappStore store, WhatsAppClientVerificationHandler.Web webVerificationHandler, WhatsAppClientMessagePreviewHandler messagePreviewHandler, WhatsAppClientErrorHandler errorHandler) {
         this.store = Objects.requireNonNull(store, "store cannot be null");
         this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler cannot be null");
         if((store.clientType() == WhatsAppClientType.WEB) == (webVerificationHandler == null)) {
-            throw new  IllegalArgumentException("webVerificationHandler cannot be null when client type is WEB");
+            throw new IllegalArgumentException("webVerificationHandler cannot be null when client type is WEB");
         }
         this.webAppState = new WebAppState(this);
         this.pendingSocketRequests = new ConcurrentHashMap<>();
-        this.socketEncryption = new SocketEncryption(store, this::sendBinary);
         this.socketStream = new SocketStream(this, webVerificationHandler);
-        this.socketState = new AtomicReference<>(SocketState.DISCONNECTED);
     }
 
     /**
@@ -150,16 +147,22 @@ public final class WhatsAppClient {
     }
 
     private void connect(WhatsAppClientDisconnectReason reason) {
-        if (!socketState.compareAndSet(SocketState.DISCONNECTED, SocketState.HANDSHAKING)) {
+        if (isConnected()) {
             return;
         }
 
         try {
-            this.socketSession = SocketSession.of(store.proxy().orElse(null));
+            var noiseKeyPair = store.noiseKeyPair();
+            var handshakePrologue = switch (store.clientType()) {
+                case WEB -> WEB_PROLOGUE;
+                case MOBILE -> MOBILE_PROLOGUE;
+            };
+            var handshakePayload = createUserClientPayload();
+            var proxy = store.proxy().orElse(null);
+            this.socketSession = SocketSession.of(noiseKeyPair, handshakePrologue, handshakePayload, proxy);
             socketSession.connect(this::onMessage);
         } catch (Throwable throwable) {
             if (reason == WhatsAppClientDisconnectReason.RECONNECTING) {
-                socketState.set(SocketState.DISCONNECTED);
                 handleFailure(RECONNECT, throwable);
             } else {
                 handleFailure(AUTH, throwable);
@@ -173,12 +176,126 @@ public final class WhatsAppClient {
                     .unstarted(this::onShutdown);
             Runtime.getRuntime().addShutdownHook(shutdownHook);
         }
-
-        socketEncryption.startHandshake();
     }
 
+    private ClientPayload createUserClientPayload() {
+        var agent = createUserAgent();
+        return switch (store.clientType()) {
+            case MOBILE -> {
+                var phoneNumber = store
+                        .phoneNumber()
+                        .orElseThrow(() -> new InternalError("Phone number was not set"));
+                yield new ClientPayloadBuilder()
+                        .username(phoneNumber)
+                        .passive(false)
+                        .pushName(store.registered() ? store.name() : null)
+                        .userAgent(agent)
+                        .shortConnect(true)
+                        .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                        .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                        .connectAttemptCount(0)
+                        .device(0)
+                        .oc(false)
+                        .build();
+            }
+            case WEB -> {
+                var jid = store.jid();
+                if (jid.isPresent()) {
+                    yield new ClientPayloadBuilder()
+                            .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                            .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                            .userAgent(agent)
+                            .username(Long.parseLong(jid.get().user()))
+                            .passive(true)
+                            .pull(true)
+                            .device(jid.get().device())
+                            .build();
+                }
+
+                yield new ClientPayloadBuilder()
+                        .connectReason(ClientPayload.ClientPayloadConnectReason.USER_ACTIVATED)
+                        .connectType(ClientPayload.ClientPayloadConnectType.WIFI_UNKNOWN)
+                        .userAgent(agent)
+                        .regData(createRegisterData())
+                        .passive(false)
+                        .pull(false)
+                        .build();
+            }
+        };
+    }
+
+    private UserAgent createUserAgent() {
+        var clientInfo = WhatsAppClientInfo.of(store.device().platform());
+        var mobile = store.clientType() == WhatsAppClientType.MOBILE;
+        return new UserAgentBuilder()
+                .platform(store.device().platform())
+                .appVersion(clientInfo.latest())
+                .mcc("000")
+                .mnc("000")
+                .osVersion(mobile ? store.device().osVersion().toString() : null)
+                .manufacturer(mobile ? store.device().manufacturer() : null)
+                .device(mobile ? store.device().model().replaceAll("_", " ") : null)
+                .osBuildNumber(mobile ? store.device().osBuildNumber() : null)
+                .phoneId(mobile ? store.fdid().toString().toUpperCase() : null)
+                .releaseChannel(store.releaseChannel())
+                .localeLanguageIso6391("en")
+                .localeCountryIso31661Alpha2("US")
+                .deviceType(UserAgent.DeviceType.PHONE)
+                .deviceModelType(store.device().modelId())
+                .build();
+    }
+
+    private CompanionRegistrationData createRegisterData() {
+        var clientInfo = WhatsAppClientInfo.of(store.device().platform());
+        var companion = new CompanionRegistrationDataBuilder()
+                .buildHash(clientInfo.latest().toHash())
+                .eRegid(SecureBytes.intToBytes(store.registrationId(), 4))
+                .eKeytype(SecureBytes.intToBytes(SignalIdentityPublicKey.type(), 1))
+                .eIdent(store.identityKeyPair().publicKey().toEncodedPoint())
+                .eSkeyId(SecureBytes.intToBytes(store.signedKeyPair().id(), 3))
+                .eSkeyVal(store.signedKeyPair().publicKey().toEncodedPoint())
+                .eSkeySig(store.signedKeyPair().signature());
+        if (store.clientType() == WhatsAppClientType.WEB) {
+            var props = createCompanionProps();
+            var encodedProps = props == null ? null : CompanionPropertiesSpec.encode(props);
+            companion.companionProps(encodedProps);
+        }
+
+        return companion.build();
+    }
+
+    private CompanionProperties createCompanionProps() {
+        return switch (store.clientType()) {
+            case WEB -> {
+                var historyLength = store.webHistoryPolicy()
+                        .orElse(WhatsAppWebClientHistory.standard(true));
+                var config = new HistorySyncConfigBuilder()
+                        .inlineInitialPayloadInE2EeMsg(true)
+                        .supportBotUserAgentChatHistory(true)
+                        .supportCallLogHistory(true)
+                        .storageQuotaMb(historyLength.size())
+                        .fullSyncSizeMbLimit(historyLength.size())
+                        .build();
+                var platformType = switch (store.device().platform()) {
+                    case IOS, IOS_BUSINESS -> CompanionProperties.PlatformType.IOS_PHONE;
+                    case ANDROID, ANDROID_BUSINESS -> CompanionProperties.PlatformType.ANDROID_PHONE;
+                    case WINDOWS -> CompanionProperties.PlatformType.UWP;
+                    case MACOS -> CompanionProperties.PlatformType.IOS_CATALYST;
+                };
+                yield new CompanionPropertiesBuilder()
+                        .os(store.name())
+                        .platformType(platformType)
+                        .requireFullSync(historyLength.isExtended())
+                        .historySyncConfig(config)
+                        .build();
+            }
+            case MOBILE -> null;
+        };
+    }
+
+
     public void disconnect(WhatsAppClientDisconnectReason reason) {
-        if (socketState.getAndSet(SocketState.DISCONNECTED) == SocketState.DISCONNECTED) {
+        if(!isConnected()) {
             return;
         }
 
@@ -186,7 +303,6 @@ public final class WhatsAppClient {
             socketSession.disconnect();
         }
 
-        socketEncryption.reset();
         pendingSocketRequests.forEach((ignored, request) -> request.complete(Node.empty()));
         pendingSocketRequests.clear();
         if (reason == WhatsAppClientDisconnectReason.LOGGED_OUT || reason == WhatsAppClientDisconnectReason.BANNED) {
@@ -215,31 +331,6 @@ public final class WhatsAppClient {
     }
 
     private void onMessage(ByteBuffer message) {
-        switch (socketState.getAcquire()) {
-            case HANDSHAKING -> handleHandshake(message);
-            case CONNECTED -> handleMessage(message);
-            case DISCONNECTED -> {
-            }
-        }
-    }
-
-    private void handleHandshake(ByteBuffer message) {
-        try {
-            socketEncryption.finishHandshake(message);
-            socketState.compareAndSet(SocketState.HANDSHAKING, SocketState.CONNECTED);
-        } catch (Throwable throwable) {
-            handleFailure(AUTH, throwable);
-        }
-    }
-
-    private void handleMessage(ByteBuffer message) {
-        try {
-            message = socketEncryption.receiveDeciphered(message);
-        } catch (Throwable throwable) {
-            handleFailure(CRYPTOGRAPHY, throwable);
-            return;
-        }
-
         try(var decoder = new NodeDecoder(message)) {
             while (decoder.hasData()) {
                 var node = decoder.decode();
@@ -256,7 +347,7 @@ public final class WhatsAppClient {
 
     public void resolvePendingRequest(Node node) {
         var id = node.getAttribute("id")
-                .map(NodeAttribute::toString)
+                .map(NodeAttribute::toValueString)
                 .orElse(null);
         if (id == null) {
             return;
@@ -269,7 +360,7 @@ public final class WhatsAppClient {
     }
 
     public void sendNodeWithNoResponse(Node node) {
-        if (!socketEncryption.sendCiphered(node)) {
+        if (!socketSession.sendNode(node)) {
             return;
         }
 
@@ -289,8 +380,8 @@ public final class WhatsAppClient {
 
         var outgoing = node.build();
         var outgoingId = outgoing.getRequiredAttribute("id")
-                .toString();
-        if (!socketEncryption.sendCiphered(outgoing)) {
+                .toValueString();
+        if (!socketSession.sendNode(outgoing)) {
             return Node.empty();
         }
 
@@ -301,14 +392,6 @@ public final class WhatsAppClient {
         var request = new SocketRequest(outgoing, filter);
         pendingSocketRequests.put(outgoingId, request);
         return request.waitForResponse();
-    }
-
-    public void sendBinary(ByteBuffer binary) {
-        if (socketState.getAcquire() == SocketState.DISCONNECTED) {
-            throw new IllegalStateException("Instance is not connected");
-        }
-
-        socketSession.sendBinary(binary);
     }
 
     /**
@@ -358,7 +441,7 @@ public final class WhatsAppClient {
      * @return a boolean
      */
     public boolean isConnected() {
-        return socketState.getAcquire() != SocketState.DISCONNECTED;
+        return socketSession != null && socketSession.isConnected();
     }
 
     /**
@@ -528,7 +611,7 @@ public final class WhatsAppClient {
         return node.getChild("contact")
                 .orElseThrow(() -> new NoSuchElementException("Missing contact"))
                 .getRequiredAttribute("type")
-                .toString()
+                .toValueString()
                 .equals("in");
     }
 
@@ -659,7 +742,7 @@ public final class WhatsAppClient {
         return sendNode(iqNode)
                 .getChild("picture")
                 .flatMap(picture -> picture.getAttribute("url"))
-                .map(attribute -> URI.create(attribute.toString()));
+                .map(attribute -> URI.create(attribute.toValueString()));
     }
 
     /**
@@ -1727,7 +1810,7 @@ public final class WhatsAppClient {
             var result = sendNode(node, resultNode -> resultNode.hasDescription("notification"));
             if (result.getChild("error").isPresent()) {
                 var code = result.getAttribute("code")
-                        .map(NodeAttribute::toString)
+                        .map(NodeAttribute::toValueString)
                         .orElse("unknown");
                 throw new IllegalArgumentException("Erroneous response from media reupload: " + code);
             }
@@ -2492,7 +2575,7 @@ public final class WhatsAppClient {
         return result.getChild("invite")
                 .orElseThrow(() -> new NoSuchElementException("Missing invite code in invite newsletters"))
                 .getRequiredAttribute("code")
-                .toString();
+                .toValueString();
     }
 
     /**
@@ -4393,8 +4476,6 @@ public final class WhatsAppClient {
     }
     //</editor-fold>
 
-    // TODO: Stuff to fix
-
     public void pushWebAppState(PatchType type, List<PendingMutation> patches) {
         webAppState.pushPatches(type, patches);
     }
@@ -4404,8 +4485,148 @@ public final class WhatsAppClient {
     }
 
     private void updateBusinessCertificate(String newName) {
-
+        var details = new BusinessVerifiedNameDetailsBuilder()
+                .name(Objects.requireNonNullElse(newName, store.name()))
+                .issuer("smb:wa")
+                .serial(Math.abs(ThreadLocalRandom.current().nextLong()))
+                .build();
+        var encodedDetails = BusinessVerifiedNameDetailsSpec.encode(details);
+        var certificate = new BusinessVerifiedNameCertificateBuilder()
+                .encodedDetails(encodedDetails)
+                .signature(Curve25519.sign(store.identityKeyPair().privateKey().toEncodedPoint(), encodedDetails))
+                .build();
+        var verifiedNameRequest = new NodeBuilder()
+                .description("verified_name")
+                .attribute("v", 2)
+                .content(BusinessVerifiedNameCertificateSpec.encode(certificate))
+                .build();
+        var queryRequest = new NodeBuilder()
+                .description("iq")
+                .attribute("to", Jid.userServer())
+                .attribute("type", "set")
+                .attribute("xmlns", "w:biz")
+                .content(verifiedNameRequest);
+        var verifiedName = sendNode(queryRequest)
+                .getChild("verified_name")
+                .flatMap(node -> node.getAttributeAsString("id"))
+                .orElse("");
+        store.setVerifiedName(verifiedName);
     }
+
+    public void sendAck(Node node) {
+        var id = node.getRequiredAttributeAsString("id");
+        sendAck(id, node);
+    }
+
+    public void sendAck(String id, Node node) {
+        var ackBuilder = new NodeBuilder()
+                .description("ack")
+                .attribute("id", id);
+
+        var ackClass = node.description();
+        var isMessage = ackClass.equals("message");
+        ackBuilder.attribute("class", ackClass);
+
+        var ackTo = node.getRequiredAttributeAsJid("from");
+        ackBuilder.attribute("to", ackTo);
+
+        node.getAttributeAsJid("participant")
+                .map(jid -> jid.hasServer(JidServer.bot()) && isMessage ? MetaBots.translate(jid) : jid)
+                .ifPresent(receiptParticipant -> ackBuilder.attribute("recipient", receiptParticipant));
+
+        if(!isMessage) {
+            node.getAttributeAsString("type")
+                    .ifPresent(type -> ackBuilder.attribute("type", type));
+        }
+
+        sendNodeWithNoResponse(ackBuilder.build());
+    }
+
+    public void sendPreKeys(long keysCount) {
+        var startId = store.hasPreKeys() ? store.preKeys().getLast().id() + 1 : 1;
+        var preKeys = new ArrayList<Node>();
+        while (keysCount-- > 0) {
+            var preKeyPair = SignalPreKeyPair.random(startId++);
+            store.addPreKey(preKeyPair);
+            var preKayNode = new NodeBuilder()
+                    .description("key")
+                    .attribute("id", SecureBytes.intToBytes(preKeyPair.id(), 3))
+                    .attribute("value", preKeyPair.publicKey().toEncodedPoint())
+                    .build();
+            preKeys.add(preKayNode);
+        }
+        var registration = new NodeBuilder()
+                .description("registration")
+                .content(SecureBytes.intToBytes(store.registrationId(), 4))
+                .build();
+        var type = new NodeBuilder()
+                .description("type")
+                .content(SIGNAL_KEY_TYPE)
+                .build();
+        var identity = new NodeBuilder()
+                .description("identity")
+                .content(store.identityKeyPair().publicKey().toEncodedPoint())
+                .build();
+        var list = new NodeBuilder()
+                .description("list")
+                .content(preKeys)
+                .build();
+        var skey = new NodeBuilder()
+                .description("skey")
+                .attribute("id", SecureBytes.intToBytes(store.signedKeyPair().id(), 3))
+                .attribute("value", store.signedKeyPair().publicKey().toEncodedPoint())
+                .attribute("signature", store.signedKeyPair().signature())
+                .build();
+        var queryRequest = new NodeBuilder()
+                .description("iq")
+                .attribute("to", JidServer.user())
+                .attribute("type", "set")
+                .attribute("xmlns", "encrypt")
+                .content(registration, type, identity, list, skey);
+        sendNode(queryRequest);
+    }
+
+    public void sendReceipt(String id, Jid parentJid, Jid senderJid, boolean fromMe) {
+        var receiptBuilder = new NodeBuilder()
+                .description("receipt")
+                .attribute("id", id);
+
+        if(fromMe) {
+            receiptBuilder.attribute("type", "sender");
+        }else if(!store.automaticMessageReceipts()){
+            receiptBuilder.attribute("type", "inactive");
+        }
+
+        if(parentJid.hasServer(JidServer.groupOrCommunity())) {
+            receiptBuilder.attribute("to", parentJid);
+            receiptBuilder.attribute("participant", senderJid);
+        }else if(fromMe) {
+            receiptBuilder.attribute("to", parentJid);
+            receiptBuilder.attribute("recipient", senderJid);
+        } else {
+            receiptBuilder.attribute("to", senderJid);
+        }
+
+        sendNodeWithNoResponse(receiptBuilder.build());
+    }
+
+    public void sendReceipt(String id, Jid from, String type) {
+        var me = store.jid()
+                .orElse(null);
+        if(me == null) {
+            return;
+        }
+
+        var receipt = new NodeBuilder()
+                .description("receipt")
+                .attribute("id", id)
+                .attribute("type", type)
+                .attribute("to", from)
+                .build();
+        sendNodeWithNoResponse(receipt);
+    }
+
+    // TODO: Stuff to fix
 
     private void querySessions(List<Jid> jids) {
 
@@ -4415,31 +4636,11 @@ public final class WhatsAppClient {
         return Node.empty();
     }
 
-    public void sendAck(Node node) {
-
-    }
-
-    public void sendAck(String messageId, Node node) {
-
-    }
-
     public SequencedCollection<Newsletter> queryNewsletters() {
         return List.of();
     }
 
-    public void sendPreKeys(int preKeysUploadChunk) {
-
-    }
-
     public SequencedCollection<Chat> queryGroups() {
         return List.of();
-    }
-
-    public void sendReceipt(String id, Jid jid, Jid jid1, boolean b) {
-
-    }
-
-    public void sendReceipt(String id, Jid jid, String histSync) {
-
     }
 }

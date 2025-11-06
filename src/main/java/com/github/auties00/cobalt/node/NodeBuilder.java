@@ -403,7 +403,7 @@ public final class NodeBuilder {
      * <ul>
      *   <li>{@link Node.TextNode} - if text children was set</li>
      *   <li>{@link Node.JidNode} - if JID children was set</li>
-     *   <li>{@link Node.BytesContent} - if ByteBuffer children was set</li>
+     *   <li>{@link Node.BytesNode} - if ByteBuffer children was set</li>
      *   <li>{@link Node.StreamNode} - if InputStream children was set</li>
      *   <li>{@link Node.ContainerNode} - if child nodes were set</li>
      *   <li>{@link Node.EmptyNode} - if no children was set</li>
@@ -421,7 +421,7 @@ public final class NodeBuilder {
         }else if(jidContent != null){
             return new Node.JidNode(description, attributes, jidContent.toJid());
         }else if(bytesContent != null){
-            return new Node.BytesContent(description, attributes, bytesContent);
+            return new Node.BytesNode(description, attributes, bytesContent);
         }else if (inputStreamContent != null){
             return new Node.StreamNode(description, attributes, inputStreamContent, inputStreamContentLength);
         }else if(childrenContent != null){

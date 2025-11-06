@@ -1,5 +1,16 @@
 package com.github.auties00.cobalt.socket;
 
+import com.github.auties00.cobalt.model.auth.*;
+import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.node.NodeEncoder;
+import com.github.auties00.curve25519.Curve25519;
+import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
+import it.auties.protobuf.stream.ProtobufInputStream;
+import it.auties.protobuf.stream.ProtobufOutputStream;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
@@ -9,6 +20,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.Queue;
@@ -21,42 +33,113 @@ public abstract sealed class SocketSession {
     private static final int MAX_MESSAGE_LENGTH = 1048576;
     private static final int DEFAULT_READ_TIMEOUT = 10_000;
 
-    SocketChannel channel;
+    private static final int HEADER_LENGTH = Integer.BYTES + Short.BYTES;
 
-    public static SocketSession of(URI proxy) {
+    private static int writeRequestHeader(int requestLength, byte[] message, int offset) {
+        var mss = requestLength >> 16;
+        message[offset++] = (byte) (mss >> 24);
+        message[offset++] = (byte) (mss >> 16);
+        message[offset++] = (byte) (mss >> 8);
+        message[offset++] = (byte) mss;
+        var lss = requestLength & 65535;
+        message[offset++] = (byte) (lss >> 8);
+        message[offset++] = (byte) lss;
+        return offset;
+    }
+
+    private static GCMParameterSpec createGcmIv(long counter) {
+        var iv = new byte[12];
+        iv[4] = (byte) (counter >> 56);
+        iv[5] = (byte) (counter >> 48);
+        iv[6] = (byte) (counter >> 40);
+        iv[7] = (byte) (counter >> 32);
+        iv[8] = (byte) (counter >> 24);
+        iv[9] = (byte) (counter >> 16);
+        iv[10] = (byte) (counter >> 8);
+        iv[11] = (byte) (counter);
+        return new GCMParameterSpec(128, iv);
+    }
+
+    SocketChannel channel;
+    private final SignalIdentityKeyPair noiseKeyPair;
+    private final byte[] handshakePrologue;
+    private final ClientPayload handshakePayload;
+
+    protected SocketSession(SignalIdentityKeyPair noiseKeyPair, byte[] handshakePrologue, ClientPayload handshakePayload) {
+        this.noiseKeyPair = noiseKeyPair;
+        this.handshakePrologue = handshakePrologue;
+        this.handshakePayload = handshakePayload;
+    }
+
+    public static SocketSession of(SignalIdentityKeyPair noiseKeyPair, byte[] handshakePrologue, ClientPayload handshakePayload, URI proxy) {
+        Objects.requireNonNull(noiseKeyPair, "noiseKeyPair cannot be null");
+        Objects.requireNonNull(handshakePrologue, "handshakePrologue cannot be null");
         if(proxy == null) {
-            return new DirectSession();
+            return new DirectSession(noiseKeyPair, handshakePrologue, handshakePayload);
         }
 
         var scheme = proxy.getScheme();
         Objects.requireNonNull(scheme, "Malformed proxy: scheme cannot be null");
         return switch (scheme.toLowerCase()) {
-            case "http", "https" -> new ProxiedHttpSession(proxy);
-            case "socks5", "socks5h" -> new ProxiedSocksSession(proxy);
+            case "http", "https" -> new ProxiedHttpSession(noiseKeyPair, handshakePrologue, handshakePayload, proxy);
+            case "socks5", "socks5h" -> new ProxiedSocksSession(noiseKeyPair, handshakePrologue, handshakePayload, proxy);
             default -> throw new IllegalArgumentException("Malformed proxy: unknown scheme " + scheme);
         };
     }
 
     public abstract void connect(Consumer<ByteBuffer> onMessage);
 
-    private void connect(InetSocketAddress endpoint, boolean ready, Consumer<ByteBuffer> onMessage) {
+    private void connect(InetSocketAddress endpoint, boolean tunnelled, Consumer<ByteBuffer> onMessage) {
+        if(isConnected()) {
+            return;
+        }
+
         try {
             this.channel = SocketChannel.open();
             channel.configureBlocking(false);
-            var ctx = new ConnectionContext(onMessage, ready);
-            if (channel.connect(endpoint)) {
-                CentralSelector.INSTANCE.register(channel, SelectionKey.OP_READ, ctx);
-            } else {
-                CentralSelector.INSTANCE.register(channel, SelectionKey.OP_CONNECT, ctx);
-                synchronized (ctx.connectionLock) {
-                    ctx.connectionLock.wait();
-                }
-            }
+
+            var ctx = new ConnectionContext(tunnelled, handshakePrologue, handshakePayload, noiseKeyPair, onMessage);
+
+            openConnection(endpoint, ctx);
+
+            startHandshake(ctx);
         }catch (Throwable exception) {
             throw new RuntimeException("Cannot connect to socket", exception);
         }
     }
 
+    private void openConnection(InetSocketAddress endpoint, ConnectionContext ctx) throws IOException, InterruptedException {
+        if (channel.connect(endpoint)) {
+            CentralSelector.INSTANCE.register(channel, SelectionKey.OP_READ, ctx);
+        } else {
+            CentralSelector.INSTANCE.register(channel, SelectionKey.OP_CONNECT, ctx);
+            synchronized (ctx.connectionLock) {
+                ctx.connectionLock.wait();
+            }
+        }
+        ctx.connected = true;
+    }
+
+    private void startHandshake(ConnectionContext ctx) {
+        if(ctx.handshakeEphemeralKeyPair != null) {
+            throw new IllegalStateException("Handshake already started");
+        }
+
+        var ephemeralKeyPair = SignalIdentityKeyPair.random();
+        ctx.handshakeEphemeralKeyPair = ephemeralKeyPair;
+        var clientHello = new ClientHelloBuilder()
+                .ephemeral(ephemeralKeyPair.publicKey().toEncodedPoint())
+                .build();
+        var handshakeMessage = new HandshakeMessageBuilder()
+                .clientHello(clientHello)
+                .build();
+        var requestLength = HandshakeMessageSpec.sizeOf(handshakeMessage);
+        var message = new byte[handshakePrologue.length + HEADER_LENGTH + requestLength];
+        System.arraycopy(handshakePrologue, 0, message, 0, handshakePrologue.length);
+        var offset = writeRequestHeader(requestLength, message, handshakePrologue.length);
+        HandshakeMessageSpec.encode(handshakeMessage, ProtobufOutputStream.toBytes(message, offset));
+        sendBinary(ByteBuffer.wrap(message));
+    }
 
     public void disconnect() {
         if(!isConnected()) {
@@ -64,21 +147,42 @@ public abstract sealed class SocketSession {
         }
 
         CentralSelector.INSTANCE.unregister(channel);
-
         try {
-            channel.close();
-        }catch (IOException ignored) {
+            if(channel != null) {
+                channel.close();
+            }
+        }catch (IOException _) {
 
-        }finally {
-            channel = null;
         }
     }
 
-    public boolean isConnected() {
-        return channel != null && channel.isConnected();
+    public synchronized boolean sendNode(Node node) {
+        var ctx = CentralSelector.INSTANCE.getContext(channel);
+        if(ctx == null || !ctx.connected || !ctx.secured) {
+            return false;
+        }
+
+        try {
+            var writeCipher = Cipher.getInstance("AES/GCM/NoPadding");
+            writeCipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    ctx.writeKey,
+                    createGcmIv(ctx.writeCounter++)
+            );
+            var plaintextLength = NodeEncoder.sizeOf(node);
+            var ciphertextLength = writeCipher.getOutputSize(plaintextLength);
+            var ciphertext = new byte[HEADER_LENGTH + ciphertextLength];
+            var offset = writeRequestHeader(ciphertextLength, ciphertext, 0);
+            NodeEncoder.encode(node, ciphertext, offset);
+            writeCipher.doFinal(ciphertext, offset, plaintextLength, ciphertext, offset);
+            sendBinary(ByteBuffer.wrap(ciphertext));
+            return true;
+        }catch (GeneralSecurityException exception) {
+            throw new InternalError("Failed to encrypt node", exception);
+        }
     }
 
-    public void sendBinary(ByteBuffer buffer) {
+    private void sendBinary(ByteBuffer buffer) {
         if (!isConnected()) {
             throw new IllegalStateException("Socket is not connected");
         }
@@ -88,8 +192,12 @@ public abstract sealed class SocketSession {
         }
     }
 
-    // Should only be used while connecting the proxy
-    private int readBinary(ByteBuffer buffer, boolean fully) throws IOException {
+    public boolean isConnected() {
+        var ctx = CentralSelector.INSTANCE.getContext(channel);
+        return ctx != null && ctx.connected;
+    }
+
+    private int readPlainBinary(ByteBuffer buffer, boolean fully) throws IOException {
         if (!isConnected()) {
             throw new IllegalStateException("Socket is not connected");
         }
@@ -115,12 +223,13 @@ public abstract sealed class SocketSession {
     }
 
     private static final class DirectSession extends SocketSession {
+
+        DirectSession(SignalIdentityKeyPair noiseKeyPair, byte[] handshakePrologue, ClientPayload handshakePayload) {
+            super(noiseKeyPair, handshakePrologue, handshakePayload);
+        }
+
         @Override
         public void connect(Consumer<ByteBuffer> onMessage) {
-            if (isConnected()) {
-                return;
-            }
-
             var endpoint = new InetSocketAddress(HOST_NAME, PORT); // Don't resolve this statically
             super.connect(endpoint, true, onMessage);
         }
@@ -136,9 +245,11 @@ public abstract sealed class SocketSession {
 
         private final URI proxy;
 
-        public ProxiedHttpSession(URI proxy) {
+        ProxiedHttpSession(SignalIdentityKeyPair noiseKeyPair, byte[] handshakePrologue, ClientPayload handshakePayload, URI proxy) {
+            super(noiseKeyPair, handshakePrologue, handshakePayload);
             this.proxy = proxy;
         }
+
 
         @Override
         public void connect(Consumer<ByteBuffer> onMessage) {
@@ -195,21 +306,21 @@ public abstract sealed class SocketSession {
             // Skip junk before the actual HTTP response starts
             var reader = ByteBuffer.allocate(12);
             do {
-                super.readBinary(reader, true);
+                super.readPlainBinary(reader, true);
             }while(isJunk(reader));
 
             // Read again if we read junk
             if(reader.position() != 0) {
                 reader.compact();
-                super.readBinary(reader, true);
+                super.readPlainBinary(reader, true);
             }
 
             // Parse the HTTP/ part
             if(reader.get() != 'H'
-                    || reader.get() != 'T'
-                    || reader.get() != 'T'
-                    || reader.get() != 'P'
-                    || reader.get() != '/') {
+               || reader.get() != 'T'
+               || reader.get() != 'T'
+               || reader.get() != 'P'
+               || reader.get() != '/') {
                 throw new IOException("Invalid HTTP response: expected HTTP/1.1");
             }
 
@@ -235,8 +346,8 @@ public abstract sealed class SocketSession {
 
             // Make sure we are getting a 200 status code
             var statusCode = (reader.get() - '0') * 100
-                    +  (reader.get() - '0') * 10
-                    +  (reader.get() - '0');
+                             +  (reader.get() - '0') * 10
+                             +  (reader.get() - '0');
             if(statusCode != SUCCESS_STATUS_CODE) {
                 throw new IOException("Invalid HTTP response: expected status code " + SUCCESS_STATUS_CODE + ", but got " +  statusCode);
             }
@@ -244,7 +355,7 @@ public abstract sealed class SocketSession {
             // Read the payload until the HTTP response ends (\r\n\r\n)
             // If the stream end, throw an error
             reader = ByteBuffer.allocate(512); // The http response is usually very small
-            var length = super.readBinary(reader, false);
+            var length = super.readPlainBinary(reader, false);
             reader.position(0);
             reader.limit(length);
             byte current;
@@ -253,7 +364,7 @@ public abstract sealed class SocketSession {
                     var available = reader.remaining();
                     reader.compact();
                     while (available < 4) {
-                        available += super.readBinary(reader, false);
+                        available += super.readPlainBinary(reader, false);
                     }
                     reader.position(0);
                     reader.limit(available);
@@ -319,9 +430,11 @@ public abstract sealed class SocketSession {
 
         private final URI proxy;
 
-        public ProxiedSocksSession(URI proxy) {
+        ProxiedSocksSession(SignalIdentityKeyPair noiseKeyPair, byte[] handshakePrologue, ClientPayload handshakePayload, URI proxy) {
+            super(noiseKeyPair, handshakePrologue, handshakePayload);
             this.proxy = proxy;
         }
+
 
         @Override
         public void connect(Consumer<ByteBuffer> onMessage) {
@@ -353,7 +466,7 @@ public abstract sealed class SocketSession {
             super.sendBinary(greeting);
 
             var serverChoice = ByteBuffer.allocate(2);
-            super.readBinary(serverChoice, true);
+            super.readPlainBinary(serverChoice, true);
             var version = serverChoice.get();
             if (version != SOCKS_VERSION_5) {
                 throw new IOException("Unsupported socks version: " + Byte.toUnsignedInt(version));
@@ -382,7 +495,7 @@ public abstract sealed class SocketSession {
                 super.sendBinary(authRequest);
 
                 var authResponse = ByteBuffer.allocate(2);
-                super.readBinary(authResponse, true);
+                super.readPlainBinary(authResponse, true);
                 authResponse.get(); // Skip version
                 if (authResponse.get() != AUTH_SUCCESS) {
                     throw new IOException("SOCKS proxy authentication failed.");
@@ -405,7 +518,7 @@ public abstract sealed class SocketSession {
 
         private void handleAuthenticationResponse() throws IOException {
             var replyInfo = ByteBuffer.allocate(2);
-            super.readBinary(replyInfo, true);
+            super.readPlainBinary(replyInfo, true);
 
             if (replyInfo.get() != SOCKS_VERSION_5) {
                 throw new IOException("Invalid SOCKS version in server reply.");
@@ -417,7 +530,7 @@ public abstract sealed class SocketSession {
             }
 
             var addrInfo = ByteBuffer.allocate(2);
-            super.readBinary(addrInfo, true);
+            super.readPlainBinary(addrInfo, true);
 
             addrInfo.get();
 
@@ -427,13 +540,13 @@ public abstract sealed class SocketSession {
                 case IPV4_REPLY -> remainingBytes = 4 + 2;
                 case DOMAIN_REPLY -> {
                     var lenBuf = ByteBuffer.allocate(1);
-                    super.readBinary(lenBuf, true);
+                    super.readPlainBinary(lenBuf, true);
                     remainingBytes = (lenBuf.get() & 0xFF) + 2;
                 }
                 case IPV6_REPLY -> remainingBytes = 16 + 2;
                 default -> throw new IOException("Proxy returned an unsupported address type in reply: " + addrType);
             }
-            super.readBinary(ByteBuffer.allocate(remainingBytes), true);
+            super.readPlainBinary(ByteBuffer.allocate(remainingBytes), true);
         }
 
         public static String getReplyReason(int replyCode) {
@@ -477,10 +590,27 @@ public abstract sealed class SocketSession {
 
         private void unregister(SocketChannel channel) {
             var key = channel.keyFor(selector);
-            if(key != null) {
-                key.cancel();
-                selector.wakeup();
+            if (key == null) {
+                return;
             }
+
+            var ctx = (ConnectionContext) key.attachment();
+            ctx.connected = false;
+            key.cancel();
+            selector.wakeup();
+        }
+
+        public ConnectionContext getContext(SocketChannel channel) {
+            if(channel == null) {
+                return null;
+            }
+
+            var key = channel.keyFor(selector);
+            if(key == null) {
+                return null;
+            }
+
+            return (ConnectionContext) key.attachment();
         }
 
         public boolean addRead(SocketChannel channel, PendingRead read) {
@@ -501,7 +631,7 @@ public abstract sealed class SocketSession {
                 return false;
             }
             var ctx = (ConnectionContext) key.attachment();
-            ctx.ready = true;
+            ctx.tunnelled = true;
             key.interestOps(key.interestOps() | SelectionKey.OP_READ);
             selector.wakeup();
             return true;
@@ -581,7 +711,7 @@ public abstract sealed class SocketSession {
         }
 
         private boolean processRead(SocketChannel channel, ConnectionContext ctx, SelectionKey key) throws IOException {
-            if(!ctx.ready) {
+            if(!ctx.tunnelled) {
                 var pendingRead = ctx.pendingReads.peek();
                 if(pendingRead == null) {
                     key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
@@ -609,42 +739,123 @@ public abstract sealed class SocketSession {
                 }
 
                 return true;
-            } else if (ctx.messageLengthBuffer.hasRemaining()) {
-                var bytesRead = channel.read(ctx.messageLengthBuffer);
-                if (bytesRead == -1) {
-                    return false;
-                }
-
+            } else {
                 if (ctx.messageLengthBuffer.hasRemaining()) {
+                    var bytesRead = channel.read(ctx.messageLengthBuffer);
+                    if (bytesRead == -1) {
+                        return false;
+                    }
+
+                    if (ctx.messageLengthBuffer.hasRemaining()) {
+                        return true;
+                    }
+
+                    ctx.messageLengthBuffer.flip();
+                    var length = ((ctx.messageLengthBuffer.get() & 0xFF) << 16)
+                                 | ((ctx.messageLengthBuffer.get() & 0xFF) << 8)
+                                 | (ctx.messageLengthBuffer.get() & 0xFF);
+                    if (length > MAX_MESSAGE_LENGTH) {
+                        return false;
+                    }
+
+                    ctx.messageBuffer = ByteBuffer.allocate(length);
+                    return true;
+                } else {
+                    var bytesRead = channel.read(ctx.messageBuffer);
+                    if (bytesRead == -1) {
+                        return false;
+                    }
+
+                    if (ctx.messageBuffer.hasRemaining()) {
+                        return true;
+                    }
+
+                    ctx.messageBuffer.flip();
+                    ctx.messageLengthBuffer.clear();
+                    var buffer = ctx.messageBuffer;
+                    ctx.messageBuffer = null;
+
+                    var secured = ctx.secured;
+                    var readKey = ctx.readKey;
+                    var readCounter = ctx.readCounter++;
+
+                    Thread.startVirtualThread(() -> {
+                        if(secured) {
+                            var output = decryptRead(readKey, readCounter, buffer);
+                            ctx.onMessage.accept(output);
+                        }else {
+                            finishHandshake(channel, ctx, buffer);
+                        }
+                    });
+
                     return true;
                 }
+            }
+        }
 
-                ctx.messageLengthBuffer.flip();
-                var length = ((ctx.messageLengthBuffer.get() & 0xFF) << 16)
-                        | ((ctx.messageLengthBuffer.get() & 0xFF) << 8)
-                        | (ctx.messageLengthBuffer.get() & 0xFF);
-                if (length > MAX_MESSAGE_LENGTH) {
-                    return false;
-                }
+        private ByteBuffer decryptRead(SecretKeySpec readKey, long readCounter, ByteBuffer buffer) {
+            try {
+                var output = buffer.duplicate();
+                var readCipher = Cipher.getInstance("AES/GCM/NoPadding");
+                readCipher.init(
+                        Cipher.DECRYPT_MODE,
+                        readKey,
+                        createGcmIv(readCounter)
+                );
+                readCipher.doFinal(buffer, output);
+                output.flip();
+                return output;
+            }catch (GeneralSecurityException exception) {
+                throw new RuntimeException(exception);
+            }
+        }
 
-                ctx.messageBuffer = ByteBuffer.allocate(length);
-                return true;
-            }else {
-                var bytesRead = channel.read(ctx.messageBuffer);
-                if (bytesRead == -1) {
-                    return false;
-                }
+        public void finishHandshake(SocketChannel channel, ConnectionContext ctx, ByteBuffer serverHelloPayload) {
+            var ephemeralKeyPair = ctx.handshakeEphemeralKeyPair;
+            if(ephemeralKeyPair == null) {
+                throw new IllegalStateException("Handshake has not started");
+            }
 
-                if (ctx.messageBuffer.hasRemaining()) {
-                    return true;
-                }
+            var serverHandshake = HandshakeMessageSpec.decode(ProtobufInputStream.fromBuffer(serverHelloPayload));
+            var serverHello = serverHandshake.serverHello();
+            try(var handshake = new SocketHandshake(ctx.handshakePrologue)) {
+                handshake.updateHash(ephemeralKeyPair.publicKey().toEncodedPoint());
+                handshake.updateHash(serverHello.ephemeral());
+                var sharedEphemeral = Curve25519.sharedKey(ephemeralKeyPair.privateKey().toEncodedPoint(), serverHello.ephemeral());
+                handshake.mixIntoKey(sharedEphemeral);
+                var decodedStaticText = handshake.cipher(serverHello.staticText(), false);
+                var sharedStatic = Curve25519.sharedKey(ephemeralKeyPair.privateKey().toEncodedPoint(), decodedStaticText);
+                handshake.mixIntoKey(sharedStatic);
+                handshake.cipher(serverHello.payload(), false);
+                var noiseKeyPair = ctx.handshakeNoiseKeyPair;
+                var encodedKey = handshake.cipher(noiseKeyPair.publicKey().toEncodedPoint(), true);
+                var sharedPrivate = Curve25519.sharedKey(noiseKeyPair.privateKey().toEncodedPoint(), serverHello.ephemeral());
+                handshake.mixIntoKey(sharedPrivate);
+                var encodedPayload = handshake.cipher(ClientPayloadSpec.encode(ctx.handshakePayload), true);
+                var clientFinish = new ClientFinish(encodedKey, encodedPayload);
+                var clientHandshake = new HandshakeMessageBuilder()
+                        .clientFinish(clientFinish)
+                        .build();
+                var requestLength = HandshakeMessageSpec.sizeOf(clientHandshake);
+                var message = new byte[HEADER_LENGTH + requestLength];
+                var offset = writeRequestHeader(requestLength, message, 0);
+                HandshakeMessageSpec.encode(clientHandshake, ProtobufOutputStream.toBytes(message, offset));
+                addWrite(channel, ByteBuffer.wrap(message));
+                var keys = handshake.finish();
 
-                ctx.messageBuffer.flip();
-                ctx.messageLengthBuffer.clear();
-                var buffer = ctx.messageBuffer;
-                Thread.startVirtualThread(() -> ctx.onMessage.accept(buffer));
-                ctx.messageBuffer = null;
-                return true;
+                ctx.writeCounter = 0;
+                ctx.writeKey = new SecretKeySpec(keys, 0, 32, "AES");
+
+                ctx.readCounter = 0;
+                ctx.readKey = new SecretKeySpec(keys, 32, 32, "AES");
+
+                ctx.secured = true;
+            }catch (GeneralSecurityException exception) {
+                throw new RuntimeException("Cannot finish handshake", exception);
+            }finally {
+                ctx.handshakePrologue = null;
+                ctx.handshakePayload = null;
+                ctx.handshakeEphemeralKeyPair = null;
             }
         }
 
@@ -663,29 +874,73 @@ public abstract sealed class SocketSession {
         }
     }
 
+    // Lifecycle:
+    // Open connection -> Open tunnel (proxy) -> Handshake -> Connected
     private static final class ConnectionContext {
+        // Flag to indicate whether the connection is connected
+        private boolean connected;
+
         // Lock to synchronize the connect method
         private final Object connectionLock;
-        // Whether the connection is ready
+
+        // Whether the connection is tunneled
         // If the client is not using a proxy, this is instantly true, otherwise only after the proxy auth is done this is true
-        private boolean ready;
+        private boolean tunnelled;
+
+        // The handshake prologue used for the handshake
+        // Becomes null after the handshake is done
+        private byte[] handshakePrologue;
+
+        // The handshake payload to send to WhatsApp
+        // Becomes null after the handshake is done
+        private ClientPayload handshakePayload;
+
+        // The ephemeral key pair used for the handshake
+        // Becomes null after the handshake is done
+        private SignalIdentityKeyPair handshakeEphemeralKeyPair;
+
+        // The noise key pair used for the handshake
+        private final SignalIdentityKeyPair handshakeNoiseKeyPair;
+
+        // The read key used to decrypt messages
+        private SecretKeySpec readKey;
+
+        // The GCM counter to decrypt messages
+        private long readCounter;
+
+        // The write key used to encrypt the connection
+        private SecretKeySpec writeKey;
+
+        // The GCM counter to encrypt the connection
+        private long writeCounter;
+
+        // Flag to indicate whether the connection has finished the handshake
+        private boolean secured;
+
         // List of buffers to read, used while ready = false
         private final Queue<PendingRead> pendingReads;
-        // LIst of buffers to write, always used
+
+        // List of buffers to write, always used
         private final Queue<ByteBuffer> pendingWrites;
+
         // Buffer used to read the length of the current WhatsApp message
         // Only used when ready = true
         private final ByteBuffer messageLengthBuffer;
+
         // Buffer used to read the current WhatsApp message
         // Only used when ready = true
         private ByteBuffer messageBuffer;
+
         // Callback for a WhatsApp message
-        // ONly used whe ready = true
+        // Only used when ready = true
         private final Consumer<ByteBuffer> onMessage;
 
-        private ConnectionContext(Consumer<ByteBuffer> onMessage, boolean ready) {
+        private ConnectionContext(boolean tunnelled, byte[] handshakePrologue, ClientPayload handshakePayload, SignalIdentityKeyPair handshakeNoiseKeyPair, Consumer<ByteBuffer> onMessage) {
+            this.handshakePrologue = handshakePrologue;
+            this.handshakeNoiseKeyPair = handshakeNoiseKeyPair;
+            this.handshakePayload = handshakePayload;
             this.connectionLock = new Object();
-            this.ready = ready;
+            this.tunnelled = tunnelled;
             this.onMessage = onMessage;
             this.pendingReads = new ConcurrentLinkedQueue<>();
             this.pendingWrites = new ConcurrentLinkedQueue<>();
@@ -693,16 +948,28 @@ public abstract sealed class SocketSession {
         }
     }
 
+    // Pending reads used while the proxy is authenticating
+    // Then we switch to Whatsapp's datagram model
     private static class PendingRead {
+        // The buffer where the data should be read
         private final ByteBuffer buffer;
+
+        // Whether the minimum amount of reads necessary to fill the read buffer should be performed
+        // Otherwise performs a single read
         private final boolean fullRead;
+
+        // The lock to wait/notify the operation's result
         private final Object lock;
+
+        // The length of the data read
+        // After the result has been notified, this property will have a value
         private int length;
 
         private PendingRead(ByteBuffer buffer, boolean fullRead) {
             this.buffer = buffer;
             this.fullRead = fullRead;
             this.lock = new Object();
+            this.length = -1;
         }
     }
 }

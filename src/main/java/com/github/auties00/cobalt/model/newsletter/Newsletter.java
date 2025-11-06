@@ -1,10 +1,11 @@
 package com.github.auties00.cobalt.model.newsletter;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfoParent;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.util.Messages;
+import com.github.auties00.collections.ConcurrentLinkedHashMap;
 import it.auties.protobuf.annotation.ProtobufMessage;
 import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
@@ -27,9 +28,9 @@ public final class Newsletter implements MessageInfoParent {
     final NewsletterViewerMetadata viewerMetadata;
 
     @ProtobufProperty(index = 5, type = ProtobufType.MESSAGE)
-    final Messages<NewsletterMessageInfo> messages;
+    final Messages messages;
 
-    Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, Messages<NewsletterMessageInfo> messages) {
+    Newsletter(Jid jid, NewsletterState state, NewsletterMetadata metadata, NewsletterViewerMetadata viewerMetadata, Messages messages) {
         this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.state = state;
         this.metadata = metadata;
@@ -58,7 +59,7 @@ public final class Newsletter implements MessageInfoParent {
         var viewerMetadata = NewsletterViewerMetadata.ofJson(viewerMetadataJsonObject)
                 .orElse(null);
         var messagesJsonObjects = newsletter.getJSONArray("messages");
-        var messages = new Messages<NewsletterMessageInfo>();
+        var messages = new Messages();
         if(messagesJsonObjects != null) {
             for (var i = 0; i < messagesJsonObjects.size(); i++) {
                 var messageJsonObject = messagesJsonObjects.getJSONObject(i);
@@ -87,6 +88,11 @@ public final class Newsletter implements MessageInfoParent {
     @Override
     public SequencedCollection<NewsletterMessageInfo> messages() {
         return Collections.unmodifiableSequencedCollection(messages);
+    }
+
+    @Override
+    public Optional<NewsletterMessageInfo> getMessageById(String messageId) {
+        return messages.getById(messageId);
     }
 
     @Override
@@ -160,5 +166,120 @@ public final class Newsletter implements MessageInfoParent {
                 ", viewerMetadata=" + viewerMetadata +
                 ", messages=" + messages +
                 '}';
+    }
+
+    static final class Messages implements SequencedCollection<NewsletterMessageInfo> {
+        private final ConcurrentLinkedHashMap<String, NewsletterMessageInfo> backing;
+
+        public Messages() {
+            this.backing = new ConcurrentLinkedHashMap<>();
+        }
+
+        public Optional<NewsletterMessageInfo> getById(String id) {
+            return Optional.ofNullable(backing.get(id));
+        }
+
+        public boolean removeById(String id) {
+            return backing.remove(id) != null;
+        }
+
+        @Override
+        public SequencedCollection<NewsletterMessageInfo> reversed() {
+            return backing.sequencedValues()
+                    .reversed();
+        }
+
+        @Override
+        public int size() {
+            return backing.size();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return backing.isEmpty();
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return o instanceof MessageInfo messageInfo
+                   && backing.containsKey(messageInfo.id());
+        }
+
+        @Override
+        public Iterator<NewsletterMessageInfo> iterator() {
+            return backing.sequencedValues()
+                    .iterator();
+        }
+
+        @Override
+        public Object[] toArray() {
+            return backing.sequencedValues()
+                    .toArray();
+        }
+
+        @Override
+        public <T> T[] toArray(T[] a) {
+            return backing.sequencedValues()
+                    .toArray(a);
+        }
+
+        @Override
+        public boolean add(NewsletterMessageInfo messageInfo) {
+            Objects.requireNonNull(messageInfo);
+            backing.put(messageInfo.id(), messageInfo);
+            return true;
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            return o instanceof MessageInfo messageInfo
+                   && backing.remove(messageInfo.id()) != null;
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> collection) {
+            Objects.requireNonNull(collection);
+            for(var entry : collection) {
+                if (!(entry instanceof MessageInfo messageInfo)) {
+                    return false;
+                }
+
+                if (!backing.containsKey(messageInfo.id())) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends NewsletterMessageInfo> collection) {
+            Objects.requireNonNull(collection);
+            for(var entry : collection) {
+                backing.put(entry.id(), entry);
+            }
+            return true;
+        }
+
+        @Override
+        public boolean removeAll(Collection<?> collection) {
+            Objects.requireNonNull(collection);
+            var result = true;
+            for(var entry : collection) {
+                if (!(entry instanceof MessageInfo messageInfo) || backing.remove(messageInfo.id()) == null) {
+                    result = false;
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public boolean retainAll(Collection<?> collection) {
+            return false;
+        }
+
+        @Override
+        public void clear() {
+            backing.clear();
+        }
     }
 }

@@ -7,6 +7,7 @@ import it.auties.protobuf.model.ProtobufString;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.stream.DoubleStream;
 import java.util.stream.LongStream;
@@ -22,7 +23,7 @@ import java.util.stream.Stream;
  *   <li>{@link EmptyNode} - A node without any children</li>
  *   <li>{@link TextNode} - A node containing text children</li>
  *   <li>{@link JidNode} - A node containing a WhatsApp JID reference</li>
- *   <li>{@link BytesContent} - A node containing binary data</li>
+ *   <li>{@link BytesNode} - A node containing binary data</li>
  *   <li>{@link StreamNode} - A node containing streaming data</li>
  *   <li>{@link ContainerNode} - A node containing child nodes</li>
  * </ul>
@@ -85,12 +86,12 @@ public sealed interface Node {
 
     default Optional<String> getAttributeAsString(String key) {
         return getAttribute(key)
-                .map(NodeAttribute::toString);
+                .map(NodeAttribute::toValueString);
     }
 
     default Optional<Boolean> getAttributeAsBool(String key) {
         return getAttribute(key)
-                .map(NodeAttribute::toString)
+                .map(NodeAttribute::toValueString)
                 .map(Boolean::parseBoolean);
     }
 
@@ -106,44 +107,44 @@ public sealed interface Node {
 
     default Optional<byte[]> getAttributeAsBytes(String key) {
         return getAttribute(key)
-                .map(NodeAttribute::toBytes);
+                .map(NodeAttribute::toValueBytes);
     }
 
     default byte[] getAttributeAsBytes(String key, byte[] defaultValue) {
         return getAttribute(key)
-                .map(NodeAttribute::toBytes)
+                .map(NodeAttribute::toValueBytes)
                 .orElse(defaultValue);
     }
 
     default Optional<Jid> getAttributeAsJid(String key) {
         return getAttribute(key)
-                .flatMap(NodeAttribute::toJid);
+                .flatMap(NodeAttribute::toValueJid);
     }
 
     default Jid getAttributeAsJid(String key, Jid defaultValue) {
         return getAttribute(key)
-                .flatMap(NodeAttribute::toJid)
+                .flatMap(NodeAttribute::toValueJid)
                 .orElse(defaultValue);
     }
 
     default OptionalLong getAttributeAsLong(String key) {
         var result = getAttribute(key);
-        return result.isEmpty() ? OptionalLong.empty() : result.get().toLong();
+        return result.isEmpty() ? OptionalLong.empty() : result.get().toValueLong();
     }
 
     default long getAttributeAsLong(String key, long defaultValue) {
         var result = getAttribute(key);
-        return result.isEmpty() ? defaultValue : result.get().toLong().orElse(defaultValue);
+        return result.isEmpty() ? defaultValue : result.get().toValueLong().orElse(defaultValue);
     }
 
     default OptionalDouble getAttributeAsDouble(String key) {
         var result = getAttribute(key);
-        return result.isEmpty() ? OptionalDouble.empty() : result.get().toDouble();
+        return result.isEmpty() ? OptionalDouble.empty() : result.get().toValueDouble();
     }
 
     default double getAttributeAsDouble(String key, double defaultValue) {
         var result = getAttribute(key);
-        return result.isEmpty() ? defaultValue : result.get().toDouble().orElse(defaultValue);
+        return result.isEmpty() ? defaultValue : result.get().toValueDouble().orElse(defaultValue);
     }
 
     /**
@@ -159,25 +160,25 @@ public sealed interface Node {
 
     default Stream<String> streamAttributeAsString(String key) {
         return streamAttribute(key)
-                .map(NodeAttribute::toString);
+                .map(NodeAttribute::toValueString);
     }
 
     default Stream<Boolean> streamAttributeAsBool(String key) {
         return streamAttribute(key)
-                .map(NodeAttribute::toString)
+                .map(NodeAttribute::toValueString)
                 .map(Boolean::parseBoolean);
     }
 
     default Stream<byte[]> streamAttributeAsBytes(String key) {
         return streamAttribute(key)
-                .map(NodeAttribute::toBytes);
+                .map(NodeAttribute::toValueBytes);
     }
 
     default Stream<Jid> streamAttributeAsJid(String key) {
         Objects.requireNonNull(key, "key cannot be null");
         var attributeValue = attributes().get(key);
         return attributeValue != null
-                ? attributeValue.toJid().stream()
+                ? attributeValue.toValueJid().stream()
                 : Stream.empty();
     }
 
@@ -185,7 +186,7 @@ public sealed interface Node {
         Objects.requireNonNull(key, "key cannot be null");
         var attributeValue = attributes().get(key);
         return attributeValue != null
-                ? attributeValue.toLong().stream()
+                ? attributeValue.toValueLong().stream()
                 : LongStream.empty();
     }
 
@@ -193,7 +194,7 @@ public sealed interface Node {
         Objects.requireNonNull(key, "key cannot be null");
         var attributeValue = attributes().get(key);
         return attributeValue != null
-                ? attributeValue.toDouble().stream()
+                ? attributeValue.toValueDouble().stream()
                 : DoubleStream.empty();
     }
 
@@ -215,38 +216,38 @@ public sealed interface Node {
 
     default String getRequiredAttributeAsString(String key) {
         return getRequiredAttribute(key)
-                .toString();
+                .toValueString();
     }
 
     default boolean getRequiredAttributeAsBool(String key) {
         var result = getRequiredAttribute(key)
-                .toString();
+                .toValueString();
         return Boolean.parseBoolean(result);
     }
 
     default byte[] getRequiredAttributeAsBytes(String key) {
         return getRequiredAttribute(key)
-                .toBytes();
+                .toValueBytes();
     }
 
     default Jid getRequiredAttributeAsJid(String key) {
         var requiredAttribute = getRequiredAttribute(key);
         return requiredAttribute
-                .toJid()
+                .toValueJid()
                 .orElseThrow(() -> new IllegalArgumentException("Cannot convert required attribute " + key + " to JID. Attribute value: " + requiredAttribute));
     }
 
     default long getRequiredAttributeAsLong(String key) {
         var requiredAttribute = getRequiredAttribute(key);
         return requiredAttribute
-                .toLong()
+                .toValueLong()
                 .orElseThrow(() -> new IllegalArgumentException("Cannot convert required attribute " + key + " to long. Attribute value: " + requiredAttribute));
     }
 
     default double getRequiredAttributeAsDouble(String key) {
         var requiredAttribute = getRequiredAttribute(key);
         return requiredAttribute
-                .toDouble()
+                .toValueDouble()
                 .orElseThrow(() -> new IllegalArgumentException("Cannot convert required attribute " + key + " to double. Attribute value: " + requiredAttribute));
     }
 
@@ -259,14 +260,14 @@ public sealed interface Node {
         Objects.requireNonNull(key, "key cannot be null");
         var attribute = attributes().get(key);
         return attribute != null
-                && attribute.toString().equals(value);
+                && attribute.toValueString().equals(value);
     }
 
     default boolean hasAttribute(String key, byte[] value) {
         Objects.requireNonNull(key, "key cannot be null");
         var attribute = attributes().get(key);
         return attribute != null
-               && Arrays.equals(attribute.toBytes(), value);
+               && Arrays.equals(attribute.toValueBytes(), value);
     }
 
     default boolean hasAttribute(String key, Jid value) {
@@ -276,7 +277,7 @@ public sealed interface Node {
             return false;
         }
 
-        var attributeValue = attribute.toJid();
+        var attributeValue = attribute.toValueJid();
         return attributeValue.isPresent()
                && Objects.equals(attributeValue.get(), value);
     }
@@ -288,7 +289,7 @@ public sealed interface Node {
             return false;
         }
 
-        var attributeValue = attribute.toLong();
+        var attributeValue = attribute.toValueLong();
         return attributeValue.isPresent()
                 && attributeValue.getAsLong() == value;
     }
@@ -300,7 +301,7 @@ public sealed interface Node {
             return false;
         }
 
-        var attributeValue = attribute.toDouble();
+        var attributeValue = attribute.toValueDouble();
         return attributeValue.isPresent()
                 && attributeValue.getAsDouble() == value;
     }
@@ -312,17 +313,27 @@ public sealed interface Node {
             return false;
         }
 
-        var attributeValue = attribute.toString();
+        var attributeValue = attribute.toValueString();
         return Boolean.parseBoolean(attributeValue) == value;
     }
 
     /**
-     * Checks whether this node has children.
+     * Checks whether this node has content.
      * Empty nodes return {@code false}, while all other node types return {@code true}.
      *
-     * @return {@code true} if the node has children, {@code false} otherwise
+     * @return {@code true} if the node has content, {@code false} otherwise
      */
     boolean hasContent();
+
+    boolean hasContent(String content);
+
+    boolean hasContent(Jid content);
+
+    boolean hasContent(byte[] content);
+
+    boolean hasContent(InputStream content);
+
+    boolean hasContent(SequencedCollection<? extends Node> content);
 
     /**
      * Calculates the size of the node based on its attributes and whether it contains children.
@@ -538,19 +549,55 @@ public sealed interface Node {
     record EmptyNode(String description, SequencedMap<String, NodeAttribute> attributes) implements Node {
         private static final EmptyNode DEFAULT = new EmptyNode("", new LinkedHashMap<>());
 
-        public EmptyNode {
-            Objects.requireNonNull(description, "description cannot be null");
-            Objects.requireNonNull(attributes, "attributes cannot be null");
-        }
-
-        @Override
-        public SequencedMap<String, NodeAttribute> attributes() {
-            return Collections.unmodifiableSequencedMap(attributes);
+        public EmptyNode(String description, SequencedMap<String, NodeAttribute> attributes) {
+            this.description = Objects.requireNonNull(description, "description cannot be null");
+            this.attributes = Collections.unmodifiableSequencedMap(Objects.requireNonNull(attributes, "attributes cannot be null"));
         }
 
         @Override
         public boolean hasContent() {
             return false;
+        }
+
+        @Override
+        public boolean hasContent(String content) {
+            return content == null || content.isEmpty();
+        }
+
+        @Override
+        public boolean hasContent(Jid content) {
+            // A Jid is never empty because of the server attribute
+            return content == null;
+        }
+
+        @Override
+        public boolean hasContent(byte[] content) {
+            return content == null || new String(content).isEmpty();
+        }
+
+        @Override
+        public boolean hasContent(InputStream content) {
+            if(content == null) {
+                return true;
+            }
+
+            if(!content.markSupported()) {
+                throw new UnsupportedOperationException("markSupported() is required");
+            }else {
+                try {
+                    content.mark(1);
+                    return content.read() == -1;
+                }catch (IOException exception) {
+                    throw new UncheckedIOException(exception);
+                }finally {
+                    content.reset();
+                }
+            }
+        }
+
+        @Override
+        public boolean hasContent(SequencedCollection<? extends Node> content) {
+            return content == null || content.isEmpty();
         }
 
         @Override
@@ -579,6 +626,22 @@ public sealed interface Node {
         }
 
         @Override
+        public boolean equals(Object o) {
+            return switch (o) {
+                case EmptyNode(var thatDescription, var thatAttributes) -> Objects.equals(description, thatDescription) && Objects.equals(attributes, thatAttributes);
+                case TextNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) && Objects.equals(attributes, thatAttributes) && hasContent(thatContent);
+                case BytesNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) && Objects.equals(attributes, thatAttributes) && hasContent(thatContent);
+                case StreamNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) && Objects.equals(attributes, thatAttributes) && hasContent(thatContent);
+                case null, default -> false;
+            };
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(description, attributes);
+        }
+
+        @Override
         public String toString() {
             var result = new StringBuilder();
             result.append("Node[description=");
@@ -604,15 +667,10 @@ public sealed interface Node {
      * @param content the text content of the node
      */
     record TextNode(String description, SequencedMap<String, NodeAttribute> attributes, String content) implements Node {
-        public TextNode {
-            Objects.requireNonNull(description, "description cannot be null");
-            Objects.requireNonNull(attributes, "attributes cannot be null");
-            Objects.requireNonNull(content, "content cannot be null");
-        }
-
-        @Override
-        public SequencedMap<String, NodeAttribute> attributes() {
-            return Collections.unmodifiableSequencedMap(attributes);
+        public TextNode(String description, SequencedMap<String, NodeAttribute> attributes, String content) {
+            this.description = Objects.requireNonNull(description, "description cannot be null");
+            this.attributes = Collections.unmodifiableSequencedMap(Objects.requireNonNull(attributes, "attributes cannot be null"));
+            this.content = Objects.requireNonNull(content, "content cannot be null");
         }
 
         @Override
@@ -648,6 +706,38 @@ public sealed interface Node {
         @Override
         public SequencedCollection<Node> children() {
             return List.of();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return switch (o) {
+                case EmptyNode(var thatDescription, var thatAttributes) when content.isEmpty() -> Objects.equals(description, thatDescription)
+                                                                                                  && Objects.equals(attributes, thatAttributes);
+                case TextNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription)
+                                                                                           && Objects.equals(attributes, thatAttributes)
+                                                                                           && Objects.equals(content, thatContent);
+                case JidNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription)
+                                                                                          && Objects.equals(attributes, thatAttributes)
+                                                                                          && Objects.equals(content, thatContent.toString());
+                case BytesNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription)
+                                                                                            && Objects.equals(attributes, thatAttributes)
+                                                                                            && Objects.equals(content, new String(thatContent));
+                case StreamNode(var thatDescription, var thatAttributes, var thatContent) -> {
+                    if(!thatContent.markSupported()) {
+                        throw new UnsupportedOperationException("markSupported() is required");
+                    }else {
+                        yield Objects.equals(description, thatDescription)
+                              && Objects.equals(attributes, thatAttributes)
+                              && Objects.equals(content, new String(thatContent.readAllBytes()));
+                    }
+                }
+                case null, default -> false;
+            };
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(description, attributes, content);
         }
 
         @Override
@@ -753,8 +843,8 @@ public sealed interface Node {
      * @param attributes the node's attributes
      * @param content the binary content of the node as a ByteBuffer
      */
-    record BytesContent(String description, SequencedMap<String, NodeAttribute> attributes, byte[] content) implements Node {
-        public BytesContent {
+    record BytesNode(String description, SequencedMap<String, NodeAttribute> attributes, byte[] content) implements Node {
+        public BytesNode {
             Objects.requireNonNull(description, "description cannot be null");
             Objects.requireNonNull(attributes, "attributes cannot be null");
             Objects.requireNonNull(content, "content cannot be null");
@@ -836,9 +926,8 @@ public sealed interface Node {
      * @param description the node's description
      * @param attributes the node's attributes
      * @param content the streaming children of the node as an InputStream
-     * @param contentLength the full length of the children
      */
-    record StreamNode(String description, SequencedMap<String, NodeAttribute> attributes, InputStream content, int contentLength) implements Node {
+    record StreamNode(String description, SequencedMap<String, NodeAttribute> attributes, InputStream content) implements Node {
         public StreamNode(String description, SequencedMap<String, NodeAttribute> attributes, InputStream content, int contentLength) {
             Objects.requireNonNull(description, "description cannot be null");
             Objects.requireNonNull(attributes, "attributes cannot be null");
@@ -846,17 +935,13 @@ public sealed interface Node {
             if(contentLength < 0) {
                 throw new IllegalArgumentException("contentLength cannot be negative");
             }
-            this.description = description;
-            this.attributes = attributes;
-            this.content = new BoundedInputStream(content, contentLength);
-            this.contentLength = contentLength;
+            this(description, attributes, new BoundedInputStream(content, contentLength));
         }
 
         @Override
         public Optional<Jid> toContentJid() {
             try {
-                var result = content.readNBytes(contentLength);
-                var converted = Jid.of(ProtobufString.lazy(result));
+                var converted = Jid.of(content);
                 return Optional.of(converted);
             }catch (IOException | MalformedJidException exception) {
                 return Optional.empty();
@@ -866,7 +951,7 @@ public sealed interface Node {
         @Override
         public Optional<byte[]> toContentBytes() {
             try {
-                var result = content.readNBytes(contentLength);
+                var result = content.readAllBytes();
                 return Optional.of(result);
             }catch (IOException exception) {
                 return Optional.empty();
@@ -881,7 +966,7 @@ public sealed interface Node {
         @Override
         public Optional<String> toContentString() {
             try {
-                var result = content.readNBytes(contentLength);
+                var result = content.readAllBytes();
                 var converted = new String(result);
                 return Optional.of(converted);
             }catch (IOException exception) {

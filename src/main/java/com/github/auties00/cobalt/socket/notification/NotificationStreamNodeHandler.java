@@ -5,8 +5,6 @@ import com.github.auties00.cobalt.client.json.response.NewsletterLeaveResponse;
 import com.github.auties00.cobalt.client.json.response.NewsletterMuteResponse;
 import com.github.auties00.cobalt.client.json.response.NewsletterResponse;
 import com.github.auties00.cobalt.client.json.response.NewsletterStateResponse;
-import com.github.auties00.cobalt.node.Node;
-import com.github.auties00.cobalt.node.NodeBuilder;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.chat.ChatEphemeralTimer;
 import com.github.auties00.cobalt.model.info.ChatMessageInfoBuilder;
@@ -25,13 +23,14 @@ import com.github.auties00.cobalt.model.privacy.PrivacySettingEntryBuilder;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingType;
 import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.sync.PatchType;
+import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.node.NodeBuilder;
+import com.github.auties00.cobalt.socket.SocketPhonePairing;
 import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.SecureBytes;
-import com.github.auties00.cobalt.socket.SocketPhonePairing;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
-import com.github.auties00.libsignal.key.SignalPreKeyPair;
 
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
@@ -48,7 +47,6 @@ import java.util.Optional;
 
 public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
-    private static final byte[] SIGNAL_KEY_TYPE = {SignalIdentityPublicKey.type()};
 
     private final SocketPhonePairing pairingCode;
     public NotificationStreamNodeHandler(WhatsAppClient whatsapp, SocketPhonePairing pairingCode) {
@@ -100,7 +98,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
 
         messages.streamChildren("message").forEachOrdered(messageNode -> {
             var messageId = messageNode.getRequiredAttribute("server_id")
-                    .toString();
+                    .toValueString();
             var newsletterMessage = whatsapp.store()
                     .findMessageById(newsletter, messageId)
                     .orElse(null);
@@ -117,9 +115,9 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
 
     private void onNewsletterReaction(Node reaction, NewsletterMessageInfo newsletterMessage) {
         var reactionCode = reaction.getRequiredAttribute("code")
-                .toString();
+                .toValueString();
         var reactionCountValue = reaction.getRequiredAttribute("count")
-                .toString();
+                .toValueString();
         var reactionCount = Integer.parseUnsignedInt(reactionCountValue);
         var newReaction = new NewsletterReaction(reactionCode, reactionCount, false);
         newsletterMessage.addReaction(newReaction)
@@ -134,7 +132,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         }
 
         var operationName = update.getRequiredAttribute("op_name")
-                .toString();
+                .toValueString();
         switch (operationName) {
             case "MexNotificationEvent" -> {
                 // TODO MexNotificationEvent
@@ -387,48 +385,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         }
         var keysCount = node.getRequiredChild("count")
                 .getRequiredAttributeAsLong("value");
-        var keys = whatsapp.store();
-        var startId = keys.hasPreKeys() ? keys.preKeys().getLast().id() + 1 : 1;
-        var preKeys = new ArrayList<Node>();
-        while (keysCount-- > 0) {
-            var preKeyPair = SignalPreKeyPair.random(startId++);
-            keys.addPreKey(preKeyPair);
-            var preKayNode = new NodeBuilder()
-                    .description("key")
-                    .attribute("id", SecureBytes.intToBytes(preKeyPair.id(), 3))
-                    .attribute("value", preKeyPair.publicKey().toEncodedPoint())
-                    .build();
-            preKeys.add(preKayNode);
-        }
-        var registration = new NodeBuilder()
-                .description("registration")
-                .content(SecureBytes.intToBytes(keys.registrationId(), 4))
-                .build();
-        var type = new NodeBuilder()
-                .description("type")
-                .content(SIGNAL_KEY_TYPE)
-                .build();
-        var identity = new NodeBuilder()
-                .description("identity")
-                .content(keys.identityKeyPair().publicKey().toEncodedPoint())
-                .build();
-        var list = new NodeBuilder()
-                .description("list")
-                .content(preKeys)
-                .build();
-        var skey = new NodeBuilder()
-                .description("skey")
-                .attribute("id", SecureBytes.intToBytes(keys.signedKeyPair().id(), 3))
-                .attribute("value", keys.signedKeyPair().publicKey().toEncodedPoint())
-                .attribute("signature", keys.signedKeyPair().signature())
-                .build();
-        var queryRequest = new NodeBuilder()
-                .description("iq")
-                .attribute("to", JidServer.user())
-                .attribute("type", "set")
-                .attribute("xmlns", "encrypt")
-                .content(registration, type, identity, list, skey);
-        whatsapp.sendNode(queryRequest);
+        whatsapp.sendPreKeys(keysCount);
     }
 
     private void handleAccountSyncNotification(Node node) {

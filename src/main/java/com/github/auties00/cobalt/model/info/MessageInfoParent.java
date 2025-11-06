@@ -11,6 +11,7 @@ public sealed interface MessageInfoParent
         extends JidProvider
         permits Chat, Newsletter {
     SequencedCollection<? extends MessageInfo> messages();
+    Optional<? extends MessageInfo> getMessageById(String messageId);
     boolean removeMessage(String messageId);
     void removeMessages();
     Optional<? extends MessageInfo> newestMessage();
