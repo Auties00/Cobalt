@@ -448,12 +448,18 @@ public final class Jid implements JidProvider {
      * @return a non-null String
      */
     public Optional<String> toPhoneNumber() {
-        try {
-            Long.parseLong(user);
-            return Optional.of(PHONE_CHAR + user);
-        } catch (NumberFormatException ignored) {
+        if(user == null) {
             return Optional.empty();
         }
+
+        var length = user.length();
+        for(var i = 0; i < length; i++) {
+            if(!Character.isDigit(user.charAt(i))) {
+                return Optional.empty();
+            }
+        }
+
+        return Optional.of(PHONE_CHAR + user);
     }
 
     /**

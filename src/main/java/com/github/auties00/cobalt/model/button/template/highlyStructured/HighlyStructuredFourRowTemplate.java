@@ -53,7 +53,7 @@ public final class HighlyStructuredFourRowTemplate implements TemplateFormatter 
         this.titleImage = titleImage;
         this.titleVideo = titleVideo;
         this.titleLocation = titleLocation;
-        this.content = Objects.requireNonNull(content, "children cannot be null");
+        this.content = Objects.requireNonNull(content, "content cannot be null");
         this.footer = footer;
         this.buttons = Objects.requireNonNullElse(buttons, List.of());
     }
@@ -180,7 +180,7 @@ public final class HighlyStructuredFourRowTemplate implements TemplateFormatter 
                 "titleImage=" + titleImage + ", " +
                 "titleVideo=" + titleVideo + ", " +
                 "titleLocation=" + titleLocation + ", " +
-                "children=" + content + ", " +
+                "content=" + content + ", " +
                 "footer=" + footer + ", " +
                 "buttons=" + buttons + ']';
     }

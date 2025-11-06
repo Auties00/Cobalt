@@ -15,7 +15,7 @@ public final class InteractiveResponseBody {
     final String content;
 
     InteractiveResponseBody(String content) {
-        this.content = Objects.requireNonNull(content, "children cannot be null");
+        this.content = Objects.requireNonNull(content, "content cannot be null");
     }
 
     public String content() {
@@ -36,6 +36,6 @@ public final class InteractiveResponseBody {
     @Override
     public String toString() {
         return "InteractiveResponseBody[" +
-                "children=" + content + ']';
+                "content=" + content + ']';
     }
 }

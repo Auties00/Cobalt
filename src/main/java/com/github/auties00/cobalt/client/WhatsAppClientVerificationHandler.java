@@ -61,7 +61,7 @@ public sealed interface WhatsAppClientVerificationHandler {
             /**
              * Creates a BitMatrix representation of a QR code from a value.
              *
-             * @param qr     The QR code children to encode
+             * @param qr     The QR code content to encode
              * @param size   The size of the QR code in pixels
              * @param margin The margin size around the QR code
              * @return A BitMatrix representing the QR code

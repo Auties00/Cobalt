@@ -84,7 +84,7 @@ public final class ReactionMessage implements Message {
     public String toString() {
         return "ReactionMessage[" +
                 "key=" + key +
-                ", children=" + content +
+                ", content=" + content +
                 ", groupingKey=" + groupingKey +
                 ", timestampSeconds=" + timestampSeconds +
                 ']';

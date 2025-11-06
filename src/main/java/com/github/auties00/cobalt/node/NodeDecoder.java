@@ -17,7 +17,7 @@ import static com.github.auties00.cobalt.node.NodeTokens.*;
  * <p>
  * This decoder implements the WhatsApp binary protocol specification for deserializing
  * node-based data structures used in WhatsApp communication. It handles various node types,
- * attributes, and children formats including compressed data, JID pairs, binary data,
+ * attributes, and content formats including compressed data, JID pairs, binary data,
  * and tokenized strings.
  * <p>
  * The decoder supports:
@@ -251,7 +251,7 @@ public final class NodeDecoder implements AutoCloseable {
      * <p>
      * The node structure consists of:
      * <ul>
-     *     <li>Size indicator (determines number of attributes and children presence)</li>
+     *     <li>Size indicator (determines number of attributes and content presence)</li>
      *     <li>Description string (optional)</li>
      *     <li>Attributes as key-value pairs (each pair consumes 2 size units)</li>
      *     <li>Content (present if size is odd after accounting for attributes)</li>
@@ -437,7 +437,7 @@ public final class NodeDecoder implements AutoCloseable {
      * Reads and decodes a single attribute value.
      * <p>
      * Attributes can be text, bytes, or JID values, encoded using various formats
-     * similar to node children encoding.
+     * similar to node content encoding.
      *
      * @return a {@link NodeAttribute} object representing the attribute value, or null if empty
      * @throws IOException if an I/O error occurs

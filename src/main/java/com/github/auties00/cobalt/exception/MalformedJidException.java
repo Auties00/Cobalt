@@ -4,7 +4,7 @@ import com.github.auties00.cobalt.model.jid.Jid;
 
 /**
  * Signals that an attempt to parse or construct a JID  has failed
- * due to invalid format or children.
+ * due to invalid format or content.
  *
  * <p>This exception is typically thrown when:
  * <ul>

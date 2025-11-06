@@ -76,9 +76,9 @@ public final class InteractiveMessage implements ContextualMessage, ButtonMessag
     }
 
     /**
-     * Returns the type of children that this message wraps
+     * Returns the type of content that this message wraps
      *
-     * @return a non-null children type
+     * @return a non-null content type
      */
     public InteractiveMessageContent.Type contentType() {
         return content()
@@ -87,9 +87,9 @@ public final class InteractiveMessage implements ContextualMessage, ButtonMessag
     }
 
     /**
-     * Returns the children of this message if it's there
+     * Returns the content of this message if it's there
      *
-     * @return a non-null children type
+     * @return a non-null content type
      */
     public Optional<? extends InteractiveMessageContent> content() {
         if (contentShop != null) {

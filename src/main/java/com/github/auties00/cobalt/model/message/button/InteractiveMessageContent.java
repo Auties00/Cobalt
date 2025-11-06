@@ -7,24 +7,24 @@ import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
 
 /**
- * A model class that represents a message that can be used as the children of a {@link InteractiveMessage}
+ * A model class that represents a message that can be used as the content of a {@link InteractiveMessage}
  */
 public sealed interface InteractiveMessageContent permits InteractiveShop, InteractiveCollection, InteractiveNativeFlow {
     /**
-     * Returns the type of this children
+     * Returns the type of this content
      *
      * @return a non-null type
      */
     Type contentType();
 
     /**
-     * The constants of this enumerated type describe the various types of children that an interactive
+     * The constants of this enumerated type describe the various types of content that an interactive
      * message can wrap
      */
     @ProtobufEnum
     enum Type {
         /**
-         * No children
+         * No content
          */
         NONE(0),
         /**

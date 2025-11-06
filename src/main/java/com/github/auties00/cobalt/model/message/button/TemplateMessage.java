@@ -132,7 +132,7 @@ public final class TemplateMessage implements ContextualMessage, ButtonMessage {
     public String toString() {
         return "TemplateMessage[" +
                 "id=" + id + ", " +
-                "children=" + content + ", " +
+                "content=" + content + ", " +
                 "highlyStructuredFourRowTemplateFormat=" + highlyStructuredFourRowTemplateFormat + ", " +
                 "hydratedFourRowTemplateFormat=" + hydratedFourRowTemplateFormat + ", " +
                 "interactiveMessageFormat=" + interactiveMessageFormat + ", " +

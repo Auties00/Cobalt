@@ -2,9 +2,6 @@ package com.github.auties00.cobalt.node;
 
 import com.github.auties00.cobalt.model.jid.Jid;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -23,8 +20,8 @@ import static com.github.auties00.cobalt.node.NodeTokens.*;
  * <ul>
  *   <li>Converting strings to dictionary tokens when possible (using single-byte or multi-dictionary lookup)</li>
  *   <li>Encoding binary data with length prefixes</li>
- *   <li>Efficiently serializing node trees with attributes and children</li>
- *   <li>Supporting various children types: text, binary buffers, JIDs, streams, and child nodes</li>
+ *   <li>Efficiently serializing node trees with attributes and content</li>
+ *   <li>Supporting various content types: text, binary buffers, JIDs, streams, and child nodes</li>
  * </ul>
  * <p>
  * The encoding format is optimized for small message sizes and includes:
@@ -72,7 +69,7 @@ public final class NodeEncoder {
      * Calculates the total size in bytes required to encode the given node.
      * <p>
      * This includes the message header (1 byte) and the full encoded length of the node
-     * including its description, attributes, and children.
+     * including its description, attributes, and content.
      *
      * @param node the node to calculate the size for
      * @return the total number of bytes required to encode the node
@@ -222,18 +219,17 @@ public final class NodeEncoder {
     }
 
     /**
-     * Calculates the number of bytes required to encode a node's children.
+     * Calculates the number of bytes required to encode a node's content.
      *
-     * @param node the node whose children to calculate
+     * @param node the node whose content to calculate
      * @return the number of bytes required
      */
     private static int contentLength(Node node){
         return switch (node) {
             case Node.BytesNode(var _, var _, var bytes) -> bytesLength(bytes);
             case Node.ContainerNode(var _, var _, var children) -> childrenLength(children);
-            case Node.EmptyNode _ -> 0;
+            case Node.EmptyNode _ -> 1;
             case Node.JidNode(var _, var _, var jid) -> jidLength(jid);
-            case Node.StreamNode(var _, var _, var _, var streamLength) -> calculateLength(streamLength);
             case Node.TextNode(var _, var _, var text) -> stringLength(text);
         };
     }
@@ -264,7 +260,7 @@ public final class NodeEncoder {
         if (jid.hasAgent() || jid.hasDevice()) {
             return 3 + stringLength(jid.user());
         }else {
-            return 2 + (jid.hasUser() ? stringLength(jid.user()) : 1);
+            return 1 + (jid.hasUser() ? stringLength(jid.user()) : 1) + stringLength(jid.server().address());
         }
     }
 
@@ -356,7 +352,7 @@ public final class NodeEncoder {
      * <p>
      * A node consists of:
      * <ol>
-     *   <li>List size (number of attributes + 2 for description + children)</li>
+     *   <li>List size (number of attributes + 2 for description + content)</li>
      *   <li>Description string</li>
      *   <li>Attributes</li>
      *   <li>Content</li>
@@ -591,9 +587,9 @@ public final class NodeEncoder {
     }
 
     /**
-     * Writes the children of a node based on its type.
+     * Writes the content of a node based on its type.
      *
-     * @param content the node whose children to write
+     * @param content the node whose content to write
      * @param output the output byte array
      * @param offset the current offset in the output array
      * @return the new offset after writing
@@ -604,13 +600,12 @@ public final class NodeEncoder {
             case Node.ContainerNode(var _, var _, var children) -> writeChildren(children, output, offset);
             case Node.EmptyNode _ -> writeNull(output, offset);
             case Node.JidNode(var _, var _, var jid) -> writeJid(jid, output, offset);
-            case Node.StreamNode(var _, var _, var inputStream, var inputStreamLength) -> writeStream(output, offset, inputStream, inputStreamLength);
             case Node.TextNode(var _, var _, var text) -> writeString(text, output, offset);
         };
     }
 
     /**
-     * Writes a null/empty children marker (LIST_EMPTY).
+     * Writes a null/empty content marker (LIST_EMPTY).
      *
      * @param output the output byte array
      * @param offset the current offset in the output array
@@ -653,21 +648,6 @@ public final class NodeEncoder {
     }
 
     /**
-     * Writes a ByteBuffer with a length prefix.
-     *
-     * @param buffer the ByteBuffer to write
-     * @param output the output byte array
-     * @param offset the current offset in the output array
-     * @return the new offset after writing
-     */
-    private static int writeBytes(ByteBuffer buffer, byte[] output, int offset){
-        var length = buffer.remaining();
-        offset = writeBinary(length, output, offset);
-        buffer.get(output, offset, length);
-        return offset + length;
-    }
-
-    /**
      * Writes a WhatsApp JID.
      * <p>
      * Two encoding formats:
@@ -695,35 +675,6 @@ public final class NodeEncoder {
                 output[offset++] = LIST_EMPTY;
             }
             return writeString(jid.server().address(), output, offset);
-        }
-    }
-
-    /**
-     * Writes data from an InputStream with a length prefix.
-     * <p>
-     * Reads from the stream until the specified length is reached or EOF is encountered.
-     *
-     * @param output the output byte array
-     * @param offset the current offset in the output array
-     * @param inputStream the input stream to read from
-     * @param length the number of bytes to read
-     * @return the new offset after writing
-     * @throws UncheckedIOException if an I/O error occurs while reading from the stream
-     */
-    private static int writeStream(byte[] output, int offset, InputStream inputStream, int length) {
-        try {
-            offset = writeBinary(length, output, offset);
-            int read;
-            while (length > 0 && (read = inputStream.read(output, offset, length)) != -1) {
-                offset += read;
-                length -= read;
-            }
-            if(length != 0) {
-                throw new IllegalStateException("Unexpected EOF while reading stream");
-            }
-            return offset;
-        }catch (IOException exception){
-            throw new UncheckedIOException(exception);
         }
     }
 }

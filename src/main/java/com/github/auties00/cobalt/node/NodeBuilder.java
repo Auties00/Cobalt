@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * A builder class for constructing WhatsApp protocol {@link Node} instances.
  * <p>
- * This builder provides a fluent API to create nodes with various types of children and attributes.
+ * This builder provides a fluent API to create nodes with various types of content and attributes.
  * Nodes are the fundamental data structure used in WhatsApp's protocol communication, similar to XML elements.
  *
  * @see Node
@@ -23,8 +23,6 @@ public final class NodeBuilder {
     private String textContent;
     private JidProvider jidContent;
     private byte[] bytesContent;
-    private InputStream inputStreamContent;
-    private int inputStreamContentLength;
     private SequencedCollection<Node> childrenContent;
 
     /**
@@ -214,58 +212,55 @@ public final class NodeBuilder {
     }
 
     /**
-     * Sets the children of the node to a text value.
-     * This method clears any other children previously set (JID, bytes, stream, or children).
+     * Sets the content of the node to a text value.
+     * This method clears any other content previously set (JID, bytes, stream, or content).
      *
-     * @param value the text children value
+     * @param value the text content value
      * @return this builder for method chaining
      */
     public NodeBuilder content(String value) {
         this.textContent = value;
         this.jidContent = null;
         this.bytesContent = null;
-        this.inputStreamContent = null;
         this.childrenContent = null;
         return this;
     }
 
     /**
-     * Sets the children of the node to a numeric value converted to its string representation.
-     * This method clears any other children previously set (JID, bytes, stream, or children).
+     * Sets the content of the node to a numeric value converted to its string representation.
+     * This method clears any other content previously set (JID, bytes, stream, or content).
      *
-     * @param value the numeric children value
+     * @param value the numeric content value
      * @return this builder for method chaining
      */
     public NodeBuilder content(Number value) {
         this.textContent = Objects.toString(value);
         this.jidContent = null;
         this.bytesContent = null;
-        this.inputStreamContent = null;
         this.childrenContent = null;
         return this;
     }
 
     /**
-     * Sets the children of the node to a boolean value converted to its string representation.
-     * This method clears any other children previously set (JID, bytes, stream, or children).
+     * Sets the content of the node to a boolean value converted to its string representation.
+     * This method clears any other content previously set (JID, bytes, stream, or content).
      *
-     * @param value the boolean children value
+     * @param value the boolean content value
      * @return this builder for method chaining
      */
     public NodeBuilder content(boolean value) {
         this.textContent = Objects.toString(value);
         this.jidContent = null;
         this.bytesContent = null;
-        this.inputStreamContent = null;
         this.childrenContent = null;
         return this;
     }
 
     /**
-     * Sets the children of the node to a JID.
-     * This method clears any other children previously set (text, bytes, stream, or children).
+     * Sets the content of the node to a JID.
+     * This method clears any other content previously set (text, bytes, stream, or content).
      *
-     * @param value the JID children value
+     * @param value the JID content value
      * @return this builder for method chaining
      * @see Jid
      */
@@ -273,32 +268,30 @@ public final class NodeBuilder {
         this.textContent = null;
         this.jidContent = value;
         this.bytesContent = null;
-        this.inputStreamContent = null;
         this.childrenContent = null;
         return this;
     }
     
     /**
-     * Sets the children of the node to binary data as a ByteBuffer.
-     * This method clears any other children previously set (text, JID, stream, or children).
+     * Sets the content of the node to binary data as a ByteBuffer.
+     * This method clears any other content previously set (text, JID, stream, or content).
      *
-     * @param value the buffer children value
+     * @param value the buffer content value
      * @return this builder for method chaining
      */
     public NodeBuilder content(byte[] value) {
         this.textContent = null;
         this.jidContent = null;
         this.bytesContent = value;
-        this.inputStreamContent = null;
         this.childrenContent = null;
         return this;
     }
 
     /**
-     * Sets the children of the node to binary data as an InputStream.
-     * This method clears any other children previously set (text, JID, bytes, or children).
+     * Sets the content of the node to binary data as an InputStream.
+     * This method clears any other content previously set (text, JID, bytes, or content).
      *
-     * @param value the InputStream children value
+     * @param value the InputStream content value
      * @param length the length of the InputStream
      * @return this builder for method chaining
      */
@@ -306,16 +299,14 @@ public final class NodeBuilder {
         this.textContent = null;
         this.jidContent = null;
         this.bytesContent = null;
-        this.inputStreamContent = value;
-        this.inputStreamContentLength = length;
         this.childrenContent = null;
         return this;
     }
 
     /**
-     * Sets the children of the node to a collection of child nodes.
-     * This method clears any other children previously set (text, JID, bytes, or stream).
-     * If a content of type children was already set, the two values will be merged into a single collection.
+     * Sets the content of the node to a collection of child nodes.
+     * This method clears any other content previously set (text, JID, bytes, or stream).
+     * If a content of type content was already set, the two values will be merged into a single collection.
      *
      * @param nodes the collection of child nodes
      * @return this builder for method chaining
@@ -324,7 +315,6 @@ public final class NodeBuilder {
         this.textContent = null;
         this.jidContent = null;
         this.bytesContent = null;
-        this.inputStreamContent = null;
         if(childrenContent == null) {
             this.childrenContent = new ArrayList<>();
         }
@@ -339,9 +329,9 @@ public final class NodeBuilder {
     }
 
     /**
-     * Sets the children of the node to a varargs array of child nodes.
-     * This method clears any other children previously set (text, JID, bytes, or stream).
-     * If a content of type children was already set, the two values will be merged into a single collection.
+     * Sets the content of the node to a varargs array of child nodes.
+     * This method clears any other content previously set (text, JID, bytes, or stream).
+     * If a content of type content was already set, the two values will be merged into a single collection.
      *
      * @param nodes the varargs array of child nodes
      * @return this builder for method chaining
@@ -350,7 +340,6 @@ public final class NodeBuilder {
         this.textContent = null;
         this.jidContent = null;
         this.bytesContent = null;
-        this.inputStreamContent = null;
         if(childrenContent == null) {
             this.childrenContent = new ArrayList<>();
         }
@@ -392,21 +381,19 @@ public final class NodeBuilder {
         return textContent != null
                || jidContent != null
                || bytesContent != null
-               || inputStreamContent != null
                || childrenContent != null;
     }
 
     /**
      * Builds and returns the constructed Node instance.
      * <p>
-     * The type of node returned depends on the children type that was set:
+     * The type of node returned depends on the content type that was set:
      * <ul>
-     *   <li>{@link Node.TextNode} - if text children was set</li>
-     *   <li>{@link Node.JidNode} - if JID children was set</li>
-     *   <li>{@link Node.BytesNode} - if ByteBuffer children was set</li>
-     *   <li>{@link Node.StreamNode} - if InputStream children was set</li>
+     *   <li>{@link Node.TextNode} - if text content was set</li>
+     *   <li>{@link Node.JidNode} - if JID content was set</li>
+     *   <li>{@link Node.BytesNode} - if ByteBuffer content was set</li>
      *   <li>{@link Node.ContainerNode} - if child nodes were set</li>
-     *   <li>{@link Node.EmptyNode} - if no children was set</li>
+     *   <li>{@link Node.EmptyNode} - if no content was set</li>
      * </ul>
      * <p>
      * If no description was set, an empty string is used as the default.
@@ -422,8 +409,6 @@ public final class NodeBuilder {
             return new Node.JidNode(description, attributes, jidContent.toJid());
         }else if(bytesContent != null){
             return new Node.BytesNode(description, attributes, bytesContent);
-        }else if (inputStreamContent != null){
-            return new Node.StreamNode(description, attributes, inputStreamContent, inputStreamContentLength);
         }else if(childrenContent != null){
             return new Node.ContainerNode(description, attributes, childrenContent);
         }else {

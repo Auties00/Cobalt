@@ -18,7 +18,7 @@ import java.util.Objects;
  *   <li>System resource usage (memory, bandwidth, storage)</li>
  *   <li>Initial connection time</li>
  *   <li>Available offline message access</li>
- *   <li>Newsletter children synchronization</li>
+ *   <li>Newsletter content synchronization</li>
  * </ul>
  * </p>
  * <p>

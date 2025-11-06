@@ -207,7 +207,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * Locale/language code for this account.
      * <p>
      * Format: ISO 639-1 language + ISO 3166-1 alpha-2 country (e.g., "en_US", "pt_BR").
-     * Determines language for system messages and localized children.
+     * Determines language for system messages and localized content.
      */
     @ProtobufProperty(index = 10, type = ProtobufType.STRING)
     String locale;

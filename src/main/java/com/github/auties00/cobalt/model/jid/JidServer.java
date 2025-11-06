@@ -76,7 +76,7 @@ public final class JidServer implements JidProvider { // String parsing is hard 
         return of(address, true);
     }
 
-    public static JidServer of(String address, boolean allowUnknown) {
+    static JidServer of(String address, boolean allowUnknown) {
         return switch (address) {
             case LEGACY_USER_ADDRESS -> LEGACY_USER;
             case GROUP_OR_COMMUNITY_ADDRESS -> GROUP_OR_COMMUNITY;

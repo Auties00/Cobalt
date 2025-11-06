@@ -1907,7 +1907,7 @@ public final class WhatsAppClient {
      * Builds and sends an edited message
      *
      * @param oldMessage the message to edit
-     * @param newMessage the new message's children
+     * @param newMessage the new message's content
      * @return a CompletableFuture
      */
     public <T extends MessageInfo> T editMessage(T oldMessage, Message newMessage) {
@@ -3087,7 +3087,7 @@ public final class WhatsAppClient {
     }
 
     /**
-     * Clears the children of a chat for this client and its companions using a modern version of
+     * Clears the content of a chat for this client and its companions using a modern version of
      * Whatsapp Important: this message doesn't seem to work always as of now
      *
      * @param chat                the non-null chat to clear

@@ -4,10 +4,7 @@ import com.github.auties00.cobalt.exception.MalformedJidException;
 import com.github.auties00.cobalt.model.jid.Jid;
 import it.auties.protobuf.model.ProtobufString;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.util.*;
 import java.util.stream.DoubleStream;
 import java.util.stream.LongStream;
@@ -16,15 +13,14 @@ import java.util.stream.Stream;
 /**
  * A sealed interface representing a node in the WhatsApp protocol communication structure.
  * Nodes are the fundamental building blocks of WhatsApp's binary XML-like protocol, where each node
- * consists of a description (tag name), attributes, and optional children.
+ * consists of a description (tag name), attributes, and optional content.
  *
  * <p>This interface provides various implementations for different content types:
  * <ul>
- *   <li>{@link EmptyNode} - A node without any children</li>
- *   <li>{@link TextNode} - A node containing text children</li>
+ *   <li>{@link EmptyNode} - A node without any content</li>
+ *   <li>{@link TextNode} - A node containing text content</li>
  *   <li>{@link JidNode} - A node containing a WhatsApp JID reference</li>
  *   <li>{@link BytesNode} - A node containing binary data</li>
- *   <li>{@link StreamNode} - A node containing streaming data</li>
  *   <li>{@link ContainerNode} - A node containing child nodes</li>
  * </ul>
  *
@@ -38,7 +34,7 @@ import java.util.stream.Stream;
  */
 public sealed interface Node {
     /**
-     * Creates and returns an empty node with no description, attributes, or children.
+     * Creates and returns an empty node with no description, attributes, or content.
      * This is useful as a placeholder or default value in the WhatsApp protocol.
      *
      * @return an empty node instance
@@ -324,24 +320,22 @@ public sealed interface Node {
      * @return {@code true} if the node has content, {@code false} otherwise
      */
     boolean hasContent();
-
+    
     boolean hasContent(String content);
-
+    
     boolean hasContent(Jid content);
-
+    
     boolean hasContent(byte[] content);
 
-    boolean hasContent(InputStream content);
-
-    boolean hasContent(SequencedCollection<? extends Node> content);
+    boolean hasContent(InputStream content) throws IOException;
 
     /**
-     * Calculates the size of the node based on its attributes and whether it contains children.
+     * Calculates the size of the node based on its attributes and whether it contains content.
      * The size is computed as:
      * <ul>
      *   <li>one unit for the description</li>
      *   <li>two units for each attribute (key and value)</li>
-     *   <li>one unit if the node contains children/li>
+     *   <li>one unit if the node contains content/li>
      * </ul>
      *
      * @return the calculated size of the node
@@ -496,11 +490,11 @@ public sealed interface Node {
     }
 
     /**
-     * Finds all children nodes by their descriptions within the current container node.
+     * Finds all content nodes by their descriptions within the current container node.
      * If no child node with the specified description exists, an empty {@code SequencedCollection} is returned.
      *
-     * @param description the description of the children nodes to find; cannot be null
-     * @return a {@code SequencedCollection} containing the children nodes
+     * @param description the description of the content nodes to find; cannot be null
+     * @return a {@code SequencedCollection} containing the content nodes
      * @throws NullPointerException if the given description is null
      */
     default SequencedCollection<Node> getChildren(String description) {
@@ -512,11 +506,11 @@ public sealed interface Node {
     }
 
     /**
-     * Finds all children nodes by their descriptions within the current container node.
+     * Finds all content nodes by their descriptions within the current container node.
      * If no child node with the specified description exists, an empty {@code Stream} is returned.
      *
-     * @param description the description of the children nodes to find; cannot be null
-     * @return an {@code Stream} containing the children nodes
+     * @param description the description of the content nodes to find; cannot be null
+     * @return an {@code Stream} containing the content nodes
      * @throws NullPointerException if the given description is null
      */
     default Stream<Node> streamChildren(String description) {
@@ -540,11 +534,11 @@ public sealed interface Node {
     }
 
     /**
-     * Represents a node without any children.
-     * This is typically used for protocol messages that only need a description and attributes.
+     * Represents a node without any content (no content, text, binary data, or streams).
      *
-     * @param description the node's description
-     * @param attributes the node's attributes
+     * @param description the node's description (tag name); cannot be null
+     * @param attributes the node's attributes as an unmodifiable sequenced map; cannot be null
+     * @see Node#empty()
      */
     record EmptyNode(String description, SequencedMap<String, NodeAttribute> attributes) implements Node {
         private static final EmptyNode DEFAULT = new EmptyNode("", new LinkedHashMap<>());
@@ -572,32 +566,12 @@ public sealed interface Node {
 
         @Override
         public boolean hasContent(byte[] content) {
-            return content == null || new String(content).isEmpty();
+            return content == null || content.length == 0;
         }
 
         @Override
-        public boolean hasContent(InputStream content) {
-            if(content == null) {
-                return true;
-            }
-
-            if(!content.markSupported()) {
-                throw new UnsupportedOperationException("markSupported() is required");
-            }else {
-                try {
-                    content.mark(1);
-                    return content.read() == -1;
-                }catch (IOException exception) {
-                    throw new UncheckedIOException(exception);
-                }finally {
-                    content.reset();
-                }
-            }
-        }
-
-        @Override
-        public boolean hasContent(SequencedCollection<? extends Node> content) {
-            return content == null || content.isEmpty();
+        public boolean hasContent(InputStream content) throws IOException {
+            return content == null || content.read() == -1;
         }
 
         @Override
@@ -631,11 +605,10 @@ public sealed interface Node {
                 case EmptyNode(var thatDescription, var thatAttributes) -> Objects.equals(description, thatDescription) && Objects.equals(attributes, thatAttributes);
                 case TextNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) && Objects.equals(attributes, thatAttributes) && hasContent(thatContent);
                 case BytesNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) && Objects.equals(attributes, thatAttributes) && hasContent(thatContent);
-                case StreamNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) && Objects.equals(attributes, thatAttributes) && hasContent(thatContent);
                 case null, default -> false;
             };
         }
-
+        
         @Override
         public int hashCode() {
             return Objects.hash(description, attributes);
@@ -659,14 +632,21 @@ public sealed interface Node {
     }
 
     /**
-     * Represents a node containing text children.
-     * This is commonly used for protocol messages that carry string data.
+     * Represents a node containing text content as a string.
      *
-     * @param description the node's description
-     * @param attributes the node's attributes
-     * @param content the text content of the node
+     * @param description the node's description (tag name); cannot be null
+     * @param attributes the node's attributes as an unmodifiable sequenced map; cannot be null
+     * @param content the text content of the node; cannot be null but may be empty
      */
     record TextNode(String description, SequencedMap<String, NodeAttribute> attributes, String content) implements Node {
+        /**
+         * Constructs a TextNode with the specified description, attributes, and text content.
+         *
+         * @param description the node's description; cannot be null
+         * @param attributes the node's attributes; cannot be null
+         * @param content the text content; cannot be null
+         * @throws NullPointerException if any parameter is null
+         */
         public TextNode(String description, SequencedMap<String, NodeAttribute> attributes, String content) {
             this.description = Objects.requireNonNull(description, "description cannot be null");
             this.attributes = Collections.unmodifiableSequencedMap(Objects.requireNonNull(attributes, "attributes cannot be null"));
@@ -675,7 +655,41 @@ public sealed interface Node {
 
         @Override
         public boolean hasContent() {
-            return true;
+            return !content.isEmpty();
+        }
+
+        @Override
+        public boolean hasContent(String content) {
+            return content != null && Objects.equals(this.content, content);
+        }
+
+        @Override
+        public boolean hasContent(Jid content) {
+            if(content == null) {
+                return false;
+            }
+
+            try {
+                var jid = Jid.of(this.content);
+                return Objects.equals(jid, content);
+            } catch (MalformedJidException e) {
+                return false;
+            }
+        }
+
+        @Override
+        public boolean hasContent(byte[] content) {
+            return content != null && Objects.equals(this.content, new String(content));
+        }
+
+        @Override
+        public boolean hasContent(InputStream content) throws IOException {
+            if(content == null) {
+                return this.content.isEmpty();
+            }
+
+            var bytes = content.readAllBytes();
+            return Objects.equals(this.content, new String(bytes));
         }
 
         @Override
@@ -711,26 +725,18 @@ public sealed interface Node {
         @Override
         public boolean equals(Object o) {
             return switch (o) {
-                case EmptyNode(var thatDescription, var thatAttributes) when content.isEmpty() -> Objects.equals(description, thatDescription)
-                                                                                                  && Objects.equals(attributes, thatAttributes);
-                case TextNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription)
-                                                                                           && Objects.equals(attributes, thatAttributes)
-                                                                                           && Objects.equals(content, thatContent);
-                case JidNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription)
-                                                                                          && Objects.equals(attributes, thatAttributes)
-                                                                                          && Objects.equals(content, thatContent.toString());
-                case BytesNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription)
-                                                                                            && Objects.equals(attributes, thatAttributes)
-                                                                                            && Objects.equals(content, new String(thatContent));
-                case StreamNode(var thatDescription, var thatAttributes, var thatContent) -> {
-                    if(!thatContent.markSupported()) {
-                        throw new UnsupportedOperationException("markSupported() is required");
-                    }else {
-                        yield Objects.equals(description, thatDescription)
-                              && Objects.equals(attributes, thatAttributes)
-                              && Objects.equals(content, new String(thatContent.readAllBytes()));
-                    }
-                }
+                case EmptyNode(var thatDescription, var thatAttributes) -> Objects.equals(description, thatDescription) 
+                        && Objects.equals(attributes, thatAttributes) 
+                        && content.isEmpty();
+                case TextNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) 
+                        && Objects.equals(attributes, thatAttributes) 
+                        && hasContent(thatContent);
+                case JidNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) 
+                        && Objects.equals(attributes, thatAttributes) 
+                        && hasContent(thatContent);
+                case BytesNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) 
+                        && Objects.equals(attributes, thatAttributes) 
+                        && hasContent(thatContent);
                 case null, default -> false;
             };
         }
@@ -764,22 +770,52 @@ public sealed interface Node {
 
     /**
      * Represents a node containing a WhatsApp JID.
-     * JIDs are used to uniquely identify users, groups, and other entities in WhatsApp.
      *
-     * @param description the node's description
-     * @param attributes the node's attributes
-     * @param content the JID content of the node
+     * @param description the node's description (tag name); cannot be null
+     * @param attributes the node's attributes as an unmodifiable sequenced map; cannot be null
+     * @param content the JID content of the node; cannot be null
      */
     record JidNode(String description, SequencedMap<String, NodeAttribute> attributes, Jid content) implements Node {
-        public JidNode {
-            Objects.requireNonNull(description, "description cannot be null");
-            Objects.requireNonNull(attributes, "attributes cannot be null");
-            Objects.requireNonNull(content, "content cannot be null");
+        public JidNode(String description, SequencedMap<String, NodeAttribute> attributes, Jid content) {
+            this.description = Objects.requireNonNull(description, "description cannot be null");
+            this.attributes = Collections.unmodifiableSequencedMap(Objects.requireNonNull(attributes, "attributes cannot be null"));
+            this.content = Objects.requireNonNull(content, "content cannot be null");
         }
 
         @Override
-        public SequencedMap<String, NodeAttribute> attributes() {
-            return Collections.unmodifiableSequencedMap(attributes);
+        public boolean hasContent() {
+            return true;
+        }
+
+        @Override
+        public boolean hasContent(String content) {
+            if(content == null) {
+                return false;
+            }
+            return Objects.equals(this.content.toString(), content);
+        }
+
+        @Override
+        public boolean hasContent(Jid content) {
+            return Objects.equals(this.content, content);
+        }
+
+        @Override
+        public boolean hasContent(byte[] content) {
+            if(content == null) {
+                return false;
+            }
+            return Objects.equals(this.content.toString(), new String(content));
+        }
+
+        @Override
+        public boolean hasContent(InputStream content) throws IOException {
+            if(content == null) {
+                return false;
+            }
+
+            var bytes = content.readAllBytes();
+            return Objects.equals(this.content.toString(), new String(bytes));
         }
 
         @Override
@@ -803,13 +839,29 @@ public sealed interface Node {
         }
 
         @Override
-        public boolean hasContent() {
-            return true;
+        public SequencedCollection<Node> children() {
+            return List.of();
         }
 
         @Override
-        public SequencedCollection<Node> children() {
-            return List.of();
+        public boolean equals(Object o) {
+            return switch (o) {
+                case TextNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) 
+                        && Objects.equals(attributes, thatAttributes) 
+                        && hasContent(thatContent);
+                case JidNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) 
+                        && Objects.equals(attributes, thatAttributes) 
+                        && hasContent(thatContent);
+                case BytesNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) 
+                        && Objects.equals(attributes, thatAttributes) 
+                        && hasContent(thatContent);
+                case null, default -> false;
+            };
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(description, attributes, content);
         }
 
         @Override
@@ -835,24 +887,58 @@ public sealed interface Node {
     }
 
     /**
-     * Represents a node containing binary data as a ByteBuffer.
-     * This is typically used for protocol messages that carry raw binary data,
-     * such as encrypted payloads or media thumbnails.
+     * Represents a node containing binary data as a byte array.
      *
-     * @param description the node's description
-     * @param attributes the node's attributes
-     * @param content the binary content of the node as a ByteBuffer
+     * @param description the node's description (tag name); cannot be null
+     * @param attributes the node's attributes as an unmodifiable sequenced map; cannot be null
+     * @param content the binary content of the node as a byte array; cannot be null but may be empty
      */
     record BytesNode(String description, SequencedMap<String, NodeAttribute> attributes, byte[] content) implements Node {
-        public BytesNode {
-            Objects.requireNonNull(description, "description cannot be null");
-            Objects.requireNonNull(attributes, "attributes cannot be null");
-            Objects.requireNonNull(content, "content cannot be null");
+        public BytesNode(String description, SequencedMap<String, NodeAttribute> attributes, byte[] content) {
+            this.description = Objects.requireNonNull(description, "description cannot be null");
+            this.attributes = Collections.unmodifiableSequencedMap(Objects.requireNonNull(attributes, "attributes cannot be null"));
+            this.content = Objects.requireNonNull(content, "content cannot be null");
         }
 
         @Override
-        public SequencedMap<String, NodeAttribute> attributes() {
-            return Collections.unmodifiableSequencedMap(attributes);
+        public boolean hasContent() {
+            return content.length != 0;
+        }
+
+        @Override
+        public boolean hasContent(String content) {
+            return content != null && Objects.equals(new String(this.content), content);
+        }
+
+        @Override
+        public boolean hasContent(Jid content) {
+            if(content == null) {
+                return false;
+            }
+            try {
+                var jid = Jid.of(ProtobufString.lazy(this.content));
+                return Objects.equals(jid, content);
+            } catch (MalformedJidException e) {
+                return false;
+            }
+        }
+
+        @Override
+        public boolean hasContent(byte[] content) {
+            return content != null && Arrays.equals(this.content, content);
+        }
+
+        @Override
+        public boolean hasContent(InputStream content) throws IOException {
+            var thisPosition = 0;
+            var thisLength = this.content.length;
+            int thatRead;
+            while (thisPosition < thisLength && (thatRead = content.read()) != -1) {
+                if(this.content[thisPosition++] != thatRead) {
+                    return false;
+                }
+            }
+            return thisPosition == thisLength;
         }
 
         @Override
@@ -882,13 +968,29 @@ public sealed interface Node {
         }
 
         @Override
-        public boolean hasContent() {
-            return true;
+        public SequencedCollection<Node> children() {
+            return List.of();
         }
 
         @Override
-        public SequencedCollection<Node> children() {
-            return List.of();
+        public boolean equals(Object o) {
+            return switch (o) {
+                case TextNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) 
+                        && Objects.equals(attributes, thatAttributes) 
+                        && hasContent(thatContent);
+                case JidNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) 
+                        && Objects.equals(attributes, thatAttributes) 
+                        && hasContent(thatContent);
+                case BytesNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription) 
+                        && Objects.equals(attributes, thatAttributes) 
+                        && hasContent(thatContent);
+                case null, default -> false;
+            };
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(description, attributes, Arrays.hashCode(content));
         }
 
         @Override
@@ -919,257 +1021,47 @@ public sealed interface Node {
     }
 
     /**
-     * Represents a node containing streaming data.
-     * This is used for protocol messages that carry large amounts of data
-     * that are better processed as a stream rather than loaded entirely into memory.
+     * Represents a node containing a collection of child nodes, creating a hierarchical structure.
      *
-     * @param description the node's description
-     * @param attributes the node's attributes
-     * @param content the streaming children of the node as an InputStream
+     * @param description the node's description (tag name); cannot be null
+     * @param attributes the node's attributes as an unmodifiable sequenced map; cannot be null
+     * @param content the child nodes contained in this node as an unmodifiable collection; cannot be null but may be empty
      */
-    record StreamNode(String description, SequencedMap<String, NodeAttribute> attributes, InputStream content) implements Node {
-        public StreamNode(String description, SequencedMap<String, NodeAttribute> attributes, InputStream content, int contentLength) {
-            Objects.requireNonNull(description, "description cannot be null");
-            Objects.requireNonNull(attributes, "attributes cannot be null");
-            Objects.requireNonNull(content, "content cannot be null");
-            if(contentLength < 0) {
-                throw new IllegalArgumentException("contentLength cannot be negative");
-            }
-            this(description, attributes, new BoundedInputStream(content, contentLength));
-        }
-
-        @Override
-        public Optional<Jid> toContentJid() {
-            try {
-                var converted = Jid.of(content);
-                return Optional.of(converted);
-            }catch (IOException | MalformedJidException exception) {
-                return Optional.empty();
-            }
-        }
-
-        @Override
-        public Optional<byte[]> toContentBytes() {
-            try {
-                var result = content.readAllBytes();
-                return Optional.of(result);
-            }catch (IOException exception) {
-                return Optional.empty();
-            }
-        }
-
-        @Override
-        public Optional<InputStream> toContentStream() {
-            return Optional.of(content);
-        }
-
-        @Override
-        public Optional<String> toContentString() {
-            try {
-                var result = content.readAllBytes();
-                var converted = new String(result);
-                return Optional.of(converted);
-            }catch (IOException exception) {
-                return Optional.empty();
-            }
-        }
-
-        @Override
-        public SequencedMap<String, NodeAttribute> attributes() {
-            return Collections.unmodifiableSequencedMap(attributes);
-        }
-
-        @Override
-        public boolean hasContent() {
-            return true;
+    record ContainerNode(String description, SequencedMap<String, NodeAttribute> attributes, SequencedCollection<Node> content) implements Node {
+        public ContainerNode(String description, SequencedMap<String, NodeAttribute> attributes, SequencedCollection<Node> content) {
+            this.description = Objects.requireNonNull(description, "description cannot be null");
+            this.attributes = Collections.unmodifiableSequencedMap(Objects.requireNonNull(attributes, "attributes cannot be null"));
+            this.content = Collections.unmodifiableSequencedCollection(Objects.requireNonNull(content, "content cannot be null"));
         }
 
         @Override
         public SequencedCollection<Node> children() {
-            return List.of();
-        }
-
-        @Override
-        public String toString() {
-            var result = new StringBuilder();
-            result.append("Node[description=");
-            result.append(description());
-
-            if(!attributes.isEmpty()) {
-                result.append(", attributes=");
-                result.append(attributes);
-            }
-
-            if(content != null) {
-                result.append(", content=<stream with ")
-                        .append(contentLength)
-                        .append(" bytes>");
-            }
-
-            result.append("]");
-
-            return result.toString();
-        }
-
-        private static final class BoundedInputStream extends InputStream {
-            private final InputStream stream;
-            private int remaining;
-            private int mark;
-
-            private BoundedInputStream(InputStream stream, int remaining) {
-                this.stream = stream;
-                this.remaining = remaining;
-            }
-
-            @Override
-            public int read() throws IOException {
-                if (remaining <= 0) {
-                    return -1;
-                }
-
-                remaining--;
-                var result = stream.read();
-                if(result == -1) {
-                    throw new IOException("Unexpected end of stream");
-                }
-
-                return result;
-            }
-
-            @Override
-            public int read(byte[] b) throws IOException {
-                return read(b, 0, b.length);
-            }
-
-            @Override
-            public int read(byte[] b, int off, int len) throws IOException {
-                if (remaining <= 0) {
-                    return -1;
-                }
-
-                var result = stream.read(b, 0, Math.min(remaining, len));
-                if(result == -1) {
-                    throw new IOException("Unexpected end of stream");
-                }
-                remaining -= result;
-                return result;
-            }
-
-            @Override
-            public byte[] readAllBytes() throws IOException {
-                var len = remaining;
-                var alloc = new byte[len];
-                if(readBytes(alloc, 0, len) != len) {
-                    throw new IOException("Unexpected end of stream");
-                }
-                return alloc;
-            }
-
-            @Override
-            public byte[] readNBytes(int len) throws IOException {
-                if(len >= remaining) {
-                    return readAllBytes();
-                }else {
-                    var alloc = new byte[len];
-                    readBytes(alloc, 0, len);
-                    return alloc;
-                }
-            }
-
-            @Override
-            public int readNBytes(byte[] b, int off, int len) throws IOException {
-                return readBytes(b, off, Math.min(remaining, len));
-            }
-
-            private int readBytes(byte[] result, int offset, int len) throws IOException {
-                var totalRead = 0;
-                while (len > 0) {
-                    var currentRead = stream.read(result, offset + totalRead, len);
-                    if (currentRead == -1) {
-                        break;
-                    }
-                    len -= currentRead;
-                    totalRead += currentRead;
-                }
-                remaining -= totalRead;
-                return totalRead;
-            }
-
-            @Override
-            public long skip(long n) throws IOException {
-                var result = stream.skip(n);
-                if(result >= Integer.MAX_VALUE) {
-                    remaining = 0;
-                }else {
-                    remaining -= Math.toIntExact(result);
-                }
-                return result;
-            }
-
-            @Override
-            public void skipNBytes(long n) throws IOException {
-                stream.skipNBytes(n);
-                remaining -= n;
-            }
-
-            @Override
-            public int available() {
-                return remaining;
-            }
-
-            @Override
-            public void close() throws IOException {
-                stream.close();
-            }
-
-            @Override
-            public void mark(int readlimit) {
-                stream.mark(readlimit);
-                mark = remaining;
-            }
-
-            @Override
-            public void reset() throws IOException {
-                stream.reset();
-                remaining = mark;
-            }
-
-            @Override
-            public boolean markSupported() {
-                return stream.markSupported();
-            }
-        }
-    }
-
-    /**
-     * Represents a node containing a collection of child nodes.
-     * This creates a hierarchical structure similar to XML, allowing complex
-     * protocol messages to be represented as trees of nodes.
-     *
-     * @param description the node's description
-     * @param attributes the node's attributes
-     * @param children the child nodes contained in this node
-     */
-    record ContainerNode(String description, SequencedMap<String, NodeAttribute> attributes, SequencedCollection<Node> children) implements Node {
-        public ContainerNode {
-            Objects.requireNonNull(description, "description cannot be null");
-            Objects.requireNonNull(attributes, "attributes cannot be null");
-            Objects.requireNonNull(children, "children cannot be null");
-        }
-
-        @Override
-        public SequencedMap<String, NodeAttribute> attributes() {
-            return Collections.unmodifiableSequencedMap(attributes);
-        }
-
-        @Override
-        public SequencedCollection<Node> children() {
-            return Collections.unmodifiableSequencedCollection(children);
+            return content;
         }
 
         @Override
         public boolean hasContent() {
-            return true;
+            return !content.isEmpty();
+        }
+
+        @Override
+        public boolean hasContent(String content) {
+            return false;
+        }
+
+        @Override
+        public boolean hasContent(Jid content) {
+            return false;
+        }
+
+        @Override
+        public boolean hasContent(byte[] content) {
+            return false;
+        }
+
+        @Override
+        public boolean hasContent(InputStream content) {
+            return false;
         }
 
         @Override
@@ -1193,6 +1085,33 @@ public sealed interface Node {
         }
 
         @Override
+        public boolean equals(Object o) {
+            return switch (o) {
+                case EmptyNode(var thatDescription, var thatAttributes) -> Objects.equals(description, thatDescription)
+                                                                           && Objects.equals(attributes, thatAttributes)
+                                                                           && content.isEmpty();
+                case TextNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription)
+                        && Objects.equals(attributes, thatAttributes)
+                        && hasContent(thatContent);
+                case JidNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription)
+                        && Objects.equals(attributes, thatAttributes)
+                        && hasContent(thatContent);
+                case BytesNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription)
+                        && Objects.equals(attributes, thatAttributes)
+                        && hasContent(thatContent);
+                case ContainerNode(var thatDescription, var thatAttributes, var thatContent) -> Objects.equals(description, thatDescription)
+                        && Objects.equals(attributes, thatAttributes)
+                        && Objects.equals(content, thatContent);
+                case null, default -> false;
+            };
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(description, attributes, content);
+        }
+
+        @Override
         public String toString() {
             var result = new StringBuilder();
             result.append("Node[description=");
@@ -1203,9 +1122,9 @@ public sealed interface Node {
                 result.append(attributes);
             }
 
-            if(!children.isEmpty()) {
-                result.append(", children=");
-                result.append(children);
+            if(!content.isEmpty()) {
+                result.append(", content=");
+                result.append(content);
             }
 
             result.append("]");

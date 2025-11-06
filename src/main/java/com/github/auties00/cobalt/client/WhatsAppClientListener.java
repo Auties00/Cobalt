@@ -128,8 +128,8 @@ public interface WhatsAppClientListener {
     /**
      * Called when all chats are received from WhatsApp.
      * <p>
-     * When this event is fired, all chat metadata is available, excluding message children.
-     * For message children, refer to {@link #onWebHistorySyncMessages(WhatsAppClient, Chat, boolean)}.
+     * When this event is fired, all chat metadata is available, excluding message content.
+     * For message content, refer to {@link #onWebHistorySyncMessages(WhatsAppClient, Chat, boolean)}.
      * Note that particularly old chats may be loaded later through the history sync process.
      *
      * @param whatsapp an instance of the calling API

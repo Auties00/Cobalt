@@ -16,7 +16,7 @@ public final class ButtonText implements ButtonBody {
     final String content;
 
     ButtonText(String content) {
-        this.content = Objects.requireNonNull(content, "children cannot be null");
+        this.content = Objects.requireNonNull(content, "content cannot be null");
     }
 
     public String content() {
@@ -42,6 +42,6 @@ public final class ButtonText implements ButtonBody {
     @Override
     public String toString() {
         return "ButtonText[" +
-                "children=" + content + ']';
+                "content=" + content + ']';
     }
 }

@@ -36,7 +36,7 @@ public interface WhatsAppClientMessagePreviewHandler {
      *   <li>Uses the LinkPreview library to detect and process URLs in message text</li>
      *   <li>Extracts metadata including title, description, and media thumbnails</li>
      *   <li>Sets the largest available image as the message thumbnail</li>
-     *   <li>Configures video preview type for video children, or none for other children</li>
+     *   <li>Configures video preview type for video content, or none for other content</li>
      *   <li>Handles network errors gracefully by ignoring failed thumbnail downloads</li>
      * </ul>
      *
@@ -129,7 +129,7 @@ public interface WhatsAppClientMessagePreviewHandler {
      * <p>Common processing steps include:
      * <ul>
      *   <li>Checking if the message type supports link previews</li>
-     *   <li>Detecting URLs in the message children</li>
+     *   <li>Detecting URLs in the message content</li>
      *   <li>Fetching metadata from detected URLs</li>
      *   <li>Setting preview fields on the message object</li>
      *   <li>Downloading and setting thumbnail images</li>

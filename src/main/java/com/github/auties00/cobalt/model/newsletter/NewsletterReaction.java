@@ -20,7 +20,7 @@ public final class NewsletterReaction {
     boolean fromMe;
 
     public NewsletterReaction(String content, long count, boolean fromMe) {
-        this.content = Objects.requireNonNull(content, "children cannot be null");
+        this.content = Objects.requireNonNull(content, "content cannot be null");
         this.count = count;
         this.fromMe = fromMe;
     }
@@ -30,7 +30,7 @@ public final class NewsletterReaction {
             return Optional.empty();
         }
 
-        var content = jsonObject.getString("children");
+        var content = jsonObject.getString("content");
         if(content == null) {
             return Optional.empty();
         }
@@ -75,7 +75,7 @@ public final class NewsletterReaction {
     @Override
     public String toString() {
         return "NewsletterReaction[" +
-                "children=" + content + ", " +
+                "content=" + content + ", " +
                 "count=" + count + ", " +
                 "fromMe=" + fromMe + ']';
     }

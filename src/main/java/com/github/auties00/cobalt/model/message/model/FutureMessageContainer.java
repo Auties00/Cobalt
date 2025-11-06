@@ -15,7 +15,7 @@ public final class FutureMessageContainer {
     final MessageContainer value;
 
     FutureMessageContainer(MessageContainer value) {
-        this.value = Objects.requireNonNull(value, "children cannot be null");
+        this.value = Objects.requireNonNull(value, "content cannot be null");
     }
 
     public MessageContainer value() {
@@ -36,7 +36,7 @@ public final class FutureMessageContainer {
     @Override
     public String toString() {
         return "FutureMessageContainer[" +
-                "children=" + value +
+                "content=" + value +
                 ']';
     }
 }
