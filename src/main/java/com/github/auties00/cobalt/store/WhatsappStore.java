@@ -50,7 +50,6 @@ import it.auties.protobuf.model.ProtobufType;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
@@ -2132,11 +2131,11 @@ public final class WhatsappStore implements SignalProtocolStore {
     }
 
 
-    public MediaConnection waitForMediaConnection(Duration timeout) throws InterruptedException {
+    public MediaConnection waitForMediaConnection() throws InterruptedException {
         if(mediaConnection == null) {
             synchronized (mediaConnectionLock) {
                 if(mediaConnection == null) {
-                    mediaConnectionLock.wait(timeout.toMillis());
+                    mediaConnectionLock.wait();
                 }
             }
         }
@@ -2151,7 +2150,9 @@ public final class WhatsappStore implements SignalProtocolStore {
      */
     public WhatsappStore setMediaConnection(MediaConnection mediaConnection) {
         this.mediaConnection = mediaConnection;
-        this.mediaConnectionLock.notifyAll();
+        synchronized (mediaConnectionLock) {
+            this.mediaConnectionLock.notifyAll();
+        }
         return this;
     }
 

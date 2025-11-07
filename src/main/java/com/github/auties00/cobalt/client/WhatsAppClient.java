@@ -96,6 +96,8 @@ public final class WhatsAppClient {
     private static final int PROFILE_PIC_SIZE = 64;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^(.+)@(\\S+)$");
 
+    private static final long MIN_PRE_KEYS_COUNT = 5;
+
     private final WhatsappStore store;
     private final WhatsAppClientErrorHandler errorHandler;
     private final WebAppState webAppState;
@@ -4539,17 +4541,26 @@ public final class WhatsAppClient {
     }
 
     public void sendPreKeys(long keysCount) {
+        keysCount = Math.max(keysCount, MIN_PRE_KEYS_COUNT);
         var startId = store.hasPreKeys() ? store.preKeys().getLast().id() + 1 : 1;
-        var preKeys = new ArrayList<Node>();
+        var listBody = new ArrayList<Node>();
+        var preKeys = new ArrayList<SignalPreKeyPair>();
         while (keysCount-- > 0) {
             var preKeyPair = SignalPreKeyPair.random(startId++);
-            store.addPreKey(preKeyPair);
+            preKeys.add(preKeyPair);
+            var id = new NodeBuilder()
+                    .description("id")
+                    .content(SecureBytes.intToBytes(preKeyPair.id(), 3))
+                    .build();
+            var value = new NodeBuilder()
+                    .description("value")
+                    .content(preKeyPair.publicKey().toEncodedPoint())
+                    .build();
             var preKayNode = new NodeBuilder()
                     .description("key")
-                    .attribute("id", SecureBytes.intToBytes(preKeyPair.id(), 3))
-                    .attribute("value", preKeyPair.publicKey().toEncodedPoint())
+                    .content(id, value)
                     .build();
-            preKeys.add(preKayNode);
+            listBody.add(preKayNode);
         }
         var registration = new NodeBuilder()
                 .description("registration")
@@ -4565,13 +4576,23 @@ public final class WhatsAppClient {
                 .build();
         var list = new NodeBuilder()
                 .description("list")
-                .content(preKeys)
+                .content(listBody)
+                .build();
+        var skeyId = new NodeBuilder()
+                .description("id")
+                .content(SecureBytes.intToBytes(store.signedKeyPair().id(), 3))
+                .build();
+        var skeyValue = new NodeBuilder()
+                .description("value")
+                .content(store.signedKeyPair().publicKey().toEncodedPoint())
+                .build();
+        var skeySignature = new NodeBuilder()
+                .description("signature")
+                .content(store.signedKeyPair().signature())
                 .build();
         var skey = new NodeBuilder()
                 .description("skey")
-                .attribute("id", SecureBytes.intToBytes(store.signedKeyPair().id(), 3))
-                .attribute("value", store.signedKeyPair().publicKey().toEncodedPoint())
-                .attribute("signature", store.signedKeyPair().signature())
+                .content(skeyId, skeyValue, skeySignature)
                 .build();
         var queryRequest = new NodeBuilder()
                 .description("iq")
@@ -4580,6 +4601,9 @@ public final class WhatsAppClient {
                 .attribute("xmlns", "encrypt")
                 .content(registration, type, identity, list, skey);
         sendNode(queryRequest);
+        for(var preKey : preKeys) {
+            store.addPreKey(preKey);
+        }
     }
 
     public void sendReceipt(String id, Jid parentJid, Jid senderJid, boolean fromMe) {

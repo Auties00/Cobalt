@@ -14,8 +14,7 @@ import com.github.auties00.cobalt.socket.message.MessageReceiptStreamNodeHandler
 import com.github.auties00.cobalt.socket.message.MessageStreamNodeHandler;
 import com.github.auties00.cobalt.socket.notification.NotificationStreamNodeHandler;
 import com.github.auties00.cobalt.socket.notification.PresenceStreamNodeHandler;
-import com.github.auties00.cobalt.socket.state.EndStreamNodeHandler;
-import com.github.auties00.cobalt.socket.state.SuccessStreamNodeHandler;
+import com.github.auties00.cobalt.socket.state.*;
 
 import java.util.*;
 
@@ -25,44 +24,54 @@ public final class SocketStream {
         var pairingCode = webVerificationHandler instanceof WhatsAppClientVerificationHandler.Web.PairingCode
                 ? new SocketPhonePairing()
                 : null;
-        this.handlers = withHandlers(
-                new CallStreamNodeHandler(whatsapp),
-                new CallAckStreamNodeHandler(whatsapp),
-                new ErrorStreamNodeHandler(whatsapp),
-                new FailureStreamNodeHandler(whatsapp),
-                new IbStreamNodeHandler(whatsapp),
-                new IqStreamNodeHandler(whatsapp, webVerificationHandler, pairingCode),
-                new MessageStreamNodeHandler(whatsapp),
-                new MessageAckStreamNodeHandler(whatsapp),
-                new MessageReceiptStreamNodeHandler(whatsapp),
-                new NotificationStreamNodeHandler(whatsapp, pairingCode),
-                new PresenceStreamNodeHandler(whatsapp),
-                new EndStreamNodeHandler(whatsapp),
-                new SuccessStreamNodeHandler(whatsapp)
-        );
-    }
-
-    private static Map<String, SequencedCollection<Handler>> withHandlers(Handler... handlers) {
-        Map<String, SequencedCollection<Handler>> result = HashMap.newHashMap(handlers.length);
-        for(var handler : handlers) {
-            for(var description : handler.descriptions()) {
-                result.compute(description, (_, values) -> {
-                    if(values == null) {
-                        values = new ArrayList<>();
-                    }
-                    values.add(handler);
-                    return values;
-                });
+        var result = new HashMap<String, SequencedCollection<Handler>>();
+        addHandler(result, new CallStreamNodeHandler(whatsapp));
+        addHandler(result, new CallAckStreamNodeHandler(whatsapp));
+        addHandler(result, new ErrorStreamNodeHandler(whatsapp));
+        addHandler(result, new FailureStreamNodeHandler(whatsapp));
+        addHandler(result, new IbStreamNodeHandler(whatsapp));
+        addHandler(result, new IqStreamNodeHandler(whatsapp, webVerificationHandler, pairingCode));
+        addHandler(result, new MessageStreamNodeHandler(whatsapp));
+        addHandler(result, new MessageAckStreamNodeHandler(whatsapp));
+        addHandler(result, new MessageReceiptStreamNodeHandler(whatsapp));
+        addHandler(result, new NotificationStreamNodeHandler(whatsapp, pairingCode));
+        addHandler(result, new PresenceStreamNodeHandler(whatsapp));
+        addHandler(result, new EndStreamNodeHandler(whatsapp));
+        addHandler(result, new UpdateIdentityStreamNodeHandler(whatsapp));
+        switch (whatsapp.store().clientType()) {
+            case WEB -> {
+                addHandler(result, new WebNotifyStoreStreamNodeHandler(whatsapp));
+                addHandler(result, new WebQueryGroupsStreamNodeHandler(whatsapp));
+                addHandler(result, new WebPullInitialAppStatePatchesStreamNodeHandler(whatsapp));
+                addHandler(result, new WebSetActiveConnectionStreamNodeHandler(whatsapp));
+                addHandler(result, new WebScheduleMediaConnectionUpdateStreamNodeHandler(whatsapp));
+                addHandler(result, new WebUpdateSelfPresenceStreamNodeHandler(whatsapp));
+                addHandler(result, new WebQuery2faStreamNodeHandler(whatsapp));
+                addHandler(result, new WebQueryAboutPrivacyStreamNodeHandler(whatsapp));
+                addHandler(result, new WebQueryPrivacySettingsStreamNodeHandler(whatsapp));
+                addHandler(result, new WebQueryDisappearingModeStreamNodeHandler(whatsapp));
+                addHandler(result, new WebQueryBlockListStreamNodeHandler(whatsapp));
+                addHandler(result, new WebOnInitialInfoStreamNodeHandler(whatsapp));
+                addHandler(result, new WebQueryNewslettersStreamNodeHandler(whatsapp));
+            }
+            case MOBILE -> {
+                addHandler(result, new MobileFinishLoginStreamNodeHandler(whatsapp));
             }
         }
-        return Collections.unmodifiableMap(result);
+        this.handlers = Collections.unmodifiableMap(result);
     }
 
+    private void addHandler(Map<String, SequencedCollection<Handler>> result, Handler handler) {
+        for (var description : handler.descriptions()) {
+            result.computeIfAbsent(description, _ -> new ArrayList<>()).add(handler);
+        }
+    }
+    
     public void digest(Node node) {
         var handlers = this.handlers.get(node.description());
         if(handlers != null) {
             for(var handler : handlers) {
-                handler.handle(node);
+                Thread.startVirtualThread(() -> handler.handle(node));
             }
         }
     }

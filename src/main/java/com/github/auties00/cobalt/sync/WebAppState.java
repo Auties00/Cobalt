@@ -231,7 +231,7 @@ public final class WebAppState implements Closeable {
     private InputStream downloadExternalMutation(ExternalBlobReference externalRef) {
         try {
             return whatsapp.store()
-                    .waitForMediaConnection(Duration.ofSeconds(30))
+                    .waitForMediaConnection()
                     .download(externalRef);
         }catch (Throwable throwable) {
             throw new WebAppStateSyncGenericRetryableException("Failed to download external mutations", throwable);
