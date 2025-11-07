@@ -2451,8 +2451,9 @@ public final class WhatsAppClient {
                     .filter(entry -> !entry.hasAttribute("error"))
                     .map(entry -> {
                         var id = entry.getRequiredAttributeAsJid("jid");
-                        var type = entry.getRequiredAttributeAsString("type");
-                        var role = ChatRole.of(type);
+                        var role = entry.getAttributeAsString("type")
+                                .map(ChatRole::of)
+                                .orElse(ChatRole.USER);
                         return ChatParticipant.ofGroup(id, role);
                     })
                     .collect(Collectors.toCollection(LinkedHashSet::new));

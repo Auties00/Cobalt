@@ -160,11 +160,6 @@ public abstract sealed class MediaUploadInputStream extends MediaInputStream {
         }
     
         @Override
-        public void close() throws IOException {
-            rawInputStream.close();
-        }
-    
-        @Override
         public long fileLength() {
             return plaintextLength;
         }
@@ -234,11 +229,6 @@ public abstract sealed class MediaUploadInputStream extends MediaInputStream {
                 plaintextHash = plaintextDigest.digest();
             }
             return result;
-        }
-    
-        @Override
-        public void close() throws IOException {
-            rawInputStream.close();
         }
     
         @Override

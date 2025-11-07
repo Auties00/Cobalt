@@ -10,66 +10,99 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.zip.DataFormatException;
+import java.util.Optional;
 import java.util.zip.Inflater;
 
-public abstract class MediaDownloadInputStream extends MediaInputStream {
+abstract class MediaDownloadInputStream extends MediaInputStream {
+    final HttpClient client;
     final Inflater inflater;
-    MediaDownloadInputStream(InputStream rawInputStream, boolean inflate) {
+    MediaDownloadInputStream(HttpClient client, InputStream rawInputStream, boolean inflate) {
+        Objects.requireNonNull(client, "client cannot be null");
         Objects.requireNonNull(rawInputStream, "rawInputStream must not be null");
-        var inflater = inflate ? new Inflater() : null;
         super(rawInputStream);
-        this.inflater = inflater;
+        this.client = client;
+        this.inflater = inflate ? new Inflater() : null;
+    }
+
+    static Optional<MediaDownloadInputStream> of(MediaProvider provider, String uploadUrl) {
+        var hasKeyName = provider.mediaPath()
+                .keyName()
+                .isPresent();
+        var hasMediaKey = provider.mediaKey()
+                .isPresent();
+        if (hasKeyName != hasMediaKey) {
+            throw new MediaDownloadException("Media key and key name must both be present or both be absent");
+        }
+
+        var client = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.ALWAYS)
+                .build();
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(uploadUrl))
+                .build();
+        try {
+            var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            if(response.statusCode() != 200) {
+                throw new MediaDownloadException("Cannot download media: status code " + response.statusCode());
+            }
+
+            var payloadLength = response.headers()
+                    .firstValueAsLong("Content-Length")
+                    .orElseThrow(() -> new MediaDownloadException("Unknown content length"));
+
+            var rawInputStream = response.body();
+            if(hasKeyName) {
+                return Optional.of(new Ciphertext(client, rawInputStream, payloadLength, provider));
+            }else {
+                return Optional.of(new Plaintext(client, rawInputStream, payloadLength, provider));
+            }
+        }catch (Throwable throwable) {
+            client.close();
+            return Optional.empty();
+        }
     }
 
     @Override
     public void close() throws IOException {
         super.close();
+        client.close();
         if(inflater != null) {
             inflater.end();
         }
     }
 
-    static MediaDownloadInputStream ofCiphertext(InputStream rawInputStream, int payloadLength, MediaProvider provider) throws GeneralSecurityException {
-        return new Ciphertext(rawInputStream, payloadLength, provider);
-    }
-
-    static MediaDownloadInputStream ofPlaintext(InputStream rawInputStream, int payloadLength, MediaProvider provider) throws NoSuchAlgorithmException {
-        return new Plaintext(rawInputStream, payloadLength, provider);
-    }
-
     private static final class Ciphertext extends MediaDownloadInputStream {
-        private final byte[] ciphertextBuffer;
-        private final byte[] plaintextBuffer;
-        private final byte[] outputBuffer;
+        private final byte[] buffer;
+        private int bufferOffset;
+        private int bufferLimit;
+
         private final MessageDigest plaintextDigest;
         private final MessageDigest ciphertextDigest;
+
         private final Mac mac;
+
         private final Cipher cipher;
+
         private final byte[] expectedPlaintextSha256;
         private final byte[] expectedCiphertextSha256;
 
-        private int plaintextOffset = 0;
-        private int plaintextLimit = 0;
-        private int outputOffset = 0;
-        private int outputLimit = 0;
         private long remainingCiphertext;
-        private boolean finished = false;
-        private boolean validated = false;
 
-        public Ciphertext(InputStream rawInputStream, int payloadLength, MediaProvider provider) throws GeneralSecurityException {
+        public Ciphertext(HttpClient client, InputStream rawInputStream, long payloadLength, MediaProvider provider) throws GeneralSecurityException {
             Objects.requireNonNull(rawInputStream, "rawInputStream must not be null");
             Objects.requireNonNull(provider, "provider must not be null");
 
-            super(rawInputStream, provider.mediaPath().inflatable());
-            this.ciphertextBuffer = new byte[BUFFER_LENGTH];
-            this.plaintextBuffer = new byte[BUFFER_LENGTH];
-            this.outputBuffer = inflater != null ? new byte[BUFFER_LENGTH] : plaintextBuffer;
+            super(client, rawInputStream, provider.mediaPath().inflatable());
+            this.buffer = new byte[BUFFER_LENGTH];
             this.expectedPlaintextSha256 = provider.mediaSha256().orElse(null);
             this.plaintextDigest = expectedPlaintextSha256 != null ? MessageDigest.getInstance("SHA-256") : null;
 
@@ -98,65 +131,40 @@ public abstract class MediaDownloadInputStream extends MediaInputStream {
 
         @Override
         public int read() throws IOException {
-            if (ensureOutputDataAvailable()) {
+            if (isFinished()) {
                 return -1;
             }
-            return outputBuffer[outputOffset++] & 0xFF;
+            return buffer[bufferOffset++] & 0xFF;
         }
 
         @Override
         public int read(byte[] b, int off, int len) throws IOException {
-            if (ensureOutputDataAvailable()) {
+            if (isFinished()) {
                 return -1;
             }
 
-            var available = outputLimit - outputOffset;
+            var available = bufferLimit - bufferOffset;
             var toRead = Math.min(len, available);
-            System.arraycopy(outputBuffer, outputOffset, b, off, toRead);
-            outputOffset += toRead;
+            System.arraycopy(buffer, bufferOffset, b, off, toRead);
+            bufferOffset += toRead;
             return toRead;
         }
 
-        private boolean ensureOutputDataAvailable() throws IOException {
-            if (inflater != null) {
-                return ensureInflatedDataAvailable();
-            } else {
-                outputOffset = plaintextOffset;
-                outputLimit = plaintextLimit;
-                return ensurePlaintextDataAvailable();
+        private boolean isFinished() throws IOException {
+            if(finished) {
+                return true;
             }
+
+            readData();
+            return bufferOffset >= bufferLimit;
         }
 
-        private boolean ensureInflatedDataAvailable() throws IOException {
+        private void readData() throws IOException {
             try {
-                while (outputOffset >= outputLimit && !inflater.finished()) {
-                    if (inflater.needsInput()) {
-                        if (ensurePlaintextDataAvailable()) {
-                            break;
-                        }
-                        var available = plaintextLimit - plaintextOffset;
-                        inflater.setInput(plaintextBuffer, plaintextOffset, available);
-                        plaintextOffset += available;
-                    }
-
-                    outputOffset = 0;
-                    outputLimit = inflater.inflate(outputBuffer);
-                }
-
-                return inflater.finished() && outputOffset >= outputLimit;
-            } catch (DataFormatException exception) {
-                throw new IOException("Cannot inflate data", exception);
-            }
-        }
-
-        private boolean ensurePlaintextDataAvailable() throws IOException {
-            try {
-                while (plaintextOffset >= plaintextLimit && !finished) {
+                while (bufferOffset >= bufferLimit && !finished) {
                     if (remainingCiphertext == 0) {
-                        plaintextOffset = 0;
-                        plaintextLimit = cipher.doFinal(plaintextBuffer, 0);
+                        finished = true;
 
-                        // Validate MAC
                         var expectedCiphertextMac = new byte[MAC_LENGTH];
                         var expectedCiphertextMacOffset = 0;
                         while (expectedCiphertextMacOffset < MAC_LENGTH) {
@@ -181,205 +189,123 @@ public abstract class MediaDownloadInputStream extends MediaInputStream {
                             throw new HmacValidationException("media_decryption");
                         }
 
-                        finished = true;
+                        bufferOffset = 0;
+                        bufferLimit = cipher.doFinal(buffer, bufferOffset);
+
+                        if(plaintextDigest != null) {
+                            plaintextDigest.update(buffer, bufferOffset, bufferLimit - bufferOffset);
+                            var actualPlaintextSha256 = plaintextDigest.digest();
+                            if (!Arrays.equals(expectedPlaintextSha256, actualPlaintextSha256)) {
+                                bufferLimit = 0;
+                                throw new MediaDownloadException("Plaintext SHA256 hash doesn't match the expected value");
+                            }
+                        }
                     } else {
-                        var toRead = remainingCiphertext < ciphertextBuffer.length ? Math.toIntExact(remainingCiphertext) : ciphertextBuffer.length;
-                        var read = rawInputStream.read(ciphertextBuffer, 0, toRead);
+                        var toRead = (int) Math.min(buffer.length, remainingCiphertext);
+                        System.out.println("Reading");
+                        var read = rawInputStream.read(buffer, 0, toRead);
+                        System.out.println("Read " + read);
                         if (read == -1) {
                             throw new IOException("Unexpected end of stream: expected " + remainingCiphertext + " more bytes");
                         }
-
                         remainingCiphertext -= read;
 
                         if (ciphertextDigest != null) {
-                            ciphertextDigest.update(ciphertextBuffer, 0, read);
+                            ciphertextDigest.update(buffer, 0, read);
                         }
-                        mac.update(ciphertextBuffer, 0, read);
 
-                        plaintextOffset = 0;
-                        plaintextLimit = cipher.update(ciphertextBuffer, 0, read, plaintextBuffer, 0);
-                    }
+                        mac.update(buffer, 0, read);
 
-                    if (plaintextDigest != null && plaintextLimit > 0) {
-                        plaintextDigest.update(plaintextBuffer, plaintextOffset, plaintextLimit - plaintextOffset);
-                    }
-                }
+                        bufferOffset = 0;
+                        bufferLimit = cipher.update(buffer, 0, read, buffer, bufferOffset);
+                        System.out.println("Decrypted " + bufferLimit + " bytes");
 
-                if (finished && plaintextOffset >= plaintextLimit && !validated) {
-                    if (plaintextDigest != null) {
-                        var actualPlaintextSha256 = plaintextDigest.digest();
-                        if (!Arrays.equals(expectedPlaintextSha256, actualPlaintextSha256)) {
-                            throw new MediaDownloadException("Plaintext SHA256 hash doesn't match the expected value");
+                        if(plaintextDigest != null) {
+                            plaintextDigest.update(buffer, bufferOffset, bufferLimit - bufferOffset);
                         }
                     }
-                    validated = true;
                 }
-
-                return finished && plaintextOffset >= plaintextLimit;
-            } catch (GeneralSecurityException exception) {
-                throw new IOException("Cannot decrypt data", exception);
+            }catch (GeneralSecurityException exception) {
+                throw new MediaDownloadException("Cannot read data", exception);
             }
-        }
-
-        @Override
-        public void close() throws IOException {
-            super.close();
-            rawInputStream.close();
         }
     }
 
     private static final class Plaintext extends MediaDownloadInputStream {
-        private final byte[] plaintextBuffer;
-        private final byte[] outputBuffer;
         private final MessageDigest plaintextDigest;
         private final byte[] expectedPlaintextSha256;
-        private int plaintextOffset = 0;
-        private int plaintextLimit = 0;
-        private int outputOffset = 0;
-        private int outputLimit = 0;
-        private long remainingBytes;
-        private boolean validated = false;
 
-        public Plaintext(InputStream rawInputStream, int payloadLength, MediaProvider provider) throws NoSuchAlgorithmException {
+        private long remainingPlaintext;
+
+        private boolean validated;
+
+        public Plaintext(HttpClient client, InputStream rawInputStream, long payloadLength, MediaProvider provider) throws NoSuchAlgorithmException {
             Objects.requireNonNull(rawInputStream, "rawInputStream must not be null");
             Objects.requireNonNull(provider, "provider must not be null");
 
-            super(rawInputStream, provider.mediaPath().inflatable());
-            this.plaintextBuffer = inflater != null ? new byte[BUFFER_LENGTH] : null;
-            this.outputBuffer = inflater != null ? new byte[BUFFER_LENGTH] : null;
+            super(client, rawInputStream, provider.mediaPath().inflatable());
             this.expectedPlaintextSha256 = provider.mediaSha256().orElse(null);
             this.plaintextDigest = expectedPlaintextSha256 != null ? MessageDigest.getInstance("SHA-256") : null;
-            this.remainingBytes = payloadLength;
+            this.remainingPlaintext = payloadLength;
         }
 
         @Override
         public int read() throws IOException {
-            if (inflater != null) {
-                if (ensureOutputDataAvailable()) {
-                    return -1;
-                }
-                return outputBuffer[outputOffset++] & 0xFF;
-            } else {
-                if (remainingBytes <= 0) {
-                    validateIfNeeded();
-                    return -1;
-                }
-
-                var b = rawInputStream.read();
-                if (b == -1) {
-                    throw new IOException("Unexpected end of stream");
-                }
-
-                remainingBytes--;
-                if (plaintextDigest != null) {
-                    plaintextDigest.update((byte) b);
-                }
-
-                if (remainingBytes == 0) {
-                    validateIfNeeded();
-                }
-
-                return b;
+            if (remainingPlaintext == 0) {
+                return -1;
             }
+
+            var b = rawInputStream.read();
+            if (b == -1) {
+                throw new IOException("Unexpected end of stream");
+            }
+
+            if (plaintextDigest != null) {
+                plaintextDigest.update((byte) b);
+            }
+
+            if (--remainingPlaintext == 0) {
+                validateIfNeeded();
+            }
+
+            return b;
         }
 
         @Override
         public int read(byte[] b, int off, int len) throws IOException {
-            if (inflater != null) {
-                if (ensureOutputDataAvailable()) {
-                    return -1;
-                }
-
-                var available = outputLimit - outputOffset;
-                var toRead = Math.min(len, available);
-                System.arraycopy(outputBuffer, outputOffset, b, off, toRead);
-                outputOffset += toRead;
-                return toRead;
-            } else {
-                if (remainingBytes <= 0) {
-                    validateIfNeeded();
-                    return -1;
-                }
-
-                var toRead = (int) Math.min(len, remainingBytes);
-                var read = rawInputStream.read(b, off, toRead);
-                if (read == -1) {
-                    throw new IOException("Unexpected end of stream");
-                }
-
-                remainingBytes -= read;
-                if (plaintextDigest != null) {
-                    plaintextDigest.update(b, off, read);
-                }
-
-                if (remainingBytes == 0) {
-                    validateIfNeeded();
-                }
-
-                return read;
-            }
-        }
-
-        private boolean ensureOutputDataAvailable() throws IOException {
-            try {
-                while (outputOffset >= outputLimit && !inflater.finished()) {
-                    if (inflater.needsInput()) {
-                        if (ensurePlaintextDataAvailable()) {
-                            break;
-                        }
-                        var available = plaintextLimit - plaintextOffset;
-                        inflater.setInput(plaintextBuffer, plaintextOffset, available);
-                        plaintextOffset += available;
-                    }
-
-                    outputOffset = 0;
-                    outputLimit = inflater.inflate(outputBuffer);
-                }
-
-                return inflater.finished() && outputOffset >= outputLimit;
-            } catch (DataFormatException exception) {
-                throw new IOException("Cannot inflate data", exception);
-            }
-        }
-
-        private boolean ensurePlaintextDataAvailable() throws IOException {
-            while (plaintextOffset >= plaintextLimit && remainingBytes > 0) {
-                var toRead = (int) Math.min(plaintextBuffer.length, remainingBytes);
-                var read = rawInputStream.read(plaintextBuffer, 0, toRead);
-                if (read == -1) {
-                    throw new IOException("Unexpected end of stream");
-                }
-
-                remainingBytes -= read;
-                if (plaintextDigest != null) {
-                    plaintextDigest.update(plaintextBuffer, 0, read);
-                }
-
-                plaintextOffset = 0;
-                plaintextLimit = read;
-
-                if (remainingBytes == 0) {
-                    validateIfNeeded();
-                }
+            if (remainingPlaintext == 0) {
+                return -1;
             }
 
-            return remainingBytes <= 0 && plaintextOffset >= plaintextLimit;
+            var toRead = (int) Math.min(len, remainingPlaintext);
+            var read = rawInputStream.read(b, off, toRead);
+            if (read == -1) {
+                throw new IOException("Unexpected end of stream");
+            }
+
+            if (plaintextDigest != null) {
+                plaintextDigest.update(b, off, read);
+            }
+
+            remainingPlaintext -= read;
+            if (remainingPlaintext == 0) {
+                validateIfNeeded();
+            }
+
+            return read;
         }
 
         private void validateIfNeeded() {
-            if (!validated && plaintextDigest != null) {
-                var actualPlaintextSha256 = plaintextDigest.digest();
-                if (!Arrays.equals(expectedPlaintextSha256, actualPlaintextSha256)) {
-                    throw new MediaDownloadException("Plaintext SHA256 hash doesn't match the expected value");
-                }
-                validated = true;
+            if (validated || plaintextDigest == null) {
+                return;
             }
-        }
 
-        @Override
-        public void close() throws IOException {
-            super.close();
-            rawInputStream.close();
+            validated = true;
+
+            var actualPlaintextSha256 = plaintextDigest.digest();
+            if (!Arrays.equals(expectedPlaintextSha256, actualPlaintextSha256)) {
+                throw new MediaDownloadException("Plaintext SHA256 hash doesn't match the expected value");
+            }
         }
     }
 }

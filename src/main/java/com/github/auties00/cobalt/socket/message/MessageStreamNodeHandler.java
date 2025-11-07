@@ -440,7 +440,7 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
         try {
             var initialPayload = notification.initialHistBootstrapInlinePayload();
             if (initialPayload.isPresent()) {
-                var initialPayloadStream = new InputStream() {
+                var initialPayloadStream = new InflaterInputStream(new InputStream() {
                     @Override
                     public int read() {
                         return initialPayload.get().get() & 0xFF;
@@ -457,15 +457,23 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
                     public int available() {
                         return initialPayload.get().remaining();
                     }
-                };
-                try(var mediaStream = ProtobufInputStream.fromStream(new InflaterInputStream(initialPayloadStream))) {
-                    return HistorySyncSpec.decode(mediaStream);
+                });
+                System.out.println("Downloading inline payload");
+                try(var mediaStream = ProtobufInputStream.fromStream(initialPayloadStream)) {
+                    var result = HistorySyncSpec.decode(mediaStream);
+                    System.out.println("Downloaded inline payload");
+                    return result;
                 }
             }else {
                 var mediaConnection = whatsapp.store()
                         .waitForMediaConnection();
-                try(var mediaStream = ProtobufInputStream.fromStream(mediaConnection.download(notification))) {
-                    return HistorySyncSpec.decode(mediaStream);
+                System.out.println("Downloading notification " + notification.mediaPath());
+                var download = mediaConnection.download(notification);
+                System.out.println("Ready to decode");
+                try(var mediaStream = ProtobufInputStream.fromStream(download)) {
+                    var result = HistorySyncSpec.decode(mediaStream);
+                    System.out.println("Downloaded notification " + notification.mediaPath());
+                    return result;
                 }
             }
         } catch (Throwable exception) {
