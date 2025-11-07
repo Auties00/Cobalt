@@ -6,6 +6,7 @@ import com.github.auties00.cobalt.client.json.request.CommunityRequests;
 import com.github.auties00.cobalt.client.json.request.NewsletterRequests;
 import com.github.auties00.cobalt.client.json.request.UserRequests;
 import com.github.auties00.cobalt.client.json.response.*;
+import com.github.auties00.cobalt.exception.SessionClosedException;
 import com.github.auties00.cobalt.model.action.*;
 import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.business.*;
@@ -360,10 +361,7 @@ public final class WhatsAppClient {
     }
 
     public void sendNodeWithNoResponse(Node node) {
-        if (!socketSession.sendNode(node)) {
-            return;
-        }
-
+        socketSession.sendNode(node);
         for (var listener : store.listeners()) {
             Thread.startVirtualThread(() -> listener.onNodeSent(this, node));
         }
@@ -381,9 +379,7 @@ public final class WhatsAppClient {
         var outgoing = node.build();
         var outgoingId = outgoing.getRequiredAttribute("id")
                 .toString();
-        if (!socketSession.sendNode(outgoing)) {
-            throw new IllegalStateException("Failed to send node");
-        }
+        socketSession.sendNode(outgoing);
 
         for (var listener : store.listeners()) {
             Thread.startVirtualThread(() -> listener.onNodeSent(this, outgoing));

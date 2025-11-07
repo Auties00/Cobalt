@@ -4,7 +4,10 @@ import com.github.auties00.cobalt.exception.MalformedJidException;
 import com.github.auties00.cobalt.model.jid.Jid;
 import it.auties.protobuf.model.ProtobufString;
 
-import java.util.*;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalLong;
 
 /**
  * A sealed interface representing attribute values within WhatsApp protocol nodes.
@@ -236,7 +239,7 @@ public sealed interface NodeAttribute {
         @Override
         public OptionalLong toLong() {
             try {
-                var result = Long.parseLong(this.toString());
+                var result = Long.parseLong(toString());
                 return OptionalLong.of(result);
             }catch (NumberFormatException exception) {
                 return OptionalLong.empty();
@@ -246,7 +249,7 @@ public sealed interface NodeAttribute {
         @Override
         public OptionalDouble toDouble() {
             try {
-                var result = Double.parseDouble(this.toString());
+                var result = Double.parseDouble(toString());
                 return OptionalDouble.of(result);
             }catch (NumberFormatException exception) {
                 return OptionalDouble.empty();

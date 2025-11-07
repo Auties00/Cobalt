@@ -313,8 +313,9 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void scheduleMediaConnectionUpdate() {
+        MediaConnection mediaConnection = null;
         try {
-            var mediaConn = new NodeBuilder()
+            var queryRequestBody = new NodeBuilder()
                     .description("media_conn")
                     .build();
             var queryRequest = new NodeBuilder()
@@ -322,35 +323,28 @@ public final class SuccessStreamNodeHandler extends SocketStream.Handler {
                     .attribute("to", JidServer.user())
                     .attribute("type", "set")
                     .attribute("xmlns", "w:m")
-                    .content(mediaConn);
+                    .content(queryRequestBody);
             var queryResponse = whatsapp.sendNode(queryRequest);
-            onMediaConnection(queryResponse);
+            var mediaConn = queryResponse.getChild("media_conn")
+                    .orElse(queryResponse);
+            var auth = mediaConn.getRequiredAttributeAsString("auth");
+            var ttl = Math.toIntExact(mediaConn.getRequiredAttributeAsLong("ttl"));
+            var maxBuckets = Math.toIntExact(mediaConn.getRequiredAttributeAsLong("max_buckets"));
+            var timestamp = System.currentTimeMillis();
+            var hosts = mediaConn.streamChildren("host")
+                    .map(attributes -> attributes.getRequiredAttributeAsString("hostname"))
+                    .toList();
+            mediaConnection = new MediaConnection(auth, ttl, maxBuckets, timestamp, hosts);
+            whatsapp.store()
+                    .setMediaConnection(mediaConnection);
         } catch (Exception throwable) {
             whatsapp.store().setMediaConnection(null);
             whatsapp.handleFailure(MEDIA_CONNECTION, throwable);
         }finally {
-            var mediaConnectionTtl = whatsapp.store()
-                    .mediaConnection()
-                    .map(MediaConnection::ttl)
-                    .orElse(DEFAULT_MEDIA_CONNECTION_TTL);
+            var mediaConnectionTtl = mediaConnection != null ? mediaConnection.ttl() : DEFAULT_MEDIA_CONNECTION_TTL;
             var executor = CompletableFuture.delayedExecutor(mediaConnectionTtl, TimeUnit.SECONDS);
             executor.execute(this::scheduleMediaConnectionUpdate);
         }
-    }
-
-    private void onMediaConnection(Node node) {
-        var mediaConnection = node.getChild("media_conn")
-                .orElse(node);
-        var auth = mediaConnection.getRequiredAttributeAsString("auth");
-        var ttl = Math.toIntExact(mediaConnection.getRequiredAttributeAsLong("ttl"));
-        var maxBuckets = Math.toIntExact(mediaConnection.getRequiredAttributeAsLong("max_buckets"));
-        var timestamp = System.currentTimeMillis();
-        var hosts = mediaConnection.streamChildren("host")
-                .map(attributes -> attributes.getRequiredAttributeAsString("hostname"))
-                .toList();
-        var result = new MediaConnection(auth, ttl, maxBuckets, timestamp, hosts);
-        whatsapp.store()
-                .setMediaConnection(result);
     }
 
     private void queryNewsletters() {

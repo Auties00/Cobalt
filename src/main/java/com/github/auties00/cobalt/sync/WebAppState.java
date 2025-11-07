@@ -19,6 +19,7 @@ import it.auties.protobuf.stream.ProtobufInputStream;
 
 import java.io.Closeable;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -230,8 +231,7 @@ public final class WebAppState implements Closeable {
     private InputStream downloadExternalMutation(ExternalBlobReference externalRef) {
         try {
             return whatsapp.store()
-                    .mediaConnection()
-                    .orElseThrow(() -> new InternalError("Media connection not available"))
+                    .waitForMediaConnection(Duration.ofSeconds(30))
                     .download(externalRef);
         }catch (Throwable throwable) {
             throw new WebAppStateSyncGenericRetryableException("Failed to download external mutations", throwable);

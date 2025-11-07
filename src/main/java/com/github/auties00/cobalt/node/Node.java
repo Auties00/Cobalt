@@ -247,7 +247,7 @@ public sealed interface Node {
         Objects.requireNonNull(key, "key cannot be null");
         var attribute = attributes().get(key);
         return attribute != null
-                && attribute.toString().equals(value);
+               && attribute.toString().equals(value);
     }
 
     default boolean hasAttribute(String key, byte[] value) {
@@ -278,7 +278,7 @@ public sealed interface Node {
 
         var attributeValue = attribute.toLong();
         return attributeValue.isPresent()
-                && attributeValue.getAsLong() == value;
+               && attributeValue.getAsLong() == value;
     }
 
     default boolean hasAttribute(String key, double value) {
@@ -290,7 +290,7 @@ public sealed interface Node {
 
         var attributeValue = attribute.toDouble();
         return attributeValue.isPresent()
-                && attributeValue.getAsDouble() == value;
+               && attributeValue.getAsDouble() == value;
     }
 
     default boolean hasAttribute(String key, boolean value) {
@@ -317,7 +317,6 @@ public sealed interface Node {
     boolean hasContent(Jid content);
     
     boolean hasContent(byte[] content);
-
     /**
      * Calculates the size of the node based on its attributes and whether it contains children.
      * The size is computed as:
@@ -544,7 +543,6 @@ public sealed interface Node {
         public boolean hasContent() {
             return false;
         }
-
         @Override
         public boolean hasContent(String content) {
             return false;
@@ -564,7 +562,6 @@ public sealed interface Node {
         public boolean hasContent(byte[] content) {
             return false;
         }
-
         @Override
         public Optional<Jid> toContentJid() {
             return Optional.empty();
@@ -599,6 +596,7 @@ public sealed interface Node {
         public int hashCode() {
             return Objects.hash(description, attributes);
         }
+
         @Override
         public String toString() {
             var result = new StringBuilder();
@@ -655,7 +653,6 @@ public sealed interface Node {
         public boolean hasContent(byte[] content) {
             return content != null && Objects.equals(this.content, new String(content));
         }
-
         @Override
         public Optional<byte[]> toContentBytes() {
             return Optional.of(content.getBytes());
@@ -770,7 +767,6 @@ public sealed interface Node {
         public boolean hasContent(byte[] content) {
             return content != null && Objects.equals(this.content.toString(), new String(content));
         }
-
         @Override
         public Optional<String> toContentString() {
             return Optional.of(content.toString());
@@ -790,7 +786,6 @@ public sealed interface Node {
         public Optional<InputStream> toContentStream() {
             return Optional.of(new ByteArrayInputStream(content.toString().getBytes()));
         }
-
 
         @Override
         public SequencedCollection<Node> children() {
@@ -817,6 +812,7 @@ public sealed interface Node {
         public int hashCode() {
             return Objects.hash(description, attributes, content);
         }
+
         @Override
         public String toString() {
             var result = new StringBuilder();
@@ -905,7 +901,6 @@ public sealed interface Node {
         public boolean hasContent(byte[] content) {
             return Arrays.equals(this.content, content);
         }
-
         @Override
         public SequencedCollection<Node> children() {
             return List.of();
@@ -1003,7 +998,6 @@ public sealed interface Node {
         public boolean hasContent(String content) {
             return false;
         }
-
         @Override
         public Optional<byte[]> toContentBytes() {
             return Optional.empty();

@@ -37,6 +37,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -463,8 +464,7 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
                 }
             }else {
                 var mediaConnection = whatsapp.store()
-                        .mediaConnection()
-                        .orElseThrow(() -> new InternalError("Missing media connection"));
+                        .waitForMediaConnection(Duration.ofSeconds(30));
                 try(var mediaStream = ProtobufInputStream.fromStream(mediaConnection.download(notification))) {
                     return HistorySyncSpec.decode(mediaStream);
                 }

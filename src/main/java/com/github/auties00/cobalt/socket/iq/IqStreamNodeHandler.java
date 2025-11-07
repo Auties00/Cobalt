@@ -3,21 +3,20 @@ package com.github.auties00.cobalt.socket.iq;
 import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.client.WhatsAppClientDisconnectReason;
 import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
-import com.github.auties00.cobalt.model.auth.SignedDeviceIdentity;
-import com.github.auties00.cobalt.model.auth.SignedDeviceIdentityHMAC;
 import com.github.auties00.cobalt.exception.HmacValidationException;
-import com.github.auties00.cobalt.node.Node;
-import com.github.auties00.cobalt.node.NodeBuilder;
+import com.github.auties00.cobalt.exception.SessionClosedException;
 import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.contact.ContactBuilder;
 import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
-import com.github.auties00.cobalt.socket.SocketStream;
-import com.github.auties00.cobalt.util.SecureBytes;
-import com.github.auties00.cobalt.util.Clock;
+import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.node.NodeBuilder;
 import com.github.auties00.cobalt.socket.SocketPhonePairing;
+import com.github.auties00.cobalt.socket.SocketStream;
+import com.github.auties00.cobalt.util.Clock;
+import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 
@@ -128,16 +127,14 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     }
 
     private void schedulePing() {
-        pingExecutor.execute(() -> {
-            var result = sendPing();
-            if(result == null) {
-                whatsapp.disconnect(WhatsAppClientDisconnectReason.RECONNECTING);
-            }else {
-                var store = whatsapp.store();
-                store.serialize();
-            }
-            schedulePing();
-        });
+        var result = sendPing();
+        if(result == null) {
+            whatsapp.disconnect(WhatsAppClientDisconnectReason.RECONNECTING);
+        }else {
+            var store = whatsapp.store();
+            store.serialize();
+        }
+        pingExecutor.execute(this::schedulePing);
     }
 
     private Node sendPing() {
@@ -152,7 +149,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
                     .attribute("type", "get")
                     .content(pingBody);
             return whatsapp.sendNode(pingRequest);
-        }catch (Throwable throwable) {
+        }catch (SessionClosedException throwable) {
             return null;
         }
     }

@@ -50,6 +50,7 @@ import it.auties.protobuf.model.ProtobufType;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
@@ -851,7 +852,9 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @see MediaConnection
      */
-    private MediaConnection mediaConnection;
+    private volatile MediaConnection mediaConnection;
+
+    private final Object mediaConnectionLock = new Object();
 
     /**
      * Pending mutations awaiting synchronization to the server.
@@ -2128,13 +2131,16 @@ public final class WhatsappStore implements SignalProtocolStore {
         return Collections.unmodifiableCollection(listeners);
     }
 
-    /**
-     * Returns the media connection.
-     *
-     * @return Optional containing the media connection, empty before initialization
-     */
-    public Optional<MediaConnection> mediaConnection() {
-        return Optional.ofNullable(mediaConnection);
+
+    public MediaConnection waitForMediaConnection(Duration timeout) throws InterruptedException {
+        if(mediaConnection == null) {
+            synchronized (mediaConnectionLock) {
+                if(mediaConnection == null) {
+                    mediaConnectionLock.wait(timeout.toMillis());
+                }
+            }
+        }
+        return mediaConnection;
     }
 
     /**
@@ -2145,6 +2151,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      */
     public WhatsappStore setMediaConnection(MediaConnection mediaConnection) {
         this.mediaConnection = mediaConnection;
+        this.mediaConnectionLock.notifyAll();
         return this;
     }
 

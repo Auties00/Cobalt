@@ -1,5 +1,6 @@
 package com.github.auties00.cobalt.socket;
 
+import com.github.auties00.cobalt.exception.SessionClosedException;
 import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.node.NodeEncoder;
@@ -156,10 +157,10 @@ public abstract sealed class SocketSession {
         }
     }
 
-    public synchronized boolean sendNode(Node node) {
+    public synchronized void sendNode(Node node) {
         var ctx = CentralSelector.INSTANCE.getContext(channel);
         if(ctx == null || !ctx.connected || !ctx.secured) {
-            return false;
+            throw new SessionClosedException();
         }
 
         try {
@@ -173,10 +174,9 @@ public abstract sealed class SocketSession {
             var ciphertextLength = writeCipher.getOutputSize(plaintextLength);
             var ciphertext = new byte[HEADER_LENGTH + ciphertextLength];
             var offset = writeRequestHeader(ciphertextLength, ciphertext, 0);
-            NodeEncoder.encode(node, ciphertext, offset);
+            NodeEncoder.encode(node, ciphertext, offset, plaintextLength);
             writeCipher.doFinal(ciphertext, offset, plaintextLength, ciphertext, offset);
             sendBinary(ByteBuffer.wrap(ciphertext));
-            return true;
         }catch (GeneralSecurityException exception) {
             throw new InternalError("Failed to encrypt node", exception);
         }

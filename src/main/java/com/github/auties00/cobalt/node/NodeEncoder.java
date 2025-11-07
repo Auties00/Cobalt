@@ -1,5 +1,6 @@
 package com.github.auties00.cobalt.node;
 
+import com.github.auties00.cobalt.exception.MalformedNodeException;
 import com.github.auties00.cobalt.model.jid.Jid;
 
 import java.nio.ByteBuffer;
@@ -20,8 +21,8 @@ import static com.github.auties00.cobalt.node.NodeTokens.*;
  * <ul>
  *   <li>Converting strings to dictionary tokens when possible (using single-byte or multi-dictionary lookup)</li>
  *   <li>Encoding binary data with length prefixes</li>
- *   <li>Efficiently serializing node trees with attributes and content</li>
- *   <li>Supporting various content types: text, binary buffers, JIDs, streams, and child nodes</li>
+ *   <li>Efficiently serializing node trees with attributes and children</li>
+ *   <li>Supporting various children types: text, binary buffers, JIDs, streams, and child nodes</li>
  * </ul>
  * <p>
  * The encoding format is optimized for small message sizes and includes:
@@ -69,7 +70,7 @@ public final class NodeEncoder {
      * Calculates the total size in bytes required to encode the given node.
      * <p>
      * This includes the message header (1 byte) and the full encoded length of the node
-     * including its description, attributes, and content.
+     * including its description, attributes, and children.
      *
      * @param node the node to calculate the size for
      * @return the total number of bytes required to encode the node
@@ -87,9 +88,9 @@ public final class NodeEncoder {
      */
     private static int nodeLength(Node input){
         return listLength(input.size())
-                + stringLength(input.description())
-                + attributesLength(input.attributes())
-                + contentLength(input);
+               + stringLength(input.description())
+               + attributesLength(input.attributes())
+               + contentLength(input);
     }
 
     /**
@@ -219,16 +220,16 @@ public final class NodeEncoder {
     }
 
     /**
-     * Calculates the number of bytes required to encode a node's content.
+     * Calculates the number of bytes required to encode a node's children.
      *
-     * @param node the node whose content to calculate
+     * @param node the node whose children to calculate
      * @return the number of bytes required
      */
     private static int contentLength(Node node){
         return switch (node) {
             case Node.BytesNode(var _, var _, var bytes) -> bytesLength(bytes);
             case Node.ContainerNode(var _, var _, var children) -> childrenLength(children);
-            case Node.EmptyNode _ -> 1;
+            case Node.EmptyNode _ -> 0;
             case Node.JidNode(var _, var _, var jid) -> jidLength(jid);
             case Node.TextNode(var _, var _, var text) -> stringLength(text);
         };
@@ -306,45 +307,20 @@ public final class NodeEncoder {
     /**
      * Encodes a node into the provided byte array at the specified offset.
      *
-     * @param node the node to encode
+     * @param node   the node to encode
      * @param output the output byte array
      * @param offset the offset in the output array where encoding should start
-     */
-    public static void encode(Node node, byte[] output, int offset) {
-        writeMessage(node, output, offset);
-    }
-
-    /**
-     * Encodes a node into a new byte array.
-     * <p>
-     * This method first calculates the required size, allocates a byte array,
-     * and then encodes the node into it.
-     *
-     * @param node the node to encode
-     * @return a byte array containing the encoded node
-     * @throws InternalError if the encoding position doesn't match the expected length
-     */
-    public static byte[] encode(Node node) {
-        var length = sizeOf(node);
-        var output = new byte[length];
-        var offset = writeMessage(node, output, 0);
-        if(offset != length) {
-            throw new InternalError("Unexpected mismatch between write position and message length");
-        }
-        return output;
-    }
-
-    /**
-     * Writes a message header (0x00) followed by the encoded node.
-     *
-     * @param input the node to encode
-     * @param output the output byte array
-     * @param offset the current offset in the output array
+     * @param length the length of the output array, in bytes, to encode to.
+     * @throws MalformedNodeException if the node is shorter/longer than the specified length
      * @return the new offset after writing
      */
-    private static int writeMessage(Node input, byte[] output, int offset) {
-        output[offset++] = 0;
-        return writeNode(input, output, offset);
+    public static int encode(Node node, byte[] output, int offset, int length) {
+        output[offset] = 0;
+        var result = writeNode(node, output, offset + 1);
+        if(result - offset != length) {
+            throw new MalformedNodeException();
+        }
+        return result;
     }
 
     /**
@@ -352,7 +328,7 @@ public final class NodeEncoder {
      * <p>
      * A node consists of:
      * <ol>
-     *   <li>List size (number of attributes + 2 for description + content)</li>
+     *   <li>List size (number of attributes + 2 for description + children)</li>
      *   <li>Description string</li>
      *   <li>Attributes</li>
      *   <li>Content</li>
@@ -587,33 +563,21 @@ public final class NodeEncoder {
     }
 
     /**
-     * Writes the content of a node based on its type.
+     * Writes the children of a node based on its type.
      *
-     * @param content the node whose content to write
+     * @param content the node whose children to write
      * @param output the output byte array
      * @param offset the current offset in the output array
      * @return the new offset after writing
      */
     private static int writeContent(Node content, byte[] output, int offset) {
         return switch (content) {
+            case Node.EmptyNode _ -> offset;
             case Node.BytesNode(var _, var _, var buffer) -> writeBytes(buffer, output, offset);
             case Node.ContainerNode(var _, var _, var children) -> writeChildren(children, output, offset);
-            case Node.EmptyNode _ -> writeNull(output, offset);
             case Node.JidNode(var _, var _, var jid) -> writeJid(jid, output, offset);
             case Node.TextNode(var _, var _, var text) -> writeString(text, output, offset);
         };
-    }
-
-    /**
-     * Writes a null/empty content marker (LIST_EMPTY).
-     *
-     * @param output the output byte array
-     * @param offset the current offset in the output array
-     * @return the new offset after writing
-     */
-    private static int writeNull(byte[] output, int offset) {
-        output[offset++] = LIST_EMPTY;
-        return offset;
     }
 
     /**
