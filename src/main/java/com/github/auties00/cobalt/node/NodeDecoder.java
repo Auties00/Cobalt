@@ -264,7 +264,7 @@ public final class NodeDecoder implements AutoCloseable {
     private Node readNode() throws IOException {
         var size = readNodeSize();
         if(size == 0) {
-            return Node.empty();
+            throw new IOException("Unexpected empty node");
         }
 
         var description = readString();

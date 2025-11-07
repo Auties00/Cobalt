@@ -4,7 +4,6 @@ import com.github.auties00.cobalt.exception.NodeTimeoutException;
 import com.github.auties00.cobalt.node.Node;
 
 import java.time.Duration;
-import java.util.Objects;
 import java.util.function.Function;
 
 public final class SocketRequest {
@@ -20,8 +19,7 @@ public final class SocketRequest {
     }
 
     public boolean complete(Node response) {
-        Objects.requireNonNull(response, "Response cannot be null");
-        var acceptable = response == Node.empty()
+        var acceptable = response == null
                 || filter == null
                 || filter.apply(response);
         if (acceptable) {

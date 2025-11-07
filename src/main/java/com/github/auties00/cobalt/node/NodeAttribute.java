@@ -33,25 +33,25 @@ public sealed interface NodeAttribute {
      *
      * @return a non-null string representation of this attribute value
      */
-    String toValueString();
+    String toString();
 
     /**
      * Converts this attribute value to its byte array representation.
      *
      * @return a non-null byte array representing this attribute value
      */
-    byte[] toValueBytes();
+    byte[] toBytes();
 
     /**
      * Converts this attribute value to its jid representation.
      *
      * @return a non-null jid representation of this attribute value
      */
-    Optional<Jid> toValueJid();
+    Optional<Jid> toJid();
 
-    OptionalLong toValueLong();
+    OptionalLong toLong();
 
-    OptionalDouble toValueDouble();
+    OptionalDouble toDouble();
 
     /**
      * A record representing a text-based attribute value.
@@ -73,18 +73,13 @@ public sealed interface NodeAttribute {
             return value;
         }
 
-        @Override
-        public String toValueString() {
-            return value;
-        }
-
         /**
          * Converts the text value to its UTF-8 byte representation.
          *
          * @return a non-null byte array containing the UTF-8 encoded text
          */
         @Override
-        public byte[] toValueBytes() {
+        public byte[] toBytes() {
             return value.getBytes();
         }
 
@@ -95,7 +90,7 @@ public sealed interface NodeAttribute {
          * @throws MalformedJidException if the text value is not a jid
          */
         @Override
-        public Optional<Jid> toValueJid() {
+        public Optional<Jid> toJid() {
             try {
                 var result = Jid.of(value);
                 return Optional.of(result);
@@ -105,7 +100,7 @@ public sealed interface NodeAttribute {
         }
 
         @Override
-        public OptionalLong toValueLong() {
+        public OptionalLong toLong() {
             try {
                 var result = Long.parseLong(value);
                 return OptionalLong.of(result);
@@ -115,7 +110,7 @@ public sealed interface NodeAttribute {
         }
 
         @Override
-        public OptionalDouble toValueDouble() {
+        public OptionalDouble toDouble() {
             try {
                 var result = Double.parseDouble(value);
                 return OptionalDouble.of(result);
@@ -140,18 +135,13 @@ public sealed interface NodeAttribute {
             Objects.requireNonNull(value, "value cannot be null");
         }
 
-        @Override
-        public String toString() {
-            return value.toString();
-        }
-
         /**
          * Converts the Jid to its string representation.
          *
          * @return a non-null string representation of the Jid
          */
         @Override
-        public String toValueString() {
+        public String toString() {
             return value.toString();
         }
 
@@ -164,7 +154,7 @@ public sealed interface NodeAttribute {
          * @return a non-null byte array containing the UTF-8 encoded Jid string
          */
         @Override
-        public byte[] toValueBytes() {
+        public byte[] toBytes() {
             return value.toString().getBytes();
         }
 
@@ -174,17 +164,17 @@ public sealed interface NodeAttribute {
          * @return a non-null {@link Jid}
          */
         @Override
-        public Optional<Jid> toValueJid() {
+        public Optional<Jid> toJid() {
             return Optional.of(value);
         }
 
         @Override
-        public OptionalLong toValueLong() {
+        public OptionalLong toLong() {
             return OptionalLong.empty();
         }
 
         @Override
-        public OptionalDouble toValueDouble() {
+        public OptionalDouble toDouble() {
             return OptionalDouble.empty();
         }
     }
@@ -206,18 +196,13 @@ public sealed interface NodeAttribute {
             Objects.requireNonNull(value, "value cannot be null");
         }
 
-        @Override
-        public String toString() {
-            return Arrays.toString(value);
-        }
-
         /**
          * Converts the binary data to a string representation.
          *
          * @return a non-null string decoded from the binary data
          */
         @Override
-        public String toValueString() {
+        public String toString() {
             return new String(value);
         }
 
@@ -229,7 +214,7 @@ public sealed interface NodeAttribute {
          * @return the original non-null byte array
          */
         @Override
-        public byte[] toValueBytes() {
+        public byte[] toBytes() {
             return value;
         }
 
@@ -239,7 +224,7 @@ public sealed interface NodeAttribute {
          * @return a non-null {@link Jid}
          */
         @Override
-        public Optional<Jid> toValueJid() {
+        public Optional<Jid> toJid() {
             try {
                 var result = Jid.of(ProtobufString.lazy(value));
                 return Optional.of(result);
@@ -249,9 +234,9 @@ public sealed interface NodeAttribute {
         }
 
         @Override
-        public OptionalLong toValueLong() {
+        public OptionalLong toLong() {
             try {
-                var result = Long.parseLong(toValueString());
+                var result = Long.parseLong(this.toString());
                 return OptionalLong.of(result);
             }catch (NumberFormatException exception) {
                 return OptionalLong.empty();
@@ -259,9 +244,9 @@ public sealed interface NodeAttribute {
         }
 
         @Override
-        public OptionalDouble toValueDouble() {
+        public OptionalDouble toDouble() {
             try {
-                var result = Double.parseDouble(toValueString());
+                var result = Double.parseDouble(this.toString());
                 return OptionalDouble.of(result);
             }catch (NumberFormatException exception) {
                 return OptionalDouble.empty();

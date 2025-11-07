@@ -98,7 +98,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
 
         messages.streamChildren("message").forEachOrdered(messageNode -> {
             var messageId = messageNode.getRequiredAttribute("server_id")
-                    .toValueString();
+                    .toString();
             var newsletterMessage = whatsapp.store()
                     .findMessageById(newsletter, messageId)
                     .orElse(null);
@@ -115,9 +115,9 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
 
     private void onNewsletterReaction(Node reaction, NewsletterMessageInfo newsletterMessage) {
         var reactionCode = reaction.getRequiredAttribute("code")
-                .toValueString();
+                .toString();
         var reactionCountValue = reaction.getRequiredAttribute("count")
-                .toValueString();
+                .toString();
         var reactionCount = Integer.parseUnsignedInt(reactionCountValue);
         var newReaction = new NewsletterReaction(reactionCode, reactionCount, false);
         newsletterMessage.addReaction(newReaction)
@@ -132,7 +132,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         }
 
         var operationName = update.getRequiredAttribute("op_name")
-                .toValueString();
+                .toString();
         switch (operationName) {
             case "MexNotificationEvent" -> {
                 // TODO MexNotificationEvent

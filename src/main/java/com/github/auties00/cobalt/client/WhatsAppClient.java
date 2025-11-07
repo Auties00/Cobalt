@@ -303,7 +303,7 @@ public final class WhatsAppClient {
             socketSession.disconnect();
         }
 
-        pendingSocketRequests.forEach((ignored, request) -> request.complete(Node.empty()));
+        pendingSocketRequests.forEach((ignored, request) -> request.complete(null));
         pendingSocketRequests.clear();
         if (reason == WhatsAppClientDisconnectReason.LOGGED_OUT || reason == WhatsAppClientDisconnectReason.BANNED) {
             store.setSerializable(false);
@@ -347,7 +347,7 @@ public final class WhatsAppClient {
 
     public void resolvePendingRequest(Node node) {
         var id = node.getAttribute("id")
-                .map(NodeAttribute::toValueString)
+                .map(NodeAttribute::toString)
                 .orElse(null);
         if (id == null) {
             return;
@@ -380,9 +380,9 @@ public final class WhatsAppClient {
 
         var outgoing = node.build();
         var outgoingId = outgoing.getRequiredAttribute("id")
-                .toValueString();
+                .toString();
         if (!socketSession.sendNode(outgoing)) {
-            return Node.empty();
+            throw new IllegalStateException("Failed to send node");
         }
 
         for (var listener : store.listeners()) {
@@ -611,7 +611,7 @@ public final class WhatsAppClient {
         return node.getChild("contact")
                 .orElseThrow(() -> new NoSuchElementException("Missing contact"))
                 .getRequiredAttribute("type")
-                .toValueString()
+                .toString()
                 .equals("in");
     }
 
@@ -742,7 +742,7 @@ public final class WhatsAppClient {
         return sendNode(iqNode)
                 .getChild("picture")
                 .flatMap(picture -> picture.getAttribute("url"))
-                .map(attribute -> URI.create(attribute.toValueString()));
+                .map(attribute -> URI.create(attribute.toString()));
     }
 
     /**
@@ -1810,7 +1810,7 @@ public final class WhatsAppClient {
             var result = sendNode(node, resultNode -> resultNode.hasDescription("notification"));
             if (result.getChild("error").isPresent()) {
                 var code = result.getAttribute("code")
-                        .map(NodeAttribute::toValueString)
+                        .map(NodeAttribute::toString)
                         .orElse("unknown");
                 throw new IllegalArgumentException("Erroneous response from media reupload: " + code);
             }
@@ -2575,7 +2575,7 @@ public final class WhatsAppClient {
         return result.getChild("invite")
                 .orElseThrow(() -> new NoSuchElementException("Missing invite code in invite newsletters"))
                 .getRequiredAttribute("code")
-                .toValueString();
+                .toString();
     }
 
     /**
@@ -4633,7 +4633,7 @@ public final class WhatsAppClient {
     }
 
     private Node createCall(JidProvider jid) {
-        return Node.empty();
+        return null;
     }
 
     public SequencedCollection<Newsletter> queryNewsletters() {

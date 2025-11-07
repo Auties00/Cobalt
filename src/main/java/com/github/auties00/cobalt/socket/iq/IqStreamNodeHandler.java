@@ -130,7 +130,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     private void schedulePing() {
         pingExecutor.execute(() -> {
             var result = sendPing();
-            if(result == Node.empty()) {
+            if(result == null) {
                 whatsapp.disconnect(WhatsAppClientDisconnectReason.RECONNECTING);
             }else {
                 var store = whatsapp.store();
@@ -153,7 +153,7 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
                     .content(pingBody);
             return whatsapp.sendNode(pingRequest);
         }catch (Throwable throwable) {
-            return Node.empty();
+            return null;
         }
     }
 
