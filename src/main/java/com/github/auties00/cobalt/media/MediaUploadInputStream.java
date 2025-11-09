@@ -1,5 +1,7 @@
 package com.github.auties00.cobalt.media;
 
+import com.github.auties00.cobalt.exception.MediaException;
+import com.github.auties00.cobalt.model.media.MediaProvider;
 import com.github.auties00.cobalt.util.SecureBytes;
 
 import javax.crypto.Cipher;
@@ -28,12 +30,14 @@ public abstract sealed class MediaUploadInputStream extends MediaInputStream {
 
     public abstract Optional<byte[]> fileKey();
 
-    static MediaUploadInputStream ofCiphertext(InputStream rawInputStream, String keyName) {
-        return new Ciphertext(rawInputStream, keyName);
-    }
-
-    static MediaUploadInputStream ofPlaintext(InputStream rawInputStream) {
-        return new Plaintext(rawInputStream);
+    static MediaUploadInputStream of(MediaProvider provider, InputStream inputStream) throws MediaException {
+        var keyName = provider.mediaPath()
+                .keyName();
+        if(keyName.isPresent()) {
+            return new Ciphertext(inputStream, keyName.get());
+        }else {
+            return new Plaintext(inputStream);
+        }
     }
 
     private static final class Ciphertext extends MediaUploadInputStream {
@@ -55,33 +59,27 @@ public abstract sealed class MediaUploadInputStream extends MediaInputStream {
         private int outputPosition;
         private int outputLimit;
     
-        public Ciphertext(InputStream rawInputStream, String keyName) {
+        public Ciphertext(InputStream rawInputStream, String keyName) throws MediaException {
             super(rawInputStream);
-    
-            try {
-                this.plaintextDigest = MessageDigest.getInstance("SHA-256");
-                this.ciphertextDigest = MessageDigest.getInstance("SHA-256");
-    
-                this.mediaKey = SecureBytes.random(32);
-                var expanded = deriveMediaKeyData(mediaKey, keyName);
-                var iv = new IvParameterSpec(expanded, 0, IV_LENGTH);
-                var cipherKey = new SecretKeySpec(expanded, IV_LENGTH, KEY_LENGTH, "AES");
-                var macKey = new SecretKeySpec(expanded, IV_LENGTH + KEY_LENGTH, KEY_LENGTH, "HmacSHA256");
-    
-                this.cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                cipher.init(Cipher.ENCRYPT_MODE, cipherKey, iv);
-    
-                this.ciphertextMac = Mac.getInstance("HmacSHA256");
-                ciphertextMac.init(macKey);
-                ciphertextMac.update(expanded, 0, IV_LENGTH);
-    
-                this.plaintextBuffer = new byte[BUFFER_LENGTH];
-                this.ciphertextBuffer = new byte[BUFFER_LENGTH + cipher.getBlockSize()];
-                this.outputBuffer = new byte[BUFFER_LENGTH];
-                this.plaintextLength = 0;
-            }catch (GeneralSecurityException exception) {
-                throw new InternalError("Cannot initialize stream", exception);
-            }
+
+            this.plaintextDigest = newHash();
+            this.ciphertextDigest = newHash();
+
+            this.mediaKey = SecureBytes.random(32);
+            var expanded = deriveMediaKeyData(mediaKey, keyName);
+            var iv = new IvParameterSpec(expanded, 0, IV_LENGTH);
+            var cipherKey = new SecretKeySpec(expanded, IV_LENGTH, KEY_LENGTH, "AES");
+            var macKey = new SecretKeySpec(expanded, IV_LENGTH + KEY_LENGTH, KEY_LENGTH, "HmacSHA256");
+
+            this.cipher = newCipher(Cipher.ENCRYPT_MODE, cipherKey, iv);
+
+            this.ciphertextMac = newMac(macKey);
+            ciphertextMac.update(expanded, 0, IV_LENGTH);
+
+            this.plaintextBuffer = new byte[BUFFER_LENGTH];
+            this.ciphertextBuffer = new byte[BUFFER_LENGTH + cipher.getBlockSize()];
+            this.outputBuffer = new byte[BUFFER_LENGTH];
+            this.plaintextLength = 0;
         }
     
         @Override

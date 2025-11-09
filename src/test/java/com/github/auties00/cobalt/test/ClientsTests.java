@@ -12,28 +12,28 @@ public class ClientsTests {
 
     @Test
     public void testWebVersion() {
-        assertDoesNotThrow(() -> WhatsAppClientInfo.of(MACOS).latest());
-        assertDoesNotThrow(() -> WhatsAppClientInfo.of(WINDOWS).latest());
+        assertDoesNotThrow(() -> WhatsAppClientInfo.of(MACOS).version());
+        assertDoesNotThrow(() -> WhatsAppClientInfo.of(WINDOWS).version());
     }
     
     @Test
     public void testPersonalIosVersion() {
-        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(IOS).latest());
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(IOS).version());
     }
     
     @Test
     public void testBusinessIosVersion() {
-        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(IOS_BUSINESS).latest());
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(IOS_BUSINESS).version());
     }
     
     @Test
     public void testPersonalAndroidVersion() {
-        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(ANDROID).latest());
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(ANDROID).version());
     }
     
     @Test
     public void testBusinessAndroidVersion() {
-        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(ANDROID_BUSINESS).latest());
+        assertDoesNotThrow(() -> WhatsAppMobileClientInfo.of(ANDROID_BUSINESS).version());
     }
 
     @Test

@@ -458,26 +458,18 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
                         return initialPayload.get().remaining();
                     }
                 });
-                System.out.println("Downloading inline payload");
                 try(var mediaStream = ProtobufInputStream.fromStream(initialPayloadStream)) {
-                    var result = HistorySyncSpec.decode(mediaStream);
-                    System.out.println("Downloaded inline payload");
-                    return result;
+                    return HistorySyncSpec.decode(mediaStream);
                 }
             }else {
                 var mediaConnection = whatsapp.store()
                         .waitForMediaConnection();
-                System.out.println("Downloading notification " + notification.mediaPath());
-                var download = mediaConnection.download(notification);
-                System.out.println("Ready to decode");
-                try(var mediaStream = ProtobufInputStream.fromStream(download)) {
-                    var result = HistorySyncSpec.decode(mediaStream);
-                    System.out.println("Downloaded notification " + notification.mediaPath());
-                    return result;
+                try(var mediaStream = ProtobufInputStream.fromStream(mediaConnection.download(notification))) {
+                    return HistorySyncSpec.decode(mediaStream);
                 }
             }
-        } catch (Throwable exception) {
-            throw new MediaDownloadException("Cannot download history sync", exception);
+        } catch (Throwable throwable) {
+            throw new MediaDownloadException("Cannot download history sync", throwable);
         }
     }
 

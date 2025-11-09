@@ -1,6 +1,7 @@
 package com.github.auties00.cobalt.client;
 
 import com.github.auties00.cobalt.client.registration.WhatsAppMobileClientRegistration;
+import com.github.auties00.cobalt.model.auth.Version;
 import com.github.auties00.cobalt.model.business.BusinessCategory;
 import com.github.auties00.cobalt.model.jid.JidDevice;
 import com.github.auties00.cobalt.store.WhatsappStore;
@@ -453,6 +454,18 @@ public sealed class WhatsAppClientBuilder {
         }
 
         /**
+         * Sets the client version for the connection
+         * This allows customization of the WhatsApp client version identifier
+         *
+         * @param clientVersion the client version to use, can be null to use the default
+         * @return the same instance for chaining
+         */
+        public Options clientVersion(Version clientVersion) {
+            store.setClientVersion(clientVersion);
+            return this;
+        }
+
+        /**
          * Sets a handler for message previews
          *
          * @param messagePreviewHandler the handler to use, can be null
@@ -534,6 +547,18 @@ public sealed class WhatsAppClientBuilder {
             @Override
             public Web automaticMessageReceipts(boolean automaticMessageReceipts) {
                 return (Web) super.automaticMessageReceipts(automaticMessageReceipts);
+            }
+
+            /**
+             * Sets the client version for the connection
+             * This allows customization of the WhatsApp client version identifier
+             *
+             * @param clientVersion the client version to use, can be null to use the default
+             * @return the same instance for chaining
+             */
+            @Override
+            public Web clientVersion(Version clientVersion) {
+                return (Web) super.clientVersion(clientVersion);
             }
 
             /**
@@ -652,6 +677,18 @@ public sealed class WhatsAppClientBuilder {
             public Mobile automaticMessageReceipts(boolean automaticMessageReceipts) {
                 super.automaticMessageReceipts(automaticMessageReceipts);
                 return this;
+            }
+
+            /**
+             * Sets the client version for the connection
+             * This allows customization of the WhatsApp client version identifier
+             *
+             * @param clientVersion the client version to use, can be null to use the default
+             * @return the same instance for chaining
+             */
+            @Override
+            public Mobile clientVersion(Version clientVersion) {
+                return (Mobile) super.clientVersion(clientVersion);
             }
 
             /**

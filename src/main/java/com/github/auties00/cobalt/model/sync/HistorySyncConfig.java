@@ -19,7 +19,13 @@ public record HistorySyncConfig(
         @ProtobufProperty(index = 6, type = ProtobufType.BOOL)
         Boolean supportCallLogHistory,
         @ProtobufProperty(index = 7, type = ProtobufType.BOOL)
-        Boolean supportBotUserAgentChatHistory
+        Boolean supportBotUserAgentChatHistory,
+        @ProtobufProperty(index = 8, type = ProtobufType.BOOL)
+        Boolean supportCagReactionsAndPolls,
+        @ProtobufProperty(index = 9, type = ProtobufType.BOOL)
+        Boolean supportBizHostedMsg,
+        @ProtobufProperty(index = 10, type = ProtobufType.BOOL)
+        Boolean supportRecentSyncChunkMessageCountTuning
 ) {
 
 }

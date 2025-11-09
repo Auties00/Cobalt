@@ -93,7 +93,7 @@ final class WhatsAppIosClientInfo implements WhatsAppMobileClientInfo {
     }
 
     @Override
-    public Version latest() {
+    public Version version() {
         return version;
     }
 

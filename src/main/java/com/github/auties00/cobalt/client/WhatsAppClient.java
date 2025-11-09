@@ -6,7 +6,6 @@ import com.github.auties00.cobalt.client.json.request.CommunityRequests;
 import com.github.auties00.cobalt.client.json.request.NewsletterRequests;
 import com.github.auties00.cobalt.client.json.request.UserRequests;
 import com.github.auties00.cobalt.client.json.response.*;
-import com.github.auties00.cobalt.exception.SessionClosedException;
 import com.github.auties00.cobalt.model.action.*;
 import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.business.*;
@@ -110,7 +109,7 @@ public final class WhatsAppClient {
     WhatsAppClient(WhatsappStore store, WhatsAppClientVerificationHandler.Web webVerificationHandler, WhatsAppClientMessagePreviewHandler messagePreviewHandler, WhatsAppClientErrorHandler errorHandler) {
         this.store = Objects.requireNonNull(store, "store cannot be null");
         this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler cannot be null");
-        if((store.clientType() == WhatsAppClientType.WEB) == (webVerificationHandler == null)) {
+        if ((store.clientType() == WhatsAppClientType.WEB) == (webVerificationHandler == null)) {
             throw new IllegalArgumentException("webVerificationHandler cannot be null when client type is WEB");
         }
         this.webAppState = new WebAppState(this);
@@ -228,11 +227,10 @@ public final class WhatsAppClient {
     }
 
     private UserAgent createUserAgent() {
-        var clientInfo = WhatsAppClientInfo.of(store.device().platform());
         var mobile = store.clientType() == WhatsAppClientType.MOBILE;
         return new UserAgentBuilder()
                 .platform(store.device().platform())
-                .appVersion(clientInfo.latest())
+                .appVersion(store.clientVersion())
                 .mcc("000")
                 .mnc("000")
                 .osVersion(mobile ? store.device().osVersion().toString() : null)
@@ -249,9 +247,8 @@ public final class WhatsAppClient {
     }
 
     private CompanionRegistrationData createRegisterData() {
-        var clientInfo = WhatsAppClientInfo.of(store.device().platform());
         var companion = new CompanionRegistrationDataBuilder()
-                .buildHash(clientInfo.latest().toHash())
+                .buildHash(store.clientVersion().toHash())
                 .eRegid(SecureBytes.intToBytes(store.registrationId(), 4))
                 .eKeytype(SecureBytes.intToBytes(SignalIdentityPublicKey.type(), 1))
                 .eIdent(store.identityKeyPair().publicKey().toEncodedPoint())
@@ -290,6 +287,7 @@ public final class WhatsAppClient {
                         .platformType(platformType)
                         .requireFullSync(historyLength.isExtended())
                         .historySyncConfig(config)
+                        .version(store.clientVersion())
                         .build();
             }
             case MOBILE -> null;
@@ -298,7 +296,7 @@ public final class WhatsAppClient {
 
 
     public void disconnect(WhatsAppClientDisconnectReason reason) {
-        if(!isConnected()) {
+        if (!isConnected()) {
             return;
         }
 
@@ -334,7 +332,7 @@ public final class WhatsAppClient {
     }
 
     private void onMessage(ByteBuffer message) {
-        try(var decoder = new NodeDecoder(message)) {
+        try (var decoder = new NodeDecoder(message)) {
             while (decoder.hasData()) {
                 var node = decoder.decode();
                 for (var listener : store.listeners()) {
@@ -580,17 +578,17 @@ public final class WhatsAppClient {
     }
 
     private Optional<Node> createUserNode(JidProvider provider) {
-        if(provider == null) {
+        if (provider == null) {
             return Optional.empty();
         }
 
         var user = provider.toJid();
-        if(!user.hasServer(JidServer.user())) {
+        if (!user.hasServer(JidServer.user())) {
             return Optional.empty();
         }
 
         var phoneNumber = user.toPhoneNumber();
-        if(phoneNumber.isEmpty()) {
+        if (phoneNumber.isEmpty()) {
             return Optional.empty();
         }
 
@@ -830,8 +828,8 @@ public final class WhatsAppClient {
             switch (store.clientType()) {
                 case WEB ->
                         throw new IllegalArgumentException("The business name cannot be changed using the web api. " +
-                                                               "This is a limitation by WhatsApp. " +
-                                                               "If this ever changes, please open an issue/PR.");
+                                                           "This is a limitation by WhatsApp. " +
+                                                           "If this ever changes, please open an issue/PR.");
                 case MOBILE -> {
                     var oldName = store.name();
                     updateBusinessCertificate(newName);
@@ -910,7 +908,7 @@ public final class WhatsAppClient {
     }
 
     private static byte[] getProfilePic(InputStream inputStream) {
-        if(inputStream == null) {
+        if (inputStream == null) {
             return null;
         }
 
@@ -1759,7 +1757,7 @@ public final class WhatsAppClient {
 
             var meJid = store.jid()
                     .orElse(null);
-            if(meJid == null) {
+            if (meJid == null) {
                 return;
             }
 
@@ -1963,15 +1961,16 @@ public final class WhatsAppClient {
                 .status(MessageStatus.PENDING)
                 .build();
         revokeInfo.setNewsletter(info.newsletter());
-        sendMessage0(info, Map.of("edit", getEditBit(info)));;
+        sendMessage0(info, Map.of("edit", getEditBit(info)));
+        ;
     }
 
     /**
      * Deletes a message
      *
-     * @param info non-null message to delete
-     * @param everyone    whether the message should be deleted for everyone or only for this client and
-     *                    its companions
+     * @param info     non-null message to delete
+     * @param everyone whether the message should be deleted for everyone or only for this client and
+     *                 its companions
      */
     public void deleteMessage(ChatMessageInfo info, boolean everyone) {
         if (everyone) {
@@ -1994,7 +1993,7 @@ public final class WhatsAppClient {
                     .timestampSeconds(Clock.nowSeconds())
                     .build();
             sendMessage0(info, Map.of("edit", getEditBit(info)));
-        }else{
+        } else {
             switch (store.clientType()) {
                 case WEB -> {
                     var deleteMessageAction = new DeleteMessageForMeActionBuilder()
@@ -3993,7 +3992,7 @@ public final class WhatsAppClient {
         if (store.clientType() != WhatsAppClientType.MOBILE) {
             throw new IllegalArgumentException("Calling is only available for the mobile api");
         }
-        
+
         return store.findCallById(callId)
                 .map(this::stopCall)
                 .orElse(false);
@@ -4009,7 +4008,7 @@ public final class WhatsAppClient {
         if (store.clientType() != WhatsAppClientType.MOBILE) {
             throw new IllegalArgumentException("Calling is only available for the mobile api");
         }
-        
+
         if (Objects.equals(call.callerJid().user(), jidOrThrowError().user())) {
             var rejectNode = new NodeBuilder()
                     .description("terminate")
@@ -4533,7 +4532,7 @@ public final class WhatsAppClient {
                 .map(jid -> jid.hasServer(JidServer.bot()) && isMessage ? MetaBots.translate(jid) : jid)
                 .ifPresent(receiptParticipant -> ackBuilder.attribute("recipient", receiptParticipant));
 
-        if(!isMessage) {
+        if (!isMessage) {
             node.getAttributeAsString("type")
                     .ifPresent(type -> ackBuilder.attribute("type", type));
         }
@@ -4602,7 +4601,7 @@ public final class WhatsAppClient {
                 .attribute("xmlns", "encrypt")
                 .content(registration, type, identity, list, skey);
         sendNode(queryRequest);
-        for(var preKey : preKeys) {
+        for (var preKey : preKeys) {
             store.addPreKey(preKey);
         }
     }
@@ -4612,16 +4611,16 @@ public final class WhatsAppClient {
                 .description("receipt")
                 .attribute("id", id);
 
-        if(fromMe) {
+        if (fromMe) {
             receiptBuilder.attribute("type", "sender");
-        }else if(!store.automaticMessageReceipts()){
+        } else if (!store.automaticMessageReceipts()) {
             receiptBuilder.attribute("type", "inactive");
         }
 
-        if(parentJid.hasServer(JidServer.groupOrCommunity())) {
+        if (parentJid.hasServer(JidServer.groupOrCommunity())) {
             receiptBuilder.attribute("to", parentJid);
             receiptBuilder.attribute("participant", senderJid);
-        }else if(fromMe) {
+        } else if (fromMe) {
             receiptBuilder.attribute("to", parentJid);
             receiptBuilder.attribute("recipient", senderJid);
         } else {
@@ -4634,7 +4633,7 @@ public final class WhatsAppClient {
     public void sendReceipt(String id, Jid from, String type) {
         var me = store.jid()
                 .orElse(null);
-        if(me == null) {
+        if (me == null) {
             return;
         }
 

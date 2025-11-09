@@ -15,5 +15,5 @@ public sealed interface WhatsAppClientInfo
         };
     }
 
-    Version latest();
+    Version version();
 }

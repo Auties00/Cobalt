@@ -62,7 +62,7 @@ public final class ProtocolMessage implements ServerMessage {
 
     ProtocolMessage(ChatMessageKey key, Type protocolType, long ephemeralExpirationSeconds, long ephemeralSettingTimestampSeconds, HistorySyncNotification historySyncNotification, AppStateSyncKeyShare appStateSyncKeyShare, AppStateSyncKeyRequest appStateSyncKeyRequest, InitialSecurityNotificationSettingSync initialSecurityNotificationSettingSync, AppStateFatalExceptionNotification appStateFatalExceptionNotification, ChatDisappear disappearingMode, MessageContainer editedMessage, long timestampMilliseconds) {
         this.key = key;
-        this.protocolType = Objects.requireNonNull(protocolType, "protocolType cannot be null");
+        this.protocolType = protocolType;
         this.ephemeralExpirationSeconds = ephemeralExpirationSeconds;
         this.ephemeralSettingTimestampSeconds = ephemeralSettingTimestampSeconds;
         this.historySyncNotification = historySyncNotification;

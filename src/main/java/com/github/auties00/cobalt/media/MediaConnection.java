@@ -3,6 +3,7 @@ package com.github.auties00.cobalt.media;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.auties00.cobalt.exception.MediaDownloadException;
+import com.github.auties00.cobalt.exception.MediaException;
 import com.github.auties00.cobalt.exception.MediaUploadException;
 import com.github.auties00.cobalt.model.media.MediaProvider;
 import com.github.auties00.cobalt.util.Clock;
@@ -17,8 +18,10 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.GeneralSecurityException;
-import java.util.*;
+import java.util.Base64;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.SequencedCollection;
 
 public final class MediaConnection {
     private final String auth;
@@ -35,7 +38,7 @@ public final class MediaConnection {
         this.hosts = hosts;
     }
 
-    public boolean upload(MediaProvider provider, InputStream inputStream) {
+    public boolean upload(MediaProvider provider, InputStream inputStream) throws MediaException {
         Objects.requireNonNull(provider, "provider cannot be null");
         Objects.requireNonNull(inputStream, "inputStream cannot be null");
 
@@ -48,10 +51,7 @@ public final class MediaConnection {
         try(var client = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build()) {
-            var uploadStream = provider.mediaPath()
-                    .keyName()
-                    .map(keyName ->  MediaUploadInputStream.ofCiphertext(inputStream, keyName))
-                    .orElseGet(() -> MediaUploadInputStream.ofPlaintext(inputStream));
+            var uploadStream = MediaUploadInputStream.of(provider, inputStream);
             var tempFile = Files.createTempFile("upload", ".tmp");
             try (uploadStream; var outputStream = Files.newOutputStream(tempFile)) {
                 uploadStream.transferTo(outputStream);
@@ -122,12 +122,12 @@ public final class MediaConnection {
         }
     }
 
-    public InputStream download(MediaProvider provider) throws GeneralSecurityException {
+    public InputStream download(MediaProvider provider) throws MediaException {
         Objects.requireNonNull(provider, "provider cannot be null");
 
         var defaultUploadUrl = provider.mediaUrl();
         if(defaultUploadUrl.isPresent()) {
-            var result = MediaDownloadInputStream.of(provider, defaultUploadUrl.get());
+            var result = tryDownload(provider, defaultUploadUrl.get());
             if(result.isPresent()) {
                 return result.get();
             }
@@ -141,13 +141,38 @@ public final class MediaConnection {
             }
 
             var uploadUrl = "https://" + host.hostname() + defaultDirectPath;
-            var result = MediaDownloadInputStream.of(provider, uploadUrl);
+            var result = tryDownload(provider, uploadUrl);
             if(result.isPresent()) {
                 return result.get();
             }
         }
 
         throw new MediaDownloadException("Cannot download media: no hosts available");
+    }
+
+    public Optional<InputStream> tryDownload(MediaProvider provider, String uploadUrl) throws MediaException {
+        var client = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.ALWAYS)
+                .build();
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(uploadUrl))
+                .build();
+        try {
+            var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            if (response.statusCode() != 200) {
+                throw new MediaDownloadException("Cannot download media: status code " + response.statusCode());
+            }
+
+            var payloadLength = response.headers()
+                    .firstValueAsLong("Content-Length")
+                    .orElseThrow(() -> new MediaDownloadException("Unknown content length"));
+
+            var rawInputStream = response.body();
+            return Optional.of(new MediaDownloadInputStream(client, rawInputStream, payloadLength, provider));
+        } catch (Throwable throwable) {
+            client.close();
+            return Optional.empty();
+        }
     }
 
     public String auth() {

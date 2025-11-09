@@ -86,7 +86,6 @@ import java.util.concurrent.ConcurrentMap;
  * @see WhatsAppClient
  * @see WhatsappStoreSerializer
  */
-// TODO: Evaluate whether version should be stored here
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 @ProtobufMessage
 public final class WhatsappStore implements SignalProtocolStore {
@@ -799,8 +798,7 @@ public final class WhatsappStore implements SignalProtocolStore {
     final ConcurrentMap<Integer, Label> labels;
 
     @ProtobufProperty(index = 64, type = ProtobufType.MESSAGE)
-    volatile
-    Version clientVersion;
+    volatile Version clientVersion;
 
     @ProtobufProperty(index = 65, type = ProtobufType.MESSAGE)
     Version companionVersion;
@@ -2932,7 +2930,7 @@ public final class WhatsappStore implements SignalProtocolStore {
             synchronized (clientVersionLock) {
                 if(clientVersion == null) {
                     clientVersion = WhatsAppClientInfo.of(device.platform())
-                            .latest();
+                            .version();
                 }
             }
         }
@@ -2940,7 +2938,6 @@ public final class WhatsappStore implements SignalProtocolStore {
     }
 
     public void setClientVersion(Version clientVersion) {
-        Objects.requireNonNull(clientVersion, "clientVersion cannot be null");
         this.clientVersion = clientVersion;
     }
 
@@ -2949,7 +2946,6 @@ public final class WhatsappStore implements SignalProtocolStore {
     }
 
     public void setCompanionVersion(Version companionVersion) {
-        Objects.requireNonNull(companionVersion, "companionVersion cannot be null");
         this.companionVersion = companionVersion;
     }
 }

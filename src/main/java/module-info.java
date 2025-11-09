@@ -30,6 +30,9 @@ module com.github.auties00.cobalt {
     // Client
     exports com.github.auties00.cobalt.client;
 
+    // Exception
+    exports com.github.auties00.cobalt.exception;
+
     // Node
     exports com.github.auties00.cobalt.node;
 

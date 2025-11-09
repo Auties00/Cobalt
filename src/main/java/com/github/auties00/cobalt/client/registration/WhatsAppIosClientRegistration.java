@@ -17,7 +17,7 @@ public final class WhatsAppIosClientRegistration extends WhatsAppMobileClientReg
         return HttpRequest.newBuilder()
                 .uri(URI.create("%s%s".formatted(MOBILE_REGISTRATION_ENDPOINT, path)))
                 .POST(HttpRequest.BodyPublishers.ofString("ENC=" + body))
-                .header("User-Agent", store.device().toUserAgent())
+                .header("User-Agent", store.device().toUserAgent(store.clientVersion()))
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .build();
     }
