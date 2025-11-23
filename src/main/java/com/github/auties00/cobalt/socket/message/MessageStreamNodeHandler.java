@@ -338,7 +338,7 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
                         chatMessageKey.id(),
                         chatMessageKey.chatJid(),
                         chatMessageKey.senderJid().orElse(null),
-                        chatMessageKey.fromMe()
+                        infoNode.hasAttribute("category", "peer")
                 );
             }
         }

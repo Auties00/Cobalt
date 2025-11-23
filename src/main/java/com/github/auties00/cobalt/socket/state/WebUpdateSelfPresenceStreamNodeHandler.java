@@ -15,27 +15,12 @@ public final class WebUpdateSelfPresenceStreamNodeHandler extends SocketStream.H
 
     @Override
     public void handle(Node node) {
-        if (!whatsapp.store().automaticPresenceUpdates()) {
-            if(!whatsapp.store().online()) {
-                var presence = new NodeBuilder()
-                        .description("presence")
-                        .attribute("name", whatsapp.store().name())
-                        .attribute("type", "unavailable")
-                        .build();
-                whatsapp.sendNodeWithNoResponse(presence);
-            }
-        }else {
-            var presence = new NodeBuilder()
-                    .description("presence")
-                    .attribute("name", whatsapp.store().name())
-                    .attribute("type", "available")
-                    .build();
-            whatsapp.sendNodeWithNoResponse(presence);
-            onPresenceUpdated();
-        }
-    }
-
-    private void onPresenceUpdated() {
+        var presence = new NodeBuilder()
+                .description("presence")
+                .attribute("name", whatsapp.store().name())
+                .attribute("type", "available")
+                .build();
+        whatsapp.sendNodeWithNoResponse(presence);
         whatsapp.store().setOnline(true);
         whatsapp.store()
                 .jid()

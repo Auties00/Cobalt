@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.socket.notification;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.client.json.response.NewsletterLeaveResponse;
-import com.github.auties00.cobalt.client.json.response.NewsletterMuteResponse;
-import com.github.auties00.cobalt.client.json.response.NewsletterResponse;
-import com.github.auties00.cobalt.client.json.response.NewsletterStateResponse;
+import com.github.auties00.cobalt.node.mex.json.response.NewsletterLeaveResponse;
+import com.github.auties00.cobalt.node.mex.json.response.NewsletterMuteResponse;
+import com.github.auties00.cobalt.node.mex.json.response.NewsletterResponse;
+import com.github.auties00.cobalt.node.mex.json.response.NewsletterStateResponse;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.chat.ChatEphemeralTimer;
 import com.github.auties00.cobalt.model.info.ChatMessageInfoBuilder;

@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.client.json.request;
+package com.github.auties00.cobalt.node.mex.json.request;
 
 import com.alibaba.fastjson2.JSONWriter;
 import com.github.auties00.cobalt.model.jid.Jid;

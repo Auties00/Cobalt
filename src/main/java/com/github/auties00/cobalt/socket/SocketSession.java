@@ -90,35 +90,28 @@ public abstract sealed class SocketSession {
 
     public abstract void connect(Consumer<ByteBuffer> onMessage);
 
-    private void connect(InetSocketAddress endpoint, boolean tunnelled, Consumer<ByteBuffer> onMessage) {
+    private ConnectionContext openConnection(InetSocketAddress endpoint, boolean tunnelled, Consumer<ByteBuffer> onMessage) {
         if(isConnected()) {
-            return;
+            throw new IllegalStateException("Socket is already connected");
         }
 
         try {
             this.channel = SocketChannel.open();
             channel.configureBlocking(false);
-
             var ctx = new ConnectionContext(tunnelled, handshakePrologue, handshakePayload, noiseKeyPair, onMessage);
-
-            openConnection(endpoint, ctx);
-
-            startHandshake(ctx);
+            if (channel.connect(endpoint)) {
+                CentralSelector.INSTANCE.register(channel, SelectionKey.OP_READ, ctx);
+            } else {
+                CentralSelector.INSTANCE.register(channel, SelectionKey.OP_CONNECT, ctx);
+                synchronized (ctx.connectionLock) {
+                    ctx.connectionLock.wait();
+                }
+            }
+            ctx.connected = true;
+            return ctx;
         }catch (Throwable exception) {
             throw new RuntimeException("Cannot connect to socket", exception);
         }
-    }
-
-    private void openConnection(InetSocketAddress endpoint, ConnectionContext ctx) throws IOException, InterruptedException {
-        if (channel.connect(endpoint)) {
-            CentralSelector.INSTANCE.register(channel, SelectionKey.OP_READ, ctx);
-        } else {
-            CentralSelector.INSTANCE.register(channel, SelectionKey.OP_CONNECT, ctx);
-            synchronized (ctx.connectionLock) {
-                ctx.connectionLock.wait();
-            }
-        }
-        ctx.connected = true;
     }
 
     private void startHandshake(ConnectionContext ctx) {
@@ -231,7 +224,8 @@ public abstract sealed class SocketSession {
         @Override
         public void connect(Consumer<ByteBuffer> onMessage) {
             var endpoint = new InetSocketAddress(HOST_NAME, PORT); // Don't resolve this statically
-            super.connect(endpoint, true, onMessage);
+            var ctx = super.openConnection(endpoint, true, onMessage);
+            super.startHandshake(ctx);
         }
     }
 
@@ -262,17 +256,18 @@ public abstract sealed class SocketSession {
                     default -> throw new InternalError();
                 };
             }
-            super.connect(new InetSocketAddress(host, port), false, onMessage);
+            var ctx = super.openConnection(new InetSocketAddress(host, port), false, onMessage);
             authenticate();
-            if(!CentralSelector.INSTANCE.markReady(channel)) {
-                throw new IllegalStateException("Failed to authenticate with proxy: rejected");
-            }
+            super.startHandshake(ctx);
         }
 
         private void authenticate() {
             try {
                 sendAuthenticationRequest();
                 handleAuthenticationResponse();
+                if(!CentralSelector.INSTANCE.markReady(channel)) {
+                    throw new IllegalStateException("Failed to authenticate with proxy: rejected");
+                }
             }catch (IOException exception) {
                 throw new UncheckedIOException("Failed to authenticate with proxy", exception);
             }
@@ -440,17 +435,18 @@ public abstract sealed class SocketSession {
         public void connect(Consumer<ByteBuffer> onMessage) {
             var proxyHost = proxy.getHost();
             var proxyPort = proxy.getPort() == -1 ? 1080 : proxy.getPort();
-            super.connect(new InetSocketAddress(proxyHost, proxyPort), false, onMessage);
+            var ctx = super.openConnection(new InetSocketAddress(proxyHost, proxyPort), false, onMessage);
             authenticate();
-            if(!CentralSelector.INSTANCE.markReady(channel)) {
-                throw new IllegalStateException("Failed to authenticate with proxy: rejected");
-            }
+            super.startHandshake(ctx);
         }
 
         private void authenticate() {
             try {
                 sendAuthenticationRequest();
                 handleAuthenticationResponse();
+                if(!CentralSelector.INSTANCE.markReady(channel)) {
+                    throw new IllegalStateException("Failed to authenticate with proxy: rejected");
+                }
             }catch (IOException exception) {
                 throw new UncheckedIOException("Failed to authenticate with proxy", exception);
             }

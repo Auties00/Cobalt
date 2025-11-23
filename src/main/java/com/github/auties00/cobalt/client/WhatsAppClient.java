@@ -1,11 +1,9 @@
 package com.github.auties00.cobalt.client;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.client.info.WhatsAppClientInfo;
-import com.github.auties00.cobalt.client.json.request.CommunityRequests;
-import com.github.auties00.cobalt.client.json.request.NewsletterRequests;
-import com.github.auties00.cobalt.client.json.request.UserRequests;
-import com.github.auties00.cobalt.client.json.response.*;
+import com.github.auties00.cobalt.node.mex.json.request.CommunityRequests;
+import com.github.auties00.cobalt.node.mex.json.request.NewsletterRequests;
+import com.github.auties00.cobalt.node.mex.json.request.UserRequests;
 import com.github.auties00.cobalt.model.action.*;
 import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.business.*;
@@ -35,6 +33,7 @@ import com.github.auties00.cobalt.model.setting.Setting;
 import com.github.auties00.cobalt.model.sync.*;
 import com.github.auties00.cobalt.model.sync.RecordSync.Operation;
 import com.github.auties00.cobalt.node.*;
+import com.github.auties00.cobalt.node.mex.json.response.*;
 import com.github.auties00.cobalt.socket.SocketRequest;
 import com.github.auties00.cobalt.socket.SocketSession;
 import com.github.auties00.cobalt.socket.SocketStream;
@@ -4606,12 +4605,18 @@ public final class WhatsAppClient {
         }
     }
 
-    public void sendReceipt(String id, Jid parentJid, Jid senderJid, boolean fromMe) {
+    public void sendReceipt(String id, Jid parentJid, Jid senderJid, boolean peer) {
+        var me = store.jid()
+                .orElseThrow(() -> new IllegalStateException("No jid"));
+        var fromMe = Objects.equals(me, senderJid);
+
         var receiptBuilder = new NodeBuilder()
                 .description("receipt")
                 .attribute("id", id);
 
-        if (fromMe) {
+        if(peer) {
+            receiptBuilder.attribute("type", "peer_msg");
+        } else if (fromMe) {
             receiptBuilder.attribute("type", "sender");
         } else if (!store.automaticMessageReceipts()) {
             receiptBuilder.attribute("type", "inactive");

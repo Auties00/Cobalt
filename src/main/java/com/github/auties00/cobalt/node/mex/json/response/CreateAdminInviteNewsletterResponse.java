@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.client.json.response;
+package com.github.auties00.cobalt.node.mex.json.response;
 
 import com.alibaba.fastjson2.JSON;
 import com.github.auties00.cobalt.model.jid.Jid;
