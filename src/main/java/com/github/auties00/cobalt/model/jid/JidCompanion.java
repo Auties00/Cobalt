@@ -12,10 +12,10 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 @ProtobufMessage
-public final class JidDevice {
-    private static final List<JidDevice> IOS_DEVICES = List.of(
+public final class JidCompanion {
+    private static final List<JidCompanion> IOS_DEVICES = List.of(
             // --- iPhone 7 --- (Supports iOS 10-15)
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 7",
                     "Apple",
                     null,
@@ -24,7 +24,7 @@ public final class JidDevice {
                     "iPhone9,3",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 7",
                     "Apple",
                     null,
@@ -35,7 +35,7 @@ public final class JidDevice {
             ),
 
             // --- iPhone 7 Plus --- (Supports iOS 10-15)
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 7 Plus",
                     "Apple",
                     null,
@@ -44,7 +44,7 @@ public final class JidDevice {
                     "iPhone9,4",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 7 Plus",
                     "Apple",
                     null,
@@ -55,7 +55,7 @@ public final class JidDevice {
             ),
 
             // --- iPhone 8 --- (Supports iOS 11-16)
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 8",
                     "Apple",
                     null,
@@ -64,7 +64,7 @@ public final class JidDevice {
                     "iPhone10,4",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 8",
                     "Apple",
                     null,
@@ -73,7 +73,7 @@ public final class JidDevice {
                     "iPhone10,4",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 8",
                     "Apple",
                     null,
@@ -82,7 +82,7 @@ public final class JidDevice {
                     "iPhone10,4",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 8",
                     "Apple",
                     null,
@@ -93,7 +93,7 @@ public final class JidDevice {
             ),
 
             // --- iPhone 8 Plus --- (Supports iOS 11-16)
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 8 Plus",
                     "Apple",
                     null,
@@ -102,7 +102,7 @@ public final class JidDevice {
                     "iPhone10,5",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 8 Plus",
                     "Apple",
                     null,
@@ -111,7 +111,7 @@ public final class JidDevice {
                     "iPhone10,5",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone 8 Plus",
                     "Apple",
                     null,
@@ -122,7 +122,7 @@ public final class JidDevice {
             ),
 
             // --- iPhone X --- (Supports iOS 11-16)
-            new JidDevice(
+            new JidCompanion(
                     "iPhone X",
                     "Apple",
                     null,
@@ -131,7 +131,7 @@ public final class JidDevice {
                     "iPhone10,6",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone X",
                     "Apple",
                     null,
@@ -140,7 +140,7 @@ public final class JidDevice {
                     "iPhone10,6",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone X",
                     "Apple",
                     null,
@@ -151,7 +151,7 @@ public final class JidDevice {
             ),
 
             // --- iPhone XR --- (Supports iOS 12-17)
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XR",
                     "Apple",
                     null,
@@ -160,7 +160,7 @@ public final class JidDevice {
                     "iPhone11,8",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XR",
                     "Apple",
                     null,
@@ -169,7 +169,7 @@ public final class JidDevice {
                     "iPhone11,8",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XR",
                     "Apple",
                     null,
@@ -178,7 +178,7 @@ public final class JidDevice {
                     "iPhone11,8",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XR",
                     "Apple",
                     null,
@@ -189,7 +189,7 @@ public final class JidDevice {
             ),
 
             // --- iPhone XS --- (Supports iOS 12-17)
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XS",
                     "Apple",
                     null,
@@ -198,7 +198,7 @@ public final class JidDevice {
                     "iPhone11,2",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XS",
                     "Apple",
                     null,
@@ -207,7 +207,7 @@ public final class JidDevice {
                     "iPhone11,2",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XS",
                     "Apple",
                     null,
@@ -216,7 +216,7 @@ public final class JidDevice {
                     "iPhone11,2",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XS",
                     "Apple",
                     null,
@@ -227,7 +227,7 @@ public final class JidDevice {
             ),
 
             // --- iPhone XS Max --- (Supports iOS 12-17)
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XS Max",
                     "Apple",
                     null,
@@ -236,7 +236,7 @@ public final class JidDevice {
                     "iPhone11,6",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XS Max",
                     "Apple",
                     null,
@@ -245,7 +245,7 @@ public final class JidDevice {
                     "iPhone11,6",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XS Max",
                     "Apple",
                     null,
@@ -254,7 +254,7 @@ public final class JidDevice {
                     "iPhone11,6",
                     WhatsAppClientType.MOBILE
             ),
-            new JidDevice(
+            new JidCompanion(
                     "iPhone XS Max",
                     "Apple",
                     null,
@@ -286,7 +286,7 @@ public final class JidDevice {
     @ProtobufProperty(index = 7, type = ProtobufType.ENUM)
     final WhatsAppClientType clientType;
 
-    JidDevice(
+    JidCompanion(
             String model,
             String manufacturer,
             PlatformType platform,
@@ -304,8 +304,8 @@ public final class JidDevice {
         this.clientType = clientType;
     }
 
-    public static JidDevice web() {
-        return new JidDevice(
+    public static JidCompanion web() {
+        return new JidCompanion(
                 "Surface Pro 4",
                 "Microsoft",
                 PlatformType.MACOS,
@@ -316,9 +316,9 @@ public final class JidDevice {
         );
     }
 
-    public static JidDevice ios(boolean business) {
+    public static JidCompanion ios(boolean business) {
         var device = IOS_DEVICES.get(ThreadLocalRandom.current().nextInt(IOS_DEVICES.size()));
-        return new JidDevice(
+        return new JidCompanion(
                 device.model,
                 device.manufacturer,
                 business ? PlatformType.IOS_BUSINESS : PlatformType.IOS,
@@ -329,9 +329,9 @@ public final class JidDevice {
         );
     }
 
-    public static JidDevice android(boolean business) {
+    public static JidCompanion android(boolean business) {
         var model = "Pixel_" + ThreadLocalRandom.current().nextInt(2, 9);
-        return new JidDevice(
+        return new JidCompanion(
                 model,
                 "Google",
                 business ? PlatformType.ANDROID_BUSINESS : PlatformType.ANDROID,
@@ -372,7 +372,7 @@ public final class JidDevice {
         }
     }
 
-    public JidDevice toPersonal() {
+    public JidCompanion toPersonal() {
         if (!platform.isBusiness()) {
             return this;
         }
@@ -380,7 +380,7 @@ public final class JidDevice {
         return withPlatform(platform.toPersonal());
     }
 
-    public JidDevice toBusiness() {
+    public JidCompanion toBusiness() {
         if (platform.isBusiness()) {
             return this;
         }
@@ -388,8 +388,8 @@ public final class JidDevice {
         return withPlatform(platform.toBusiness());
     }
 
-    public JidDevice withPlatform(PlatformType platform) {
-        return new JidDevice(
+    public JidCompanion withPlatform(PlatformType platform) {
+        return new JidCompanion(
                 model,
                 manufacturer,
                 Objects.requireNonNullElse(platform, this.platform),
@@ -426,7 +426,7 @@ public final class JidDevice {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof JidDevice that
+        return o instanceof JidCompanion that
                 && Objects.equals(model, that.model)
                 && Objects.equals(manufacturer, that.manufacturer)
                 && platform == that.platform
@@ -443,7 +443,7 @@ public final class JidDevice {
 
     @Override
     public String toString() {
-        return "CompanionDevice[" +
+        return "JidCompanion[" +
                 "model='" + model + '\'' +
                 ", manufacturer='" + manufacturer + '\'' +
                 ", platform=" + platform +

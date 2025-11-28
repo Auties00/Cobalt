@@ -1,6 +1,6 @@
 import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.client.WhatsAppClientSixPartsKeys;
-import com.github.auties00.cobalt.model.jid.JidDevice;
+import com.github.auties00.cobalt.model.jid.JidCompanion;
 
 void main() {
     var sixParts = promptSixParts();
@@ -9,7 +9,7 @@ void main() {
             .mobileClient()
             .loadConnection(WhatsAppClientSixPartsKeys.of(sixParts))
             // .proxy(URI.create("http://username:password@host:port/")) Remember to set an HTTP proxy
-            .device(JidDevice.ios(business)) // Make sure to select the correct account type(business or personal) or you'll get error 401
+            .device(JidCompanion.ios(business)) // Make sure to select the correct account type(business or personal) or you'll get error 401
             .registered()
             .orElseThrow()
             .addNodeReceivedListener((_, incoming) -> System.out.printf("Received node %s%n", incoming))

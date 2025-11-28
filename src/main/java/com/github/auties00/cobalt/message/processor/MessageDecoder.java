@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.socket.message;
+package com.github.auties00.cobalt.message.processor;
 
 import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
@@ -12,12 +12,9 @@ import com.github.auties00.libsignal.protocol.SignalPreKeyMessage;
 import com.github.auties00.libsignal.protocol.SignalSenderKeyDistributionMessage;
 import it.auties.protobuf.stream.ProtobufInputStream;
 
-public final class MessageDecoder {
-    private static final String SKMSG = "skmsg";
-    private static final String PKMSG = "pkmsg";
-    private static final String MSG = "msg";
-    private static final String MSMG = "msmsg";
+import static com.github.auties00.cobalt.message.processor.MessageConstants.*;
 
+public final class MessageDecoder {
     private final SignalSessionCipher sessionCipher;
     private final SignalGroupCipher groupCipher;
 

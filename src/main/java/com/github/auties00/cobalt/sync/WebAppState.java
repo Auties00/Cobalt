@@ -3,7 +3,6 @@ package com.github.auties00.cobalt.sync;
 import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.exception.*;
 import com.github.auties00.cobalt.sync.crypto.MutationKeys;
-import com.github.auties00.cobalt.sync.error.ExponentialBackoffScheduler;
 import com.github.auties00.cobalt.sync.crypto.MutationLTHash;
 import com.github.auties00.cobalt.model.sync.*;
 import com.github.auties00.cobalt.sync.crypto.MutationIntegrityVerifier;
@@ -19,7 +18,6 @@ import it.auties.protobuf.stream.ProtobufInputStream;
 
 import java.io.Closeable;
 import java.io.InputStream;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -50,7 +48,7 @@ public final class WebAppState implements Closeable {
     private final MutationResponseParser responseParser;
     private final MutationIntegrityVerifier integrityVerifier;
     private final WebAppStateHandlerRegistry handlerRegistry;
-    private final ExponentialBackoffScheduler retryScheduler;
+    private final WebAppStateBackoffScheduler retryScheduler;
 
     /**
      * Creates a new WebAppStateManager instance.
@@ -64,7 +62,7 @@ public final class WebAppState implements Closeable {
         this.responseParser = new MutationResponseParser();
         this.handlerRegistry = new WebAppStateHandlerRegistry();
         this.integrityVerifier = new MutationIntegrityVerifier(store);
-        this.retryScheduler = new ExponentialBackoffScheduler();
+        this.retryScheduler = new WebAppStateBackoffScheduler();
     }
 
     /**
@@ -143,7 +141,7 @@ public final class WebAppState implements Closeable {
         try {
             // 1. Get pending mutations
             var pending = whatsapp.store()
-                    .getPendingMutations(patchType);
+                    .findPendingMutations(patchType);
 
             // 2. Build request
             var request = requestBuilder.buildSyncRequest(patchType, pending);
@@ -334,7 +332,7 @@ public final class WebAppState implements Closeable {
     private SequencedCollection<DecryptedMutation.Trusted> resolveConflicts(SequencedCollection<DecryptedMutation.Trusted> remoteMutations, PatchType collectionName) {
         // Create index for quick lookup of pending mutations
         var pendingByIndex = whatsapp.store()
-                .getPendingMutations(collectionName)
+                .findPendingMutations(collectionName)
                 .stream()
                 .map(PendingMutation::mutation)
                 .collect(Collectors.toUnmodifiableMap(DecryptedMutation.Trusted::index, Function.identity()));

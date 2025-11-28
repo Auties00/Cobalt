@@ -110,4 +110,8 @@ public final class SecureBytes {
         }
         return result;
     }
+
+    public static int nextInt(int bound) {
+        return RANDOM.nextInt(bound);
+    }
 }

@@ -1,11 +1,11 @@
-package com.github.auties00.cobalt.sync.error;
+package com.github.auties00.cobalt.sync;
 
 import com.github.auties00.cobalt.model.sync.PatchType;
 
 import java.io.Closeable;
 import java.util.concurrent.*;
 
-public final class ExponentialBackoffScheduler implements Closeable {
+public final class WebAppStateBackoffScheduler implements Closeable {
     private static final int MAX_RETRIES = 5;
     private static final long BASE_DELAY_MS = 1000;
     private static final long MAX_DELAY_MS = 60_000;
@@ -14,7 +14,7 @@ public final class ExponentialBackoffScheduler implements Closeable {
 
     private final ConcurrentHashMap<PatchType, CompletableFuture<?>> pendingRetries;
 
-    public ExponentialBackoffScheduler() {
+    public WebAppStateBackoffScheduler() {
         this.pendingRetries = new ConcurrentHashMap<>();
     }
 
@@ -31,6 +31,7 @@ public final class ExponentialBackoffScheduler implements Closeable {
         var delayMs = calculateBackoff(attemptNumber);
 
         // Schedule the retry
+        // TODO: Can this be improved?
         var delayedExecutor = CompletableFuture.delayedExecutor(delayMs, TimeUnit.MILLISECONDS, Thread::startVirtualThread);
         var future = CompletableFuture.runAsync(() -> {
             pendingRetries.remove(collectionName);

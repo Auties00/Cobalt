@@ -3,7 +3,7 @@ package com.github.auties00.cobalt.client;
 import com.github.auties00.cobalt.client.registration.WhatsAppMobileClientRegistration;
 import com.github.auties00.cobalt.model.auth.Version;
 import com.github.auties00.cobalt.model.business.BusinessCategory;
-import com.github.auties00.cobalt.model.jid.JidDevice;
+import com.github.auties00.cobalt.model.jid.JidCompanion;
 import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.store.WhatsappStoreBuilder;
 import com.github.auties00.cobalt.store.WhatsappStoreSerializer;
@@ -167,8 +167,8 @@ public sealed class WhatsAppClientBuilder {
 
         private static WhatsappStore newStore(UUID id, Long phoneNumber, WhatsAppClientType clientType, SignalIdentityKeyPair identityKeyPair, SignalIdentityKeyPair noiseKeyPair, boolean registered, byte[] identityId) {
             var device = switch (clientType) {
-                case WEB -> JidDevice.web();
-                case MOBILE -> JidDevice.ios(false);
+                case WEB -> JidCompanion.web();
+                case MOBILE -> JidCompanion.ios(false);
             };
             return new WhatsappStoreBuilder()
                     .uuid(Objects.requireNonNullElseGet(id, UUID::randomUUID))
@@ -435,7 +435,7 @@ public sealed class WhatsAppClientBuilder {
          * @param device the companion device, can be null
          * @return the same instance for chaining
          */
-        public Options device(JidDevice device) {
+        public Options device(JidCompanion device) {
             store.setDevice(device);
             return this;
         }
@@ -510,7 +510,7 @@ public sealed class WhatsAppClientBuilder {
              * @return the same instance for chaining
              */
             @Override
-            public Web device(JidDevice device) {
+            public Web device(JidCompanion device) {
                 return (Web) super.device(device);
             }
 
@@ -648,7 +648,7 @@ public sealed class WhatsAppClientBuilder {
              * @return the same instance for chaining
              */
             @Override
-            public Mobile device(JidDevice device) {
+            public Mobile device(JidCompanion device) {
                 store.setDevice(device);
                 return this;
             }

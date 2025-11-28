@@ -380,6 +380,36 @@ public sealed interface Node {
                 .stream();
     }
 
+    default Optional<Integer> toContentInt() {
+        return toContentString().map(str -> {
+            try {
+                return Integer.parseInt(str);
+            }catch (NumberFormatException _) {
+                return null;
+            }
+        });
+    }
+
+    default Stream<Integer> streamContentInt() {
+        return toContentInt()
+                .stream();
+    }
+
+    default Optional<Long> toContentLong() {
+        return toContentString().map(str -> {
+            try {
+                return Long.parseLong(str);
+            }catch (NumberFormatException _) {
+                return null;
+            }
+        });
+    }
+
+    default Stream<Long> streamContentLong() {
+        return toContentLong()
+                .stream();
+    }
+
     /**
      * Converts the content of this node to a jid, if possible.
      *

@@ -30,6 +30,8 @@ public final class Jid implements JidProvider {
     private static final Jid LID = new Jid(null, JidServer.lid(), 0, 0);
     private static final Jid NEWSLETTER = new Jid(null, JidServer.newsletter(), 0, 0);
     private static final Jid BOT = new Jid(null, JidServer.bot(), 0, 0);
+    private static final Jid HOSTED = new Jid(null, JidServer.hosted(), 0, 0);
+    private static final Jid HOSTED_LID = new Jid(null, JidServer.hostedLid(), 0, 0);
 
     private static final Jid OFFICIAL_SURVEYS_ACCOUNT = new Jid("16505361212", JidServer.user(), 0, 0);
     private static final Jid OFFICIAL_BUSINESS_ACCOUNT = new Jid("16505361212", JidServer.legacyUser(), 0, 0);
@@ -85,8 +87,16 @@ public final class Jid implements JidProvider {
         return NEWSLETTER;
     }
 
-    public static Jid Server() {
+    public static Jid botServer() {
         return BOT;
+    }
+
+    public static Jid hostedServer() {
+        return HOSTED;
+    }
+
+    public static Jid hostedLidServer() {
+        return HOSTED_LID;
     }
 
     public static Jid officialSurveysAccount() {
@@ -153,6 +163,8 @@ public final class Jid implements JidProvider {
             case LID -> LID;
             case NEWSLETTER -> NEWSLETTER;
             case BOT -> BOT;
+            case HOSTED -> HOSTED;
+            case HOSTED_LID -> HOSTED_LID;
         };
     }
 

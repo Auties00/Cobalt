@@ -331,7 +331,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             addMessageForGroupStubType(timestamp, fromChat, participantJid, MessageInfoStubType.GROUP_CHANGE_ICON, node);
             return;
         }
-        if(!whatsapp.store().hasContact(fromJid)) {
+        if(whatsapp.store().findContactByJid(fromJid).isEmpty()) {
             var contact = whatsapp.store().addNewContact(fromJid);
             for (var listener : whatsapp.store().listeners()) {
                 Thread.startVirtualThread(() -> listener.onNewContact(whatsapp, contact));

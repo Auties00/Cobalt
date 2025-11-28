@@ -1,9 +1,7 @@
 package com.github.auties00.cobalt.client;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.node.mex.json.request.CommunityRequests;
-import com.github.auties00.cobalt.node.mex.json.request.NewsletterRequests;
-import com.github.auties00.cobalt.node.mex.json.request.UserRequests;
+import com.github.auties00.cobalt.message.MessageSender;
 import com.github.auties00.cobalt.model.action.*;
 import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.business.*;
@@ -33,6 +31,9 @@ import com.github.auties00.cobalt.model.setting.Setting;
 import com.github.auties00.cobalt.model.sync.*;
 import com.github.auties00.cobalt.model.sync.RecordSync.Operation;
 import com.github.auties00.cobalt.node.*;
+import com.github.auties00.cobalt.node.mex.json.request.CommunityRequests;
+import com.github.auties00.cobalt.node.mex.json.request.NewsletterRequests;
+import com.github.auties00.cobalt.node.mex.json.request.UserRequests;
 import com.github.auties00.cobalt.node.mex.json.response.*;
 import com.github.auties00.cobalt.socket.SocketRequest;
 import com.github.auties00.cobalt.socket.SocketSession;
@@ -98,7 +99,9 @@ public final class WhatsAppClient {
 
     private final WhatsappStore store;
     private final WhatsAppClientErrorHandler errorHandler;
+    private final WhatsAppClientMessagePreviewHandler messagePreviewHandler;
     private final WebAppState webAppState;
+    private final MessageSender messageSender;
 
     private SocketSession socketSession;
     private final SocketStream socketStream;
@@ -112,8 +115,10 @@ public final class WhatsAppClient {
             throw new IllegalArgumentException("webVerificationHandler cannot be null when client type is WEB");
         }
         this.webAppState = new WebAppState(this);
+        this.messageSender = new MessageSender(this);
         this.pendingSocketRequests = new ConcurrentHashMap<>();
         this.socketStream = new SocketStream(this, webVerificationHandler);
+        this.messagePreviewHandler = messagePreviewHandler;
     }
 
     /**
@@ -135,6 +140,11 @@ public final class WhatsAppClient {
     public WhatsappStore store() {
         return store;
     }
+
+    public WhatsAppClientMessagePreviewHandler messagePreviewHandler() {
+        return messagePreviewHandler;
+    }
+
     //</editor-fold>
 
     //<editor-fold desc="Connection">
@@ -1658,7 +1668,7 @@ public final class WhatsAppClient {
         if (compose) {
             changePresence(recipient, COMPOSING);
         }
-        sendMessage0(info, Map.of());
+        messageSender.sendMessage(info, Map.of());
         if (compose) {
             var pausedNode = new NodeBuilder()
                     .description("paused")
@@ -1681,12 +1691,19 @@ public final class WhatsAppClient {
      * @return a CompletableFuture
      */
     public NewsletterMessageInfo sendMessage(NewsletterMessageInfo info) {
-        return sendMessage0(info, Map.of());
+        messageSender.sendMessage(info, Map.of());
+        return info;
     }
 
-    // TODO: Implement message sending
-    private <T extends MessageInfo> T sendMessage0(T info, Map<String, ?> attributes) {
-        throw new UnsupportedOperationException("Not yet implemented");
+    private String determineMessageType(MessageContainer message) {
+        return switch (message.content().type()) {
+            case IMAGE -> "image";
+            case VIDEO -> "video";
+            case AUDIO -> "audio";
+            case DOCUMENT -> "document";
+            case STICKER -> "sticker";
+            default -> "text";
+        };
     }
 
 
@@ -1921,7 +1938,7 @@ public final class WhatsAppClient {
                         .status(MessageStatus.PENDING)
                         .build();
                 info.setNewsletter(oldNewsletterInfo.newsletter());
-                sendMessage0(info, Map.of("edit", getEditBit(info)));
+                messageSender.sendMessage(info, Map.of("edit", getEditBit(info)));
                 return oldMessage;
             }
             case ChatMessageInfo oldChatInfo -> {
@@ -1939,7 +1956,7 @@ public final class WhatsAppClient {
                         .timestampSeconds(Clock.nowSeconds())
                         .broadcast(oldChatInfo.chatJid().hasServer(JidServer.broadcast()))
                         .build();
-                sendMessage0(info, Map.of("edit", getEditBit(info)));
+                messageSender.sendMessage(info, Map.of("edit", getEditBit(info)));
                 return oldMessage;
             }
             default -> throw new IllegalStateException("Unsupported edit: " + oldMessage);
@@ -1960,7 +1977,7 @@ public final class WhatsAppClient {
                 .status(MessageStatus.PENDING)
                 .build();
         revokeInfo.setNewsletter(info.newsletter());
-        sendMessage0(info, Map.of("edit", getEditBit(info)));
+        messageSender.sendMessage(info, Map.of("edit", getEditBit(info)));
         ;
     }
 
@@ -1991,7 +2008,7 @@ public final class WhatsAppClient {
                     .message(MessageContainer.of(message))
                     .timestampSeconds(Clock.nowSeconds())
                     .build();
-            sendMessage0(info, Map.of("edit", getEditBit(info)));
+            messageSender.sendMessage(info, Map.of("edit", getEditBit(info)));
         } else {
             switch (store.clientType()) {
                 case WEB -> {
@@ -3742,7 +3759,7 @@ public final class WhatsAppClient {
     // TODO: Verify if this works on web as well
     public Collection<Jid> addContacts(JidProvider... contacts) {
         var users = Arrays.stream(contacts)
-                .filter(entry -> entry.toJid().hasServer(JidServer.user()) && !store.hasContact(entry))
+                .filter(entry -> entry.toJid().hasServer(JidServer.user()) && store.findContactByJid(entry).isEmpty())
                 .map(contact -> contact.toJid().toPhoneNumber())
                 .flatMap(Optional::stream)
                 .map(phoneNumber -> {
