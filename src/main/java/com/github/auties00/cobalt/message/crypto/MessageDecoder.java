@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.message.processor;
+package com.github.auties00.cobalt.message.crypto;
 
 import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
@@ -12,8 +12,12 @@ import com.github.auties00.libsignal.protocol.SignalPreKeyMessage;
 import com.github.auties00.libsignal.protocol.SignalSenderKeyDistributionMessage;
 import it.auties.protobuf.stream.ProtobufInputStream;
 
-import static com.github.auties00.cobalt.message.processor.MessageConstants.*;
+import static com.github.auties00.cobalt.util.SignalProtocolConstants.*;
 
+/**
+ * Decoder for WhatsApp messages using Signal Protocol encryption.
+ * This is the counterpart to MessageEncoder for incoming messages.
+ */
 public final class MessageDecoder {
     private final SignalSessionCipher sessionCipher;
     private final SignalGroupCipher groupCipher;
@@ -25,7 +29,7 @@ public final class MessageDecoder {
 
     // TODO: Can everything here be streamed? I think it's possible but very hard
     public MessageContainer decode(ChatMessageKey messageKey, String type, byte[] encodedMessage) {
-        if(MSMG.equals(type)) {
+        if(MSMSG.equals(type)) {
             return MessageContainer.empty();
         }else {
             var result = switch (type) {

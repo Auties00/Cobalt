@@ -1,8 +1,7 @@
 package com.github.auties00.cobalt.message;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.message.processor.MessageAttributer;
-import com.github.auties00.cobalt.message.processor.MessageDecoder;
+import com.github.auties00.cobalt.message.crypto.MessageDecoder;
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificateSpec;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.info.*;
@@ -10,12 +9,25 @@ import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.message.model.*;
 import com.github.auties00.cobalt.model.message.server.SenderKeyDistributionMessage;
+import com.github.auties00.cobalt.model.message.standard.PollCreationMessage;
+import com.github.auties00.cobalt.model.message.standard.PollUpdateMessage;
+import com.github.auties00.cobalt.model.message.standard.ReactionMessage;
 import com.github.auties00.cobalt.model.newsletter.NewsletterReaction;
+import com.github.auties00.cobalt.model.poll.PollUpdateBuilder;
+import com.github.auties00.cobalt.model.poll.PollUpdateEncryptedOptionsSpec;
 import com.github.auties00.cobalt.node.Node;
+import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.libsignal.SignalProtocolAddress;
 import com.github.auties00.libsignal.groups.SignalSenderKeyName;
 import com.github.auties00.libsignal.protocol.SignalSenderKeyDistributionMessage;
 
+import javax.crypto.Cipher;
+import javax.crypto.KDF;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.HKDFParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,12 +37,10 @@ import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Locat
 public final class MessageReceiverService {
     private final WhatsAppClient whatsapp;
     private final MessageDecoder messageDecoder;
-    private final MessageAttributer messageAttributer;
 
     public MessageReceiverService(WhatsAppClient whatsapp) {
         this.whatsapp = whatsapp;
         this.messageDecoder = new MessageDecoder(whatsapp.store());
-        this.messageAttributer = new MessageAttributer(whatsapp.store());
     }
     
     public SequencedCollection<? extends MessageInfo> readMessages(Node node) {
@@ -66,7 +76,7 @@ public final class MessageReceiverService {
 
     public void validateMessages(Chat chat) {
         for(var message : chat.messages()) {
-            messageAttributer.attributeChatMessage(message);
+            attributeChatMessage(message);
         }
     }
 
@@ -265,7 +275,7 @@ public final class MessageReceiverService {
             info.message()
                     .senderKeyDistributionMessage()
                     .ifPresent(keyDistributionMessage -> handleSenderKeyDistributionMessage(keyDistributionMessage, info.senderJid().toSignalAddress()));
-            messageAttributer.attributeChatMessage(info);
+            attributeChatMessage(info);
             return Stream.of(info);
         } catch (Throwable throwable) {
             whatsapp.handleFailure(MESSAGE, throwable);
@@ -316,5 +326,161 @@ public final class MessageReceiverService {
         var groupName = new SignalSenderKeyName(keyDistributionMessage.groupJid().toString(), address);
         var signalDistributionMessage = SignalSenderKeyDistributionMessage.ofSerialized(keyDistributionMessage.data());
         messageDecoder.process(groupName, signalDistributionMessage);
+    }
+
+    public void attributeChatMessage(ChatMessageInfo info) {
+        attributeMessageReceipt(info);
+        var chat = whatsapp.store()
+                .findChatByJid(info.chatJid())
+                .orElseGet(() -> whatsapp.store().addNewChat(info.chatJid()));
+        info.setChat(chat);
+        var me = whatsapp.store().jid().orElse(null);
+        if (info.fromMe() && me != null) {
+            info.key().setSenderJid(me.withoutData());
+        }
+
+        attributeSender(info, info.senderJid());
+        info.message()
+                .contentWithContext()
+                .ifPresent(message -> {
+                    message.contextInfo()
+                            .ifPresent(this::attributeContext);
+                    processMessageWithSecret(info, message);
+                });
+    }
+
+    private void processMessageWithSecret(ChatMessageInfo info, Message message) {
+        switch (message) {
+            case PollCreationMessage pollCreationMessage -> handlePollCreation(info, pollCreationMessage);
+            case PollUpdateMessage pollUpdateMessage -> handlePollUpdate(info, pollUpdateMessage);
+            case ReactionMessage reactionMessage -> handleReactionMessage(info, reactionMessage);
+            default -> {}
+        }
+    }
+
+    private void handlePollCreation(ChatMessageInfo info, PollCreationMessage pollCreationMessage) {
+        if (pollCreationMessage.encryptionKey().isPresent()) {
+            return;
+        }
+
+        info.message()
+                .deviceInfo()
+                .flatMap(DeviceContextInfo::messageSecret)
+                .or(info::messageSecret)
+                .ifPresent(pollCreationMessage::setEncryptionKey);
+    }
+
+    private void handlePollUpdate(ChatMessageInfo info, PollUpdateMessage pollUpdateMessage) {
+        try {
+            var originalPollInfo = whatsapp.store()
+                    .findChatMessageByKey(pollUpdateMessage.pollCreationMessageKey());
+            if (originalPollInfo.isEmpty()) {
+                return;
+            }
+
+            if(!(originalPollInfo.get().message().content() instanceof PollCreationMessage originalPollMessage)) {
+                return;
+            }
+
+            pollUpdateMessage.setPollCreationMessage(originalPollMessage);
+            var originalPollSenderJid = originalPollInfo.get()
+                    .senderJid()
+                    .withoutData();
+            var modificationSenderJid = info.senderJid().withoutData();
+            pollUpdateMessage.setVoter(modificationSenderJid);
+            var originalPollId = originalPollInfo.get().id();
+            var useSecretPayload = originalPollId + originalPollSenderJid + modificationSenderJid + pollUpdateMessage.secretName();
+            var encryptionKey = originalPollMessage.encryptionKey()
+                    .orElseThrow(() -> new NoSuchElementException("Missing encryption key"));
+            var hkdf = KDF.getInstance("HKDF-SHA256");
+            var params = HKDFParameterSpec.ofExtract()
+                    .addIKM(new SecretKeySpec(encryptionKey, "AES"))
+                    .thenExpand(useSecretPayload.getBytes(), 32);
+            var useCaseSecret = hkdf.deriveData(params);
+            var additionalData = "%s\0%s".formatted(
+                    originalPollId,
+                    modificationSenderJid
+            );
+            var metadata = pollUpdateMessage.encryptedMetadata()
+                    .orElseThrow(() -> new NoSuchElementException("Missing encrypted metadata"));
+            var cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(useCaseSecret, "AES"),
+                    new GCMParameterSpec(128, metadata.iv())
+            );
+            cipher.updateAAD(additionalData.getBytes(StandardCharsets.UTF_8));
+            var decrypted = cipher.doFinal(metadata.payload());
+            var pollVoteMessage = PollUpdateEncryptedOptionsSpec.decode(decrypted);
+            var selectedOptions = pollVoteMessage.selectedOptions()
+                    .stream()
+                    .map(sha256 -> originalPollMessage.getSelectableOption(HexFormat.of().formatHex(sha256)))
+                    .flatMap(Optional::stream)
+                    .toList();
+            originalPollMessage.addSelectedOptions(modificationSenderJid, selectedOptions);
+            pollUpdateMessage.setVotes(selectedOptions);
+            var update = new PollUpdateBuilder()
+                    .pollUpdateMessageKey(info.key())
+                    .vote(pollVoteMessage)
+                    .senderTimestampMilliseconds(Clock.nowMilliseconds())
+                    .build();
+            info.pollUpdates()
+                    .add(update);
+        } catch (GeneralSecurityException exception) {
+            throw new RuntimeException("Cannot decrypt poll update", exception);
+        }
+    }
+
+    private void handleReactionMessage(ChatMessageInfo info, ReactionMessage reactionMessage) {
+        info.setIgnore(true);
+        whatsapp.store()
+                .findChatMessageByKey(reactionMessage.key())
+                .ifPresent(message -> message.reactions().add(reactionMessage));
+    }
+
+    private void attributeSender(ChatMessageInfo info, Jid senderJid) {
+        if (!senderJid.isPhone() && !senderJid.isLid()) {
+            return;
+        }
+
+        whatsapp.store().findContactByJid(senderJid)
+                .ifPresent(info::setSender);
+    }
+
+    private void attributeContext(ContextInfo contextInfo) {
+        contextInfo.quotedMessageSenderJid().ifPresent(senderJid -> attributeContextSender(contextInfo, senderJid));
+        contextInfo.quotedMessageParentJid().ifPresent(parentJid -> attributeContextParent(contextInfo, parentJid));
+    }
+
+    private void attributeContextParent(ContextInfo contextInfo, Jid parentJid) {
+        if(parentJid.hasServer(JidServer.newsletter())) {
+            var newsletter = whatsapp.store()
+                    .findNewsletterByJid(parentJid)
+                    .orElseGet(() -> whatsapp.store().addNewNewsletter(parentJid));
+            contextInfo.setQuotedMessageParent(newsletter);
+        }else {
+            var chat = whatsapp.store()
+                    .findChatByJid(parentJid)
+                    .orElseGet(() -> whatsapp.store().addNewChat(parentJid));
+            contextInfo.setQuotedMessageParent(chat);
+        }
+    }
+
+    private void attributeContextSender(ContextInfo contextInfo, Jid senderJid) {
+        whatsapp.store().findContactByJid(senderJid)
+                .ifPresent(contextInfo::setQuotedMessageSender);
+    }
+
+    private void attributeMessageReceipt(ChatMessageInfo info) {
+        var self = whatsapp.store().jid()
+                .map(Jid::withoutData)
+                .orElse(null);
+        if (!info.fromMe() || (self != null && !info.chatJid().equals(self))) {
+            return;
+        }
+        info.receipt().setReadTimestampSeconds(info.timestampSeconds().orElse(0L));
+        info.receipt().addDeliveredJid(self);
+        info.receipt().addReadJid(self);
+        info.setStatus(MessageStatus.READ);
     }
 }

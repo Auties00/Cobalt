@@ -44,8 +44,10 @@ import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.MetaBots;
 import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.curve25519.Curve25519;
+import com.github.auties00.libsignal.SignalSessionCipher;
 import com.github.auties00.libsignal.key.SignalIdentityPublicKey;
 import com.github.auties00.libsignal.key.SignalPreKeyPair;
+import com.github.auties00.libsignal.state.SignalPreKeyBundleBuilder;
 
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
@@ -185,7 +187,7 @@ public final class WhatsAppClient {
         if (shutdownHook == null) {
             this.shutdownHook = Thread.ofPlatform()
                     .name("CobaltShutdownHandler")
-                    .unstarted(this::onShutdown);
+                    .unstarted(() -> disconnect(WhatsAppClientDisconnectReason.DISCONNECTED));
             Runtime.getRuntime().addShutdownHook(shutdownHook);
         }
     }
@@ -4672,10 +4674,6 @@ public final class WhatsAppClient {
 
     // TODO: Stuff to fix
 
-    private void querySessions(List<Jid> jids) {
-
-    }
-
     private Node createCall(JidProvider jid) {
         return null;
     }
@@ -4686,5 +4684,187 @@ public final class WhatsAppClient {
 
     public SequencedCollection<Chat> queryGroups() {
         return List.of();
+    }
+
+    /**
+     * Queries the device list for message sending and ensures Signal sessions exist.
+     * This includes querying the device list via usync and fetching pre-keys for devices
+     * that messages should be encrypted for.
+     *
+     * @param jids the list of user JIDs to query devices for
+     * @return the list of device JIDs that should receive the encrypted message
+     */
+    public Collection<? extends Jid> querySessions(Collection<? extends Jid> jids) {
+        if (jids == null || jids.isEmpty()) {
+            return List.of();
+        }
+
+        // Get all devices for the given JIDs
+        var devices = queryDevicesForJids(jids);
+        if (devices.isEmpty()) {
+            return List.of();
+        }
+
+        // Ensure sessions exist for all devices
+        var devicesNeedingSessions = devices.stream()
+                .filter(device -> store.findSessionByAddress(device.toSignalAddress()).isEmpty())
+                .toList();
+
+        if (!devicesNeedingSessions.isEmpty()) {
+            fetchPreKeysAndCreateSessions(devicesNeedingSessions);
+        }
+
+        return devices;
+    }
+
+    private Collection<? extends Jid> queryDevicesForJids(Collection<? extends Jid> jids) {
+        var userNodes = jids.stream()
+                .map(jid -> buildUserNode(jid.toUserJid()))
+                .toList();
+
+        var devicesNode = new NodeBuilder()
+                .description("devices")
+                .attribute("version", "2")
+                .build();
+        var queryNode = new NodeBuilder()
+                .description("query")
+                .content(devicesNode)
+                .build();
+        var listNode = new NodeBuilder()
+                .description("list")
+                .content(userNodes.toArray(Node[]::new))
+                .build();
+        var sideListNode = new NodeBuilder()
+                .description("side_list")
+                .build();
+        var syncNode = new NodeBuilder()
+                .description("usync")
+                .attribute("sid", randomSid())
+                .attribute("mode", "query")
+                .attribute("last", "true")
+                .attribute("index", "0")
+                .attribute("context", "message")
+                .content(queryNode, listNode, sideListNode)
+                .build();
+        var iqNode = new NodeBuilder()
+                .description("iq")
+                .attribute("xmlns", "usync")
+                .attribute("to", JidServer.user())
+                .attribute("type", "get")
+                .content(syncNode);
+
+        return sendNode(iqNode)
+                .streamChildren("usync")
+                .flatMap(node -> node.streamChild("list"))
+                .flatMap(node -> node.streamChildren("user"))
+                .flatMap(WhatsAppClient::parseDevice)
+                .toList();
+    }
+
+    private static Stream<Jid> parseDevice(Node user) {
+        var userJid = user.getAttributeAsJid("jid");
+        if (userJid.isEmpty()) {
+            return Stream.empty();
+        } else {
+            return user.streamChild("devices")
+                    .flatMap(devices -> devices.streamChild("device_list"))
+                    .flatMap(deviceList -> deviceList.streamChildren("device"))
+                    .map(device -> {
+                        var deviceId = (int) device.getAttributeAsLong("id", 0L);
+                        return userJid.get().withDevice(deviceId);
+                    });
+        }
+    }
+
+    private void fetchPreKeysAndCreateSessions(Collection<? extends Jid> devices) {
+        if (devices.isEmpty()) {
+            return;
+        }
+
+        var keyNodes = devices.stream()
+                .map(device -> buildUserNode(device))
+                .toArray(Node[]::new);
+        var keyNode = new NodeBuilder()
+                .description("key")
+                .content(keyNodes)
+                .build();
+        var iqNode = new NodeBuilder()
+                .description("iq")
+                .attribute("xmlns", "encrypt")
+                .attribute("to", JidServer.user())
+                .attribute("type", "get")
+                .content(keyNode);
+
+        sendNode(iqNode)
+                .streamChild("list")
+                .flatMap(list -> list.streamChildren("user"))
+                .forEach(this::processPreKeyResponse);
+    }
+
+    private static Node buildUserNode(Jid jid) {
+        return new NodeBuilder()
+                .description("user")
+                .attribute("jid", jid)
+                .build();
+    }
+
+    private void processPreKeyResponse(Node userNode) {
+        var jid = userNode.getRequiredAttributeAsJid("jid");
+        var registrationId = userNode.getChild("registration")
+                .flatMap(Node::toContentBytes)
+                .map(bytes -> SecureBytes.bytesToInt(bytes, Math.min(bytes.length, 4)))
+                .orElse(0);
+        var identityKey = userNode.getChild("identity")
+                .flatMap(Node::toContentBytes)
+                .map(SignalIdentityPublicKey::ofDirect)
+                .orElse(null);
+
+        var signedPreKey = userNode.getChild("skey", null);
+        var preKey = userNode.getChild("key", null);
+        if (identityKey == null || signedPreKey == null) {
+            return;
+        }
+
+        var signedPreKeyId = signedPreKey.getChild("id")
+                .flatMap(Node::toContentBytes)
+                .map(bytes -> SecureBytes.bytesToInt(bytes, Math.min(bytes.length, 4)))
+                .orElse(0);
+        var signedPreKeyPublic = signedPreKey.getChild("value")
+                .flatMap(Node::toContentBytes)
+                .map(SignalIdentityPublicKey::ofDirect)
+                .orElse(null);
+        var signedPreKeySignature = signedPreKey.getChild("signature")
+                .flatMap(Node::toContentBytes)
+                .orElse(null);
+        if (signedPreKeyPublic == null || signedPreKeySignature == null) {
+            return;
+        }
+
+        int preKeyId = 0;
+        SignalIdentityPublicKey preKeyPublic = null;
+        if (preKey != null) {
+            preKeyId = preKey.getChild("id")
+                    .flatMap(Node::toContentBytes)
+                    .map(bytes -> SecureBytes.bytesToInt(bytes, Math.min(bytes.length, 4)))
+                    .orElse(0);
+            preKeyPublic = preKey.getChild("value")
+                    .flatMap(Node::toContentBytes)
+                    .map(SignalIdentityPublicKey::ofDirect)
+                    .orElse(null);
+        }
+
+        var bundle = new SignalPreKeyBundleBuilder()
+                .registrationId(registrationId)
+                .deviceId(jid.device())
+                .preKeyId(preKeyId)
+                .preKeyPublic(preKeyPublic)
+                .signedPreKeyId(signedPreKeyId)
+                .signedPreKeyPublic(signedPreKeyPublic)
+                .signedPreKeySignature(signedPreKeySignature)
+                .identityKey(identityKey)
+                .build();
+
+        var sessionCipher = new SignalSessionCipher(store);
+        sessionCipher.process(jid.toSignalAddress(), bundle);
     }
 }

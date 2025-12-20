@@ -5,7 +5,7 @@ import com.github.auties00.cobalt.model.auth.Version;
 import com.github.auties00.cobalt.model.business.BusinessCategory;
 import com.github.auties00.cobalt.model.jid.JidCompanion;
 import com.github.auties00.cobalt.store.WhatsAppStore;
-import com.github.auties00.cobalt.store.WhatsappStoreBuilder;
+import com.github.auties00.cobalt.store.WhatsAppStoreBuilder;
 import com.github.auties00.cobalt.store.WhatsappStoreSerializer;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 
@@ -170,7 +170,7 @@ public sealed class WhatsAppClientBuilder {
                 case WEB -> JidCompanion.web();
                 case MOBILE -> JidCompanion.ios(false);
             };
-            var result = new WhatsappStoreBuilder()
+            var result = new WhatsAppStoreBuilder()
                     .uuid(Objects.requireNonNullElseGet(id, UUID::randomUUID))
                     .phoneNumber(phoneNumber)
                     .clientType(Objects.requireNonNull(clientType, "clientType must not be null"))

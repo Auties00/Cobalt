@@ -477,6 +477,20 @@ public sealed interface Node {
 
     /**
      * Finds a child node by its description within the current container node.
+     * If no child node with the specified description exists, {@code defaultValue} is returned
+     *
+     * @param description the description of the child node to find; cannot be null
+     * @param defaultValue the default value to return if no node with the provided description exists
+     * @return the child node with the provided description, if found, otherwise {@code defaultValue}
+     * @throws NullPointerException if the given description is null
+     */
+    default Node getChild(String description, Node defaultValue) {
+        return getChild(description)
+                .orElse(defaultValue);
+    }
+
+    /**
+     * Finds a child node by its description within the current container node.
      * If no child node with the specified description exists, an {@code IllegalArgumentException} is thrown.
      *
      * @param description the description of the child node to find; cannot be null

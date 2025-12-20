@@ -139,7 +139,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         try {
             var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
             try (var stream = Files.newOutputStream(tempFile)) {
-                WhatsappStoreSpec.encode(store, ProtobufOutputStream.toStream(stream));
+                WhatsAppStoreSpec.encode(store, ProtobufOutputStream.toStream(stream));
             }
             Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
@@ -237,7 +237,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
 
         try (var stream = Files.newInputStream(path)) {
-            var store = WhatsappStoreSpec.decode(ProtobufInputStream.fromStream(stream));
+            var store = WhatsAppStoreSpec.decode(ProtobufInputStream.fromStream(stream));
             startAttribute(store);
             storesHashCodes.put(store.uuid(), store.hashCode());
             return Optional.of(store);
