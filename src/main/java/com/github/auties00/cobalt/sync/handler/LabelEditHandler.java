@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.sync.RecordSync;
-import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles label edit actions.
@@ -25,7 +25,7 @@ public final class LabelEditHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var action = mutation.value()
                 .labelEditAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing labelEditAction"));
@@ -35,9 +35,11 @@ public final class LabelEditHandler implements WebAppStateActionHandler {
 
         if (mutation.operation() == RecordSync.Operation.SET) {
             if(action.deleted()) {
-                store.removeLabel(labelId);
+                client.store()
+                        .removeLabel(labelId);
             }else {
-                var label = store.findLabel(labelId);
+                var label = client.store()
+                        .findLabel(labelId);
                 if(label.isPresent()) {
                     if(action.name().isPresent()) {
                         label.get().setName(action.name().get());
@@ -46,11 +48,13 @@ public final class LabelEditHandler implements WebAppStateActionHandler {
                         label.get().setColor(action.color().getAsInt());
                     }
                 }else {
-                    store.addLabel(action.toLabel());
+                    client.store()
+                            .addLabel(action.toLabel());
                 }
             }
         } else {
-            store.removeLabel(labelId);
+            client.store()
+                    .removeLabel(labelId);
         }
 
         return true;

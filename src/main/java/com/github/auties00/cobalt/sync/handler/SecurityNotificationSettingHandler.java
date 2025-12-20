@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync.handler;
 
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.store.WhatsappStore;
 
 /**
  * Handles security notification setting changes.
@@ -22,12 +22,13 @@ public final class SecurityNotificationSettingHandler implements WebAppStateActi
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var setting = mutation.value()
                 .securityNotificationSetting()
                 .orElseThrow(() -> new IllegalArgumentException("Missing securityNotificationSetting"));
 
-        store.setShowSecurityNotifications(setting.showNotification());
+        client.store()
+                .setShowSecurityNotifications(setting.showNotification());
 
         return true;
     }

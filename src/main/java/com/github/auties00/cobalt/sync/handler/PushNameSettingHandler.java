@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync.handler;
 
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.store.WhatsappStore;
 
 /**
  * Handles push name setting changes.
@@ -21,15 +21,17 @@ public final class PushNameSettingHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var setting = mutation.value()
                 .pushNameSetting()
                 .orElseThrow(() -> new IllegalArgumentException("Missing pushNameSetting"));
 
-        store.setName(setting.name());
+        client.store()
+                .setName(setting.name());
 
-        store.jid()
-                .flatMap(entry -> store.findContactByJid(entry.withoutData()))
+        client.store()
+                .jid()
+                .flatMap(entry -> client.store().findContactByJid(entry.withoutData()))
                 .ifPresent(contact -> contact.setChosenName(setting.name()));
 
         return true;

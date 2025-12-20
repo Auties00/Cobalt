@@ -87,7 +87,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 @ProtobufMessage
-public final class WhatsappStore implements SignalProtocolStore {
+public final class WhatsAppStore implements SignalProtocolStore {
     private static final WhatsappStoreSerializer DEFAULT_DESERIALIZER = WhatsappStoreSerializer.discarding();
     private static final String DEFAULT_NAME = "User";
 
@@ -830,6 +830,23 @@ public final class WhatsappStore implements SignalProtocolStore {
     private final KeySetView<WhatsAppClientListener, Boolean> listeners;
 
     /**
+     * LID to phone number JID mappings for the LID migration system.
+     * <p>
+     * Thread-safe map that enables reverse lookups from LID to phone number.
+     * Not serialized - rebuilt from contacts on session restoration.
+     * Used for contact resolution when receiving messages with LID addressing.
+     */
+    private final ConcurrentHashMap<Jid, Jid> lidToPhoneMappings;
+
+    /**
+     * Phone number JID to LID mappings for the LID migration system.
+     * <p>
+     * Thread-safe map that enables lookups from phone number to LID.
+     * Not serialized - rebuilt from contacts on session restoration.
+     */
+    private final ConcurrentHashMap<Jid, Jid> phoneToLidMappings;
+
+    /**
      * Active media connection for uploading/downloading media files.
      * <p>
      * Separate connection with authentication tokens for media operations (images,
@@ -879,7 +896,7 @@ public final class WhatsappStore implements SignalProtocolStore {
     /**
      * Private constructor used by builder and deserialization
      */
-    WhatsappStore(
+    WhatsAppStore(
             UUID uuid,
             Long phoneNumber,
             WhatsAppClientType clientType,
@@ -990,6 +1007,11 @@ public final class WhatsappStore implements SignalProtocolStore {
         this.newsletters = new ConcurrentHashMap<>();
         this.status = new ConcurrentHashMap<>();
         this.listeners = ConcurrentHashMap.newKeySet();
+        this.lidToPhoneMappings = new ConcurrentHashMap<>();
+        this.phoneToLidMappings = new ConcurrentHashMap<>();
+        for (var contact : contacts.values()) {
+            contact.lid().ifPresent(entry -> registerLidMapping(contact.jid(), entry));
+        }
         this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> SecureBytes.nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNullElseGet(noiseKeyPair, SignalIdentityKeyPair::random);
         this.identityKeyPair = Objects.requireNonNullElseGet(identityKeyPair, SignalIdentityKeyPair::random);
@@ -1041,7 +1063,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param serializable whether to enable serialization
      * @return this store instance for method chaining
      */
-    public WhatsappStore setSerializable(boolean serializable) {
+    public WhatsAppStore setSerializable(boolean serializable) {
         this.serializable = serializable;
         return this;
     }
@@ -1063,7 +1085,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param serializer the new serializer, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setSerializer(WhatsappStoreSerializer serializer) {
+    public WhatsAppStore setSerializer(WhatsappStoreSerializer serializer) {
         this.serializer = serializer;
         return this;
     }
@@ -1076,7 +1098,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      *
      * @return this store instance for method chaining
      */
-    public WhatsappStore serialize() {
+    public WhatsAppStore serialize() {
         if (serializable && serializer != null) {
             serializer.serialize(this);
         }
@@ -1088,16 +1110,46 @@ public final class WhatsappStore implements SignalProtocolStore {
     // =====================================================
 
     /**
-     * Finds a contact by their JID.
+     * Finds a contact by either phone number JID or LID.
      * <p>
-     * Supports multiple input types through {@link JidProvider} interface including
-     * {@link Contact}, {@link Jid}, {@link Chat}, and other JID-providing types.
+     * First attempts direct lookup by the provided JID, then tries
+     * the alternate addressing mode if the first lookup fails.
      *
-     * @param jid the JID to search for, may be null
-     * @return Optional containing the contact if found, empty otherwise
+     * @param jid the JID to search for (phone or LID)
+     * @return Optional containing the contact if found
      */
     public Optional<Contact> findContactByJid(JidProvider jid) {
-        return jid == null ? Optional.empty() : Optional.ofNullable(contacts.get(jid.toJid()));
+        return switch (jid) {
+            case Contact contact -> Optional.of(contact);
+            case null -> Optional.empty();
+            case Chat _, Newsletter _, Jid _, JidServer _-> {
+                var targetJid = jid.toJid();
+
+                // Try direct lookup first
+                var direct = contacts.get(targetJid);
+                if (direct != null) {
+                    yield Optional.of(direct);
+                }
+
+                // Try alternate addressing mode
+                var normalizedJid = targetJid.withoutData();
+                if (normalizedJid.isLid()) {
+                    // LID provided, try to find by phone number
+                    var phoneJid = lidToPhoneMappings.get(normalizedJid);
+                    if (phoneJid != null) {
+                        yield Optional.ofNullable(contacts.get(phoneJid));
+                    }
+                } else if (normalizedJid.isPhone()) {
+                    // Phone provided, try to find by LID
+                    var lidJid = phoneToLidMappings.get(normalizedJid);
+                    if (lidJid != null) {
+                        yield Optional.ofNullable(contacts.get(lidJid));
+                    }
+                }
+
+                yield Optional.empty();
+            }
+        };
     }
 
     /**
@@ -1155,22 +1207,97 @@ public final class WhatsappStore implements SignalProtocolStore {
     }
 
     // =====================================================
+    // SECTION: LID Migration Support
+    // =====================================================
+
+    /**
+     * Registers a LID mapping for a contact.
+     * <p>
+     * This creates bidirectional mappings between phone number JID and LID
+     * to enable lookups in both directions during LID migration.
+     *
+     * @param phoneJid the phone number JID
+     * @param lidJid the LID JID
+     */
+    public void registerLidMapping(Jid phoneJid, Jid lidJid) {
+        if (phoneJid == null || lidJid == null) {
+            return;
+        }
+        var normalizedPhone = phoneJid.withoutData();
+        var normalizedLid = lidJid.withoutData();
+        lidToPhoneMappings.put(normalizedLid, normalizedPhone);
+        phoneToLidMappings.put(normalizedPhone, normalizedLid);
+    }
+
+    /**
+     * Finds the phone number JID for a given LID.
+     *
+     * @param lidJid the LID to look up
+     * @return Optional containing the phone number JID if found
+     */
+    public Optional<Jid> findPhoneByLid(Jid lidJid) {
+        return lidJid == null ? Optional.empty() : Optional.ofNullable(lidToPhoneMappings.get(lidJid.withoutData()));
+    }
+
+    /**
+     * Finds the LID for a given phone number JID.
+     *
+     * @param phoneJid the phone number JID to look up
+     * @return Optional containing the LID if found
+     */
+    public Optional<Jid> findLidByPhone(Jid phoneJid) {
+        return phoneJid == null ? Optional.empty() : Optional.ofNullable(phoneToLidMappings.get(phoneJid.withoutData()));
+    }
+
+    /**
+     * Gets the alternate JID (phone↔LID) for a given JID.
+     *
+     * @param jid the JID to get the alternate for
+     * @return Optional containing the alternate JID if available
+     */
+    public Optional<Jid> getAlternateJid(JidProvider jid) {
+        if (jid == null) {
+            return Optional.empty();
+        } else {
+            var normalized = jid.toJid().withoutData();
+            if (normalized.isLid()) {
+                return findPhoneByLid(normalized);
+            } else if (normalized.isPhone()) {
+                return findLidByPhone(normalized);
+            } else {
+                return Optional.empty();
+            }
+        }
+    }
+
+    // =====================================================
     // SECTION: Chat & Message Management
     // =====================================================
 
     /**
      * Finds a chat by its JID.
-     * <p>
-     * Supports multiple input types through {@link JidProvider} interface including
-     * {@link Chat}, {@link Jid}, {@link Contact}, and other JID-providing types.
      *
      * @param jid the JID to search for, may be null
      * @return Optional containing the chat if found, empty otherwise
      */
     public Optional<Chat> findChatByJid(JidProvider jid) {
-        return jid == null
-                ? Optional.empty()
-                : Optional.ofNullable(chats.get(jid.toJid()));
+        return switch (jid) {
+            case null -> Optional.empty();
+            case Chat chat -> Optional.of(chat);
+            case Contact _, Newsletter _, Jid _, JidServer _-> {
+                var targetjid = jid.toJid();
+
+                // Direct lookup
+                var chat = chats.get(targetjid);
+                if (chat != null) {
+                    yield Optional.of(chat);
+                }
+
+                // Try alternate JID (PN↔LID)
+                yield getAlternateJid(jid)
+                        .map(chats::get);
+            }
+        };
     }
 
     /**
@@ -1423,7 +1550,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param phoneNumber the phone number in international format, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setPhoneNumber(Long phoneNumber) {
+    public WhatsAppStore setPhoneNumber(Long phoneNumber) {
         this.phoneNumber = phoneNumber;
         return this;
     }
@@ -1452,7 +1579,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param proxy the proxy URI, may be null to disable proxy
      * @return this store instance for method chaining
      */
-    public WhatsappStore setProxy(URI proxy) {
+    public WhatsAppStore setProxy(URI proxy) {
         this.proxy = proxy;
         return this;
     }
@@ -1472,7 +1599,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param device the device info, cannot be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setDevice(JidCompanion device) {
+    public WhatsAppStore setDevice(JidCompanion device) {
         this.device = Objects.requireNonNull(device, "device cannot be null");
         return this;
     }
@@ -1492,7 +1619,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param releaseChannel the release channel, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setReleaseChannel(ReleaseChannel releaseChannel) {
+    public WhatsAppStore setReleaseChannel(ReleaseChannel releaseChannel) {
         this.releaseChannel = Objects.requireNonNull(releaseChannel, "releaseChannel cannot be null");
         return this;
     }
@@ -1512,7 +1639,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param online true to appear online, false otherwise
      * @return this store instance for method chaining
      */
-    public WhatsappStore setOnline(boolean online) {
+    public WhatsAppStore setOnline(boolean online) {
         this.online = online;
         return this;
     }
@@ -1532,7 +1659,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param locale the locale in format "language_COUNTRY", may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setLocale(String locale) {
+    public WhatsAppStore setLocale(String locale) {
         this.locale = locale;
         return this;
     }
@@ -1552,7 +1679,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param name the display name, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setName(String name) {
+    public WhatsAppStore setName(String name) {
         this.name = name;
         return this;
     }
@@ -1572,7 +1699,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param verifiedName the verified name, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setVerifiedName(String verifiedName) {
+    public WhatsAppStore setVerifiedName(String verifiedName) {
         this.verifiedName = verifiedName;
         return this;
     }
@@ -1592,7 +1719,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param profilePicture the profile picture URI, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setProfilePicture(URI profilePicture) {
+    public WhatsAppStore setProfilePicture(URI profilePicture) {
         this.profilePicture = profilePicture;
         return this;
     }
@@ -1612,7 +1739,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param about the about text, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setAbout(String about) {
+    public WhatsAppStore setAbout(String about) {
         this.about = about;
         return this;
     }
@@ -1632,7 +1759,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param jid the JID, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setJid(Jid jid) {
+    public WhatsAppStore setJid(Jid jid) {
         this.jid = jid;
         return this;
     }
@@ -1652,7 +1779,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param lid the LID, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setLid(Jid lid) {
+    public WhatsAppStore setLid(Jid lid) {
         this.lid = lid;
         return this;
     }
@@ -1672,7 +1799,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param businessAddress the business address, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setBusinessAddress(String businessAddress) {
+    public WhatsAppStore setBusinessAddress(String businessAddress) {
         this.businessAddress = businessAddress;
         return this;
     }
@@ -1692,7 +1819,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param businessLongitude the longitude (-180.0 to 180.0), may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setBusinessLongitude(Double businessLongitude) {
+    public WhatsAppStore setBusinessLongitude(Double businessLongitude) {
         this.businessLongitude = businessLongitude;
         return this;
     }
@@ -1712,7 +1839,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param businessLatitude the latitude (-90.0 to 90.0), may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setBusinessLatitude(Double businessLatitude) {
+    public WhatsAppStore setBusinessLatitude(Double businessLatitude) {
         this.businessLatitude = businessLatitude;
         return this;
     }
@@ -1732,7 +1859,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param businessDescription the description, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setBusinessDescription(String businessDescription) {
+    public WhatsAppStore setBusinessDescription(String businessDescription) {
         this.businessDescription = businessDescription;
         return this;
     }
@@ -1752,7 +1879,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param businessWebsite the website URL, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setBusinessWebsite(String businessWebsite) {
+    public WhatsAppStore setBusinessWebsite(String businessWebsite) {
         this.businessWebsite = businessWebsite;
         return this;
     }
@@ -1772,7 +1899,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param businessEmail the email, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setBusinessEmail(String businessEmail) {
+    public WhatsAppStore setBusinessEmail(String businessEmail) {
         this.businessEmail = businessEmail;
         return this;
     }
@@ -1792,7 +1919,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param businessCategory the category, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setBusinessCategory(BusinessCategory businessCategory) {
+    public WhatsAppStore setBusinessCategory(BusinessCategory businessCategory) {
         this.businessCategory = businessCategory;
         return this;
     }
@@ -1848,7 +1975,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param unarchiveChats true to enable automatic unarchiving, false otherwise
      * @return this store instance for method chaining
      */
-    public WhatsappStore setUnarchiveChats(boolean unarchiveChats) {
+    public WhatsAppStore setUnarchiveChats(boolean unarchiveChats) {
         this.unarchiveChats = unarchiveChats;
         return this;
     }
@@ -1868,7 +1995,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param twentyFourHourFormat true for 24-hour format, false for 12-hour format
      * @return this store instance for method chaining
      */
-    public WhatsappStore setTwentyFourHourFormat(boolean twentyFourHourFormat) {
+    public WhatsAppStore setTwentyFourHourFormat(boolean twentyFourHourFormat) {
         this.twentyFourHourFormat = twentyFourHourFormat;
         return this;
     }
@@ -1897,7 +2024,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param newChatsEphemeralTimer the ephemeral timer, never null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setNewChatsEphemeralTimer(ChatEphemeralTimer newChatsEphemeralTimer) {
+    public WhatsAppStore setNewChatsEphemeralTimer(ChatEphemeralTimer newChatsEphemeralTimer) {
         this.newChatsEphemeralTimer = Objects.requireNonNull(newChatsEphemeralTimer, "newChatsEphemeralTimer cannot be null");
         return this;
     }
@@ -1917,7 +2044,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param webHistoryPolicy the history policy, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setWebHistoryPolicy(WhatsAppWebClientHistory webHistoryPolicy) {
+    public WhatsAppStore setWebHistoryPolicy(WhatsAppWebClientHistory webHistoryPolicy) {
         this.webHistoryPolicy = webHistoryPolicy;
         return this;
     }
@@ -1937,7 +2064,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param automaticPresenceUpdates true to enable, false to disable
      * @return this store instance for method chaining
      */
-    public WhatsappStore setAutomaticPresenceUpdates(boolean automaticPresenceUpdates) {
+    public WhatsAppStore setAutomaticPresenceUpdates(boolean automaticPresenceUpdates) {
         this.automaticPresenceUpdates = automaticPresenceUpdates;
         return this;
     }
@@ -1957,7 +2084,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param automaticMessageReceipts true to enable, false to disable
      * @return this store instance for method chaining
      */
-    public WhatsappStore setAutomaticMessageReceipts(boolean automaticMessageReceipts) {
+    public WhatsAppStore setAutomaticMessageReceipts(boolean automaticMessageReceipts) {
         this.automaticMessageReceipts = automaticMessageReceipts;
         return this;
     }
@@ -1977,7 +2104,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param checkPatchMacs true to enable verification, false to disable
      * @return this store instance for method chaining
      */
-    public WhatsappStore setCheckPatchMacs(boolean checkPatchMacs) {
+    public WhatsAppStore setCheckPatchMacs(boolean checkPatchMacs) {
         this.checkPatchMacs = checkPatchMacs;
         return this;
     }
@@ -1997,7 +2124,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param syncedChats true if synchronized, false otherwise
      * @return this store instance for method chaining
      */
-    public WhatsappStore setSyncedChats(boolean syncedChats) {
+    public WhatsAppStore setSyncedChats(boolean syncedChats) {
         this.syncedChats = syncedChats;
         return this;
     }
@@ -2017,7 +2144,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param syncedContacts true if synchronized, false otherwise
      * @return this store instance for method chaining
      */
-    public WhatsappStore setSyncedContacts(boolean syncedContacts) {
+    public WhatsAppStore setSyncedContacts(boolean syncedContacts) {
         this.syncedContacts = syncedContacts;
         return this;
     }
@@ -2037,7 +2164,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param syncedNewsletters true if synchronized, false otherwise
      * @return this store instance for method chaining
      */
-    public WhatsappStore setSyncedNewsletters(boolean syncedNewsletters) {
+    public WhatsAppStore setSyncedNewsletters(boolean syncedNewsletters) {
         this.syncedNewsletters = syncedNewsletters;
         return this;
     }
@@ -2057,7 +2184,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param syncedStatus true if synchronized, false otherwise
      * @return this store instance for method chaining
      */
-    public WhatsappStore setSyncedStatus(boolean syncedStatus) {
+    public WhatsAppStore setSyncedStatus(boolean syncedStatus) {
         this.syncedStatus = syncedStatus;
         return this;
     }
@@ -2077,7 +2204,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param syncedWebAppState true if synchronized, false otherwise
      * @return this store instance for method chaining
      */
-    public WhatsappStore setSyncedWebAppState(boolean syncedWebAppState) {
+    public WhatsAppStore setSyncedWebAppState(boolean syncedWebAppState) {
         this.syncedWebAppState = syncedWebAppState;
         return this;
     }
@@ -2096,7 +2223,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param syncedBusinessCertificate true if synchronized, false otherwise
      * @return this store instance for method chaining
      */
-    public WhatsappStore setSyncedBusinessCertificate(boolean syncedBusinessCertificate) {
+    public WhatsAppStore setSyncedBusinessCertificate(boolean syncedBusinessCertificate) {
         this.syncedBusinessCertificate = syncedBusinessCertificate;
         return this;
     }
@@ -2137,7 +2264,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param mediaConnection the media connection, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setMediaConnection(MediaConnection mediaConnection) {
+    public WhatsAppStore setMediaConnection(MediaConnection mediaConnection) {
         this.mediaConnection = mediaConnection;
         synchronized (mediaConnectionLock) {
             this.mediaConnectionLock.notifyAll();
@@ -2160,7 +2287,7 @@ public final class WhatsappStore implements SignalProtocolStore {
      * @param companionIdentity the companion identity, may be null
      * @return this store instance for method chaining
      */
-    public WhatsappStore setCompanionIdentity(SignedDeviceIdentity companionIdentity) {
+    public WhatsAppStore setCompanionIdentity(SignedDeviceIdentity companionIdentity) {
         this.companionIdentity = companionIdentity;
         return this;
     }
@@ -2730,7 +2857,7 @@ public final class WhatsappStore implements SignalProtocolStore {
 
     @Override
     public boolean equals(Object o) {
-        return o == this || o instanceof WhatsappStore that
+        return o == this || o instanceof WhatsAppStore that
                && serializable == that.serializable
                && online == that.online
                && unarchiveChats == that.unarchiveChats

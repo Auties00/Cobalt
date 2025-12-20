@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
@@ -26,7 +26,7 @@ public final class ContactActionHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var action = mutation.value().contactAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing contactAction"));
 
@@ -34,13 +34,18 @@ public final class ContactActionHandler implements WebAppStateActionHandler {
         var contactJidString = indexArray.getString(1);
         var contactJid = Jid.of(contactJidString);
 
-        var contact = store.findContactByJid(contactJid)
-                .orElseGet(() -> store.addNewContact(contactJid));
+        var contact = client.store()
+                .findContactByJid(contactJid)
+                .orElseGet(() -> client.store().addNewContact(contactJid));
 
         switch (mutation.operation()) {
             case SET -> {
                 action.fullName().ifPresent(contact::setFullName);
                 action.firstName().ifPresent(contact::setShortName);
+                action.lid().ifPresent(lid -> {
+                    contact.setLid(lid);
+                    client.store().registerLidMapping(contactJid, lid);
+                });
             }
             case REMOVE -> {
                 contact.setFullName(null);

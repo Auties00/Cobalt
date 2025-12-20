@@ -1,10 +1,7 @@
 package com.github.auties00.cobalt.socket.notification;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.node.mex.json.response.NewsletterLeaveResponse;
-import com.github.auties00.cobalt.node.mex.json.response.NewsletterMuteResponse;
-import com.github.auties00.cobalt.node.mex.json.response.NewsletterResponse;
-import com.github.auties00.cobalt.node.mex.json.response.NewsletterStateResponse;
+import com.github.auties00.cobalt.migration.LidMigrationService;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.chat.ChatEphemeralTimer;
 import com.github.auties00.cobalt.model.info.ChatMessageInfoBuilder;
@@ -25,6 +22,7 @@ import com.github.auties00.cobalt.model.privacy.PrivacySettingValue;
 import com.github.auties00.cobalt.model.sync.PatchType;
 import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.node.NodeBuilder;
+import com.github.auties00.cobalt.node.mex.json.response.*;
 import com.github.auties00.cobalt.socket.SocketPhonePairing;
 import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.SecureBytes;
@@ -49,9 +47,11 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
     private static final int DEFAULT_NEWSLETTER_MESSAGES = 100;
 
     private final SocketPhonePairing pairingCode;
-    public NotificationStreamNodeHandler(WhatsAppClient whatsapp, SocketPhonePairing pairingCode) {
+    private final LidMigrationService lidMigrationService;
+    public NotificationStreamNodeHandler(WhatsAppClient whatsapp, SocketPhonePairing pairingCode, LidMigrationService lidMigrationService) {
         super(whatsapp, "notification");
         this.pairingCode = pairingCode;
+        this.lidMigrationService = lidMigrationService;
     }
 
     @Override
@@ -190,9 +190,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
             case "AccountSyncUsernameNotification" -> {
                 // TODO AccountSyncUsernameNotification
             }
-            case "LidChangeNotification" -> {
-                // TODO LidChangeNotification
-            }
+            case "LidChangeNotification" -> handleLidChangeNotification(update);
             case "NotificationUserBrigadingUpdate" -> {
                 // TODO NotificationUserBrigadingUpdate
             }
@@ -402,6 +400,22 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
         }
     }
 
+    private void handleLidChangeNotification(Node update) {
+        var payloadString = update.toContentBytes()
+                .orElse(null);
+        if (payloadString == null) {
+            return;
+        }
+
+        var notification = LidChangeNotificationResponse.ofJson(payloadString);
+        if (notification.isEmpty()) {
+            return;
+        }
+
+        var lidChange = notification.get();
+        lidMigrationService.handleNotification(lidChange);
+    }
+
     public void updateUserPicture() {
         var user = whatsapp
                 .store()
@@ -565,7 +579,8 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                     secretKey,
                     new GCMParameterSpec(128, SecureBytes.random(12))
             );
-            cipher.update(whatsapp.store().identityKeyPair().publicKey().toEncodedPoint());
+            var identityPublicKey = whatsapp.store().identityKeyPair().publicKey().toEncodedPoint();
+            cipher.update(identityPublicKey);
             cipher.update(primaryIdentityPublicKey);
             cipher.update(random);
             var encrypted = cipher.doFinal();
@@ -586,7 +601,7 @@ public final class NotificationStreamNodeHandler extends SocketStream.Handler {
                     .build();
             var companionIdentityPublicKey = new NodeBuilder()
                     .description("companion_identity_public")
-                    .content(whatsapp.store().identityKeyPair().publicKey().toEncodedPoint())
+                    .content(identityPublicKey)
                     .build();
             var linkCodePairingRef = new NodeBuilder()
                     .description("link_code_pairing_ref")

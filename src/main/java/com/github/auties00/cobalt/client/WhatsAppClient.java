@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.client;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.message.MessageSender;
+import com.github.auties00.cobalt.message.MessageSenderService;
 import com.github.auties00.cobalt.model.action.*;
 import com.github.auties00.cobalt.model.auth.*;
 import com.github.auties00.cobalt.model.business.*;
@@ -38,8 +38,8 @@ import com.github.auties00.cobalt.node.mex.json.response.*;
 import com.github.auties00.cobalt.socket.SocketRequest;
 import com.github.auties00.cobalt.socket.SocketSession;
 import com.github.auties00.cobalt.socket.SocketStream;
-import com.github.auties00.cobalt.store.WhatsappStore;
-import com.github.auties00.cobalt.sync.WebAppState;
+import com.github.auties00.cobalt.store.WhatsAppStore;
+import com.github.auties00.cobalt.sync.WebAppStateService;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.MetaBots;
 import com.github.auties00.cobalt.util.SecureBytes;
@@ -97,25 +97,26 @@ public final class WhatsAppClient {
 
     private static final long MIN_PRE_KEYS_COUNT = 5;
 
-    private final WhatsappStore store;
+    private final WhatsAppStore store;
     private final WhatsAppClientErrorHandler errorHandler;
     private final WhatsAppClientMessagePreviewHandler messagePreviewHandler;
-    private final WebAppState webAppState;
-    private final MessageSender messageSender;
+
+    private final WebAppStateService webAppStateService;
+    private final MessageSenderService messageSenderService;
 
     private SocketSession socketSession;
     private final SocketStream socketStream;
     private final ConcurrentMap<String, SocketRequest> pendingSocketRequests;
     private Thread shutdownHook;
 
-    WhatsAppClient(WhatsappStore store, WhatsAppClientVerificationHandler.Web webVerificationHandler, WhatsAppClientMessagePreviewHandler messagePreviewHandler, WhatsAppClientErrorHandler errorHandler) {
+    WhatsAppClient(WhatsAppStore store, WhatsAppClientVerificationHandler.Web webVerificationHandler, WhatsAppClientMessagePreviewHandler messagePreviewHandler, WhatsAppClientErrorHandler errorHandler) {
         this.store = Objects.requireNonNull(store, "store cannot be null");
         this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler cannot be null");
         if ((store.clientType() == WhatsAppClientType.WEB) == (webVerificationHandler == null)) {
             throw new IllegalArgumentException("webVerificationHandler cannot be null when client type is WEB");
         }
-        this.webAppState = new WebAppState(this);
-        this.messageSender = new MessageSender(this);
+        this.webAppStateService = new WebAppStateService(this);
+        this.messageSenderService = new MessageSenderService(this);
         this.pendingSocketRequests = new ConcurrentHashMap<>();
         this.socketStream = new SocketStream(this, webVerificationHandler);
         this.messagePreviewHandler = messagePreviewHandler;
@@ -137,7 +138,7 @@ public final class WhatsAppClient {
      *
      * @return a non-null WhatsappStore
      */
-    public WhatsappStore store() {
+    public WhatsAppStore store() {
         return store;
     }
 
@@ -315,29 +316,30 @@ public final class WhatsAppClient {
 
         pendingSocketRequests.forEach((ignored, request) -> request.complete(null));
         pendingSocketRequests.clear();
+
         if (reason == WhatsAppClientDisconnectReason.LOGGED_OUT || reason == WhatsAppClientDisconnectReason.BANNED) {
             store.setSerializable(false);
             var serializer = store.serializer();
             serializer.deleteSession(store.clientType(), store.uuid());
+        } else {
+            store.serialize();
         }
-        if (reason != WhatsAppClientDisconnectReason.RECONNECTING) {
-            if (shutdownHook != null) {
-                Runtime.getRuntime().removeShutdownHook(shutdownHook);
-                shutdownHook = null;
-            }
-            onShutdown();
+
+        socketStream.reset();
+        webAppStateService.reset();
+
+        if (reason != WhatsAppClientDisconnectReason.RECONNECTING && shutdownHook != null) {
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            shutdownHook = null;
         }
+
         for (var listener : store.listeners()) {
             listener.onDisconnected(this, reason);
         }
+
         if (reason == WhatsAppClientDisconnectReason.RECONNECTING) {
             connect(reason);
         }
-    }
-
-    private void onShutdown() {
-        webAppState.close();
-        store.serialize();
     }
 
     private void onMessage(ByteBuffer message) {
@@ -1668,7 +1670,7 @@ public final class WhatsAppClient {
         if (compose) {
             changePresence(recipient, COMPOSING);
         }
-        messageSender.sendMessage(info, Map.of());
+        messageSenderService.sendMessage(info, Map.of());
         if (compose) {
             var pausedNode = new NodeBuilder()
                     .description("paused")
@@ -1691,7 +1693,7 @@ public final class WhatsAppClient {
      * @return a CompletableFuture
      */
     public NewsletterMessageInfo sendMessage(NewsletterMessageInfo info) {
-        messageSender.sendMessage(info, Map.of());
+        messageSenderService.sendMessage(info, Map.of());
         return info;
     }
 
@@ -1938,7 +1940,7 @@ public final class WhatsAppClient {
                         .status(MessageStatus.PENDING)
                         .build();
                 info.setNewsletter(oldNewsletterInfo.newsletter());
-                messageSender.sendMessage(info, Map.of("edit", getEditBit(info)));
+                messageSenderService.sendMessage(info, Map.of("edit", getEditBit(info)));
                 return oldMessage;
             }
             case ChatMessageInfo oldChatInfo -> {
@@ -1956,7 +1958,7 @@ public final class WhatsAppClient {
                         .timestampSeconds(Clock.nowSeconds())
                         .broadcast(oldChatInfo.chatJid().hasServer(JidServer.broadcast()))
                         .build();
-                messageSender.sendMessage(info, Map.of("edit", getEditBit(info)));
+                messageSenderService.sendMessage(info, Map.of("edit", getEditBit(info)));
                 return oldMessage;
             }
             default -> throw new IllegalStateException("Unsupported edit: " + oldMessage);
@@ -1977,7 +1979,7 @@ public final class WhatsAppClient {
                 .status(MessageStatus.PENDING)
                 .build();
         revokeInfo.setNewsletter(info.newsletter());
-        messageSender.sendMessage(info, Map.of("edit", getEditBit(info)));
+        messageSenderService.sendMessage(info, Map.of("edit", getEditBit(info)));
         ;
     }
 
@@ -2008,7 +2010,7 @@ public final class WhatsAppClient {
                     .message(MessageContainer.of(message))
                     .timestampSeconds(Clock.nowSeconds())
                     .build();
-            messageSender.sendMessage(info, Map.of("edit", getEditBit(info)));
+            messageSenderService.sendMessage(info, Map.of("edit", getEditBit(info)));
         } else {
             switch (store.clientType()) {
                 case WEB -> {
@@ -4054,7 +4056,7 @@ public final class WhatsAppClient {
         var result = sendNode(body);
         return result.getChild("error").isEmpty();
     }
-    //</editor-fold>  
+    //</editor-fold>
 
     //<editor-fold desc="Listeners">
 
@@ -4491,11 +4493,11 @@ public final class WhatsAppClient {
     //</editor-fold>
 
     public void pushWebAppState(PatchType type, List<PendingMutation> patches) {
-        webAppState.pushPatches(type, patches);
+        webAppStateService.pushPatches(type, patches);
     }
 
     public void pullWebAppState(PatchType... patches) {
-        webAppState.pullPatches(patches);
+        webAppStateService.pullPatches(patches);
     }
 
     private void updateBusinessCertificate(String newName) {

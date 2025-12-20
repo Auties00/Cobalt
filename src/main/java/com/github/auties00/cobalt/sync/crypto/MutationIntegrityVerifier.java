@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.sync.crypto;
 
-import com.github.auties00.cobalt.exception.WebAppStateSyncFatalException;
+import com.github.auties00.cobalt.exception.WebAppStateFatalSyncException;
 import com.github.auties00.cobalt.sync.exchange.MutationSyncResponse;
 import com.github.auties00.cobalt.model.sync.PatchSync;
 import com.github.auties00.cobalt.model.sync.PatchType;
-import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.store.WhatsAppStore;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -12,9 +12,9 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 
 public final class MutationIntegrityVerifier {
-    private final WhatsappStore store;
+    private final WhatsAppStore store;
 
-    public MutationIntegrityVerifier(WhatsappStore store) {
+    public MutationIntegrityVerifier(WhatsAppStore store) {
         this.store = store;
     }
 
@@ -56,7 +56,7 @@ public final class MutationIntegrityVerifier {
         try (var keys = MutationKeys.ofSyncKey(keyData.keyData())) {
             var expectedMac = computeMac(response.collectionName(), response.version(), expectedHash, keys.snapshotMacKey());
             if (!MessageDigest.isEqual(snapshot.mac(), expectedMac)) {
-                throw new WebAppStateSyncFatalException("Snapshot MAC mismatch");
+                throw new WebAppStateFatalSyncException("Snapshot MAC mismatch");
             }
         }
     }
@@ -84,7 +84,7 @@ public final class MutationIntegrityVerifier {
         try (var keys = MutationKeys.ofSyncKey(keyData.keyData())) {
             var expectedMac = computeMac(type, patch.encodedVersion(), expectedHash, keys.patchMacKey());
             if (!MessageDigest.isEqual(patch.patchMac(), expectedMac)) {
-                throw new WebAppStateSyncFatalException("Patch MAC mismatch");
+                throw new WebAppStateFatalSyncException("Patch MAC mismatch");
             }
         }
     }
@@ -109,7 +109,7 @@ public final class MutationIntegrityVerifier {
 
             return mac.doFinal();
         }catch (GeneralSecurityException exception) {
-            throw new WebAppStateSyncFatalException("Failed to compute MAC", exception);
+            throw new WebAppStateFatalSyncException("Failed to compute MAC", exception);
         }
     }
 }

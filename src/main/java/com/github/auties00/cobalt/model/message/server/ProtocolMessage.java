@@ -6,8 +6,6 @@ import com.github.auties00.cobalt.model.message.model.Message;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
 import com.github.auties00.cobalt.model.message.model.ServerMessage;
 import com.github.auties00.cobalt.model.sync.*;
-import com.github.auties00.cobalt.model.sync.*;
-import com.github.auties00.cobalt.model.sync.*;
 import com.github.auties00.cobalt.util.Clock;
 import it.auties.protobuf.annotation.ProtobufEnum;
 import it.auties.protobuf.annotation.ProtobufEnumIndex;
@@ -16,6 +14,7 @@ import it.auties.protobuf.annotation.ProtobufProperty;
 import it.auties.protobuf.model.ProtobufType;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -60,7 +59,43 @@ public final class ProtocolMessage implements ServerMessage {
     @ProtobufProperty(index = 15, type = ProtobufType.INT64)
     final long timestampMilliseconds;
 
-    ProtocolMessage(ChatMessageKey key, Type protocolType, long ephemeralExpirationSeconds, long ephemeralSettingTimestampSeconds, HistorySyncNotification historySyncNotification, AppStateSyncKeyShare appStateSyncKeyShare, AppStateSyncKeyRequest appStateSyncKeyRequest, InitialSecurityNotificationSettingSync initialSecurityNotificationSettingSync, AppStateFatalExceptionNotification appStateFatalExceptionNotification, ChatDisappear disappearingMode, MessageContainer editedMessage, long timestampMilliseconds) {
+    @ProtobufProperty(index = 16, type = ProtobufType.MESSAGE)
+    final PeerDataOperationRequestMessage peerDataOperationRequestMessage;
+
+    @ProtobufProperty(index = 17, type = ProtobufType.MESSAGE)
+    final PeerDataOperationRequestResponseMessage peerDataOperationRequestResponseMessage;
+
+    @ProtobufProperty(index = 18, type = ProtobufType.MESSAGE)
+    final BotFeedbackMessage botFeedbackMessage;
+
+    @ProtobufProperty(index = 19, type = ProtobufType.STRING)
+    final String invokerJid;
+
+    @ProtobufProperty(index = 20, type = ProtobufType.MESSAGE)
+    final RequestWelcomeMessageMetadata requestWelcomeMessageMetadata;
+
+    @ProtobufProperty(index = 21, type = ProtobufType.MESSAGE)
+    final MediaNotifyMessage mediaNotifyMessage;
+
+    @ProtobufProperty(index = 22, type = ProtobufType.MESSAGE)
+    final CloudAPIThreadControlNotification cloudApiThreadControlNotification;
+
+    @ProtobufProperty(index = 23, type = ProtobufType.MESSAGE)
+    final LIDMigrationMappingSyncMessage lidMigrationMappingSyncMessage;
+
+    @ProtobufProperty(index = 24, type = ProtobufType.MESSAGE)
+    final LimitSharing limitSharing;
+
+    @ProtobufProperty(index = 25, type = ProtobufType.BYTES)
+    final byte[] aiPsiMetadata;
+
+    @ProtobufProperty(index = 26, type = ProtobufType.MESSAGE)
+    final AIQueryFanout aiQueryFanout;
+
+    @ProtobufProperty(index = 27, type = ProtobufType.MESSAGE)
+    final MemberLabel memberLabel;
+
+    ProtocolMessage(ChatMessageKey key, Type protocolType, long ephemeralExpirationSeconds, long ephemeralSettingTimestampSeconds, HistorySyncNotification historySyncNotification, AppStateSyncKeyShare appStateSyncKeyShare, AppStateSyncKeyRequest appStateSyncKeyRequest, InitialSecurityNotificationSettingSync initialSecurityNotificationSettingSync, AppStateFatalExceptionNotification appStateFatalExceptionNotification, ChatDisappear disappearingMode, MessageContainer editedMessage, long timestampMilliseconds, PeerDataOperationRequestMessage peerDataOperationRequestMessage, PeerDataOperationRequestResponseMessage peerDataOperationRequestResponseMessage, BotFeedbackMessage botFeedbackMessage, String invokerJid, RequestWelcomeMessageMetadata requestWelcomeMessageMetadata, MediaNotifyMessage mediaNotifyMessage, CloudAPIThreadControlNotification cloudApiThreadControlNotification, LIDMigrationMappingSyncMessage lidMigrationMappingSyncMessage, LimitSharing limitSharing, byte[] aiPsiMetadata, AIQueryFanout aiQueryFanout, MemberLabel memberLabel) {
         this.key = key;
         this.protocolType = protocolType;
         this.ephemeralExpirationSeconds = ephemeralExpirationSeconds;
@@ -73,6 +108,18 @@ public final class ProtocolMessage implements ServerMessage {
         this.disappearingMode = disappearingMode;
         this.editedMessage = editedMessage;
         this.timestampMilliseconds = timestampMilliseconds;
+        this.peerDataOperationRequestMessage = peerDataOperationRequestMessage;
+        this.peerDataOperationRequestResponseMessage = peerDataOperationRequestResponseMessage;
+        this.botFeedbackMessage = botFeedbackMessage;
+        this.invokerJid = invokerJid;
+        this.requestWelcomeMessageMetadata = requestWelcomeMessageMetadata;
+        this.mediaNotifyMessage = mediaNotifyMessage;
+        this.cloudApiThreadControlNotification = cloudApiThreadControlNotification;
+        this.lidMigrationMappingSyncMessage = lidMigrationMappingSyncMessage;
+        this.limitSharing = limitSharing;
+        this.aiPsiMetadata = aiPsiMetadata;
+        this.aiQueryFanout = aiQueryFanout;
+        this.memberLabel = memberLabel;
     }
 
     @Override
@@ -140,29 +187,96 @@ public final class ProtocolMessage implements ServerMessage {
         return Clock.parseMilliseconds(timestampMilliseconds);
     }
 
+    public Optional<PeerDataOperationRequestMessage> peerDataOperationRequestMessage() {
+        return Optional.ofNullable(peerDataOperationRequestMessage);
+    }
+
+    public Optional<PeerDataOperationRequestResponseMessage> peerDataOperationRequestResponseMessage() {
+        return Optional.ofNullable(peerDataOperationRequestResponseMessage);
+    }
+
+    public Optional<BotFeedbackMessage> botFeedbackMessage() {
+        return Optional.ofNullable(botFeedbackMessage);
+    }
+
+    public Optional<String> invokerJid() {
+        return Optional.ofNullable(invokerJid);
+    }
+
+    public Optional<RequestWelcomeMessageMetadata> requestWelcomeMessageMetadata() {
+        return Optional.ofNullable(requestWelcomeMessageMetadata);
+    }
+
+    public Optional<MediaNotifyMessage> mediaNotifyMessage() {
+        return Optional.ofNullable(mediaNotifyMessage);
+    }
+
+    public Optional<CloudAPIThreadControlNotification> cloudApiThreadControlNotification() {
+        return Optional.ofNullable(cloudApiThreadControlNotification);
+    }
+
+    public Optional<LIDMigrationMappingSyncMessage> lidMigrationMappingSyncMessage() {
+        return Optional.ofNullable(lidMigrationMappingSyncMessage);
+    }
+
+    public Optional<LimitSharing> limitSharing() {
+        return Optional.ofNullable(limitSharing);
+    }
+
+    public Optional<byte[]> aiPsiMetadata() {
+        return Optional.ofNullable(aiPsiMetadata);
+    }
+
+    public Optional<AIQueryFanout> aiQueryFanout() {
+        return Optional.ofNullable(aiQueryFanout);
+    }
+
+    public Optional<MemberLabel> memberLabel() {
+        return Optional.ofNullable(memberLabel);
+    }
+
     @Override
     public boolean equals(Object o) {
-        return o instanceof ProtocolMessage that
-                && Objects.equals(key, that.key)
-                && Objects.equals(protocolType, that.protocolType)
-                && ephemeralExpirationSeconds == that.ephemeralExpirationSeconds
-                && ephemeralSettingTimestampSeconds == that.ephemeralSettingTimestampSeconds
-                && Objects.equals(historySyncNotification, that.historySyncNotification)
-                && Objects.equals(appStateSyncKeyShare, that.appStateSyncKeyShare)
-                && Objects.equals(appStateSyncKeyRequest, that.appStateSyncKeyRequest)
-                && Objects.equals(initialSecurityNotificationSettingSync, that.initialSecurityNotificationSettingSync)
-                && Objects.equals(appStateFatalExceptionNotification, that.appStateFatalExceptionNotification)
-                && Objects.equals(disappearingMode, that.disappearingMode)
-                && Objects.equals(editedMessage, that.editedMessage)
-                && timestampMilliseconds == that.timestampMilliseconds;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ProtocolMessage that = (ProtocolMessage) o;
+        return ephemeralExpirationSeconds == that.ephemeralExpirationSeconds &&
+                ephemeralSettingTimestampSeconds == that.ephemeralSettingTimestampSeconds &&
+                timestampMilliseconds == that.timestampMilliseconds &&
+                Objects.equals(key, that.key) &&
+                protocolType == that.protocolType &&
+                Objects.equals(historySyncNotification, that.historySyncNotification) &&
+                Objects.equals(appStateSyncKeyShare, that.appStateSyncKeyShare) &&
+                Objects.equals(appStateSyncKeyRequest, that.appStateSyncKeyRequest) &&
+                Objects.equals(initialSecurityNotificationSettingSync, that.initialSecurityNotificationSettingSync) &&
+                Objects.equals(appStateFatalExceptionNotification, that.appStateFatalExceptionNotification) &&
+                Objects.equals(disappearingMode, that.disappearingMode) &&
+                Objects.equals(editedMessage, that.editedMessage) &&
+                Objects.equals(peerDataOperationRequestMessage, that.peerDataOperationRequestMessage) &&
+                Objects.equals(peerDataOperationRequestResponseMessage, that.peerDataOperationRequestResponseMessage) &&
+                Objects.equals(botFeedbackMessage, that.botFeedbackMessage) &&
+                Objects.equals(invokerJid, that.invokerJid) &&
+                Objects.equals(requestWelcomeMessageMetadata, that.requestWelcomeMessageMetadata) &&
+                Objects.equals(mediaNotifyMessage, that.mediaNotifyMessage) &&
+                Objects.equals(cloudApiThreadControlNotification, that.cloudApiThreadControlNotification) &&
+                Objects.equals(lidMigrationMappingSyncMessage, that.lidMigrationMappingSyncMessage) &&
+                Objects.equals(limitSharing, that.limitSharing) &&
+                Arrays.equals(aiPsiMetadata, that.aiPsiMetadata) &&
+                Objects.equals(aiQueryFanout, that.aiQueryFanout) &&
+                Objects.equals(memberLabel, that.memberLabel);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, protocolType, ephemeralExpirationSeconds, ephemeralSettingTimestampSeconds,
+        int result = Objects.hash(key, protocolType, ephemeralExpirationSeconds, ephemeralSettingTimestampSeconds,
                 historySyncNotification, appStateSyncKeyShare, appStateSyncKeyRequest,
                 initialSecurityNotificationSettingSync, appStateFatalExceptionNotification, disappearingMode,
-                editedMessage, timestampMilliseconds);
+                editedMessage, timestampMilliseconds, peerDataOperationRequestMessage,
+                peerDataOperationRequestResponseMessage, botFeedbackMessage, invokerJid,
+                requestWelcomeMessageMetadata, mediaNotifyMessage, cloudApiThreadControlNotification,
+                lidMigrationMappingSyncMessage, limitSharing, aiQueryFanout, memberLabel);
+        result = 31 * result + Arrays.hashCode(aiPsiMetadata);
+        return result;
     }
 
     @Override
@@ -179,7 +293,19 @@ public final class ProtocolMessage implements ServerMessage {
                 "appStateFatalExceptionNotification=" + appStateFatalExceptionNotification + ", " +
                 "disappearingMode=" + disappearingMode + ", " +
                 "editedMessage=" + editedMessage + ", " +
-                "timestampMilliseconds=" + timestampMilliseconds + ']';
+                "timestampMilliseconds=" + timestampMilliseconds + ", " +
+                "peerDataOperationRequestMessage=" + peerDataOperationRequestMessage + ", " +
+                "peerDataOperationRequestResponseMessage=" + peerDataOperationRequestResponseMessage + ", " +
+                "botFeedbackMessage=" + botFeedbackMessage + ", " +
+                "invokerJid=" + invokerJid + ", " +
+                "requestWelcomeMessageMetadata=" + requestWelcomeMessageMetadata + ", " +
+                "mediaNotifyMessage=" + mediaNotifyMessage + ", " +
+                "cloudApiThreadControlNotification=" + cloudApiThreadControlNotification + ", " +
+                "lidMigrationMappingSyncMessage=" + lidMigrationMappingSyncMessage + ", " +
+                "limitSharing=" + limitSharing + ", " +
+                "aiPsiMetadata=" + Arrays.toString(aiPsiMetadata) + ", " +
+                "aiQueryFanout=" + aiQueryFanout + ", " +
+                "memberLabel=" + memberLabel + ']';
     }
 
     /**
@@ -197,33 +323,33 @@ public final class ProtocolMessage implements ServerMessage {
          */
         EPHEMERAL_SETTING(3),
         /**
-         * A {@link ProtocolMessage} that notifies that a dataSync in an ephemeral chat
+         * A {@link ProtocolMessage} that notifies that a sync in an ephemeral chat
          */
         EPHEMERAL_SYNC_RESPONSE(4),
         /**
-         * A {@link ProtocolMessage} that notifies that a history dataSync in any chat
+         * A {@link ProtocolMessage} that notifies that a history sync in any chat
          */
         HISTORY_SYNC_NOTIFICATION(5),
         /**
-         * App state dataSync key share
+         * App state sync key share
          */
         APP_STATE_SYNC_KEY_SHARE(6),
         /**
-         * App state dataSync key request
+         * App state sync key request
          */
         APP_STATE_SYNC_KEY_REQUEST(7),
         /**
-         * Message back-fill request
+         * Message fanout back-fill request
          */
-        MESSAGE_BACK_FILL_REQUEST(8),
+        MSG_FANOUT_BACKFILL_REQUEST(8),
         /**
-         * Initial security notification setting dataSync
+         * Initial security notification setting sync
          */
         INITIAL_SECURITY_NOTIFICATION_SETTING_SYNC(9),
         /**
          * App state fatal exception notification
          */
-        EXCEPTION_NOTIFICATION(10),
+        APP_STATE_FATAL_EXCEPTION_NOTIFICATION(10),
         /**
          * Share phone value
          */
@@ -231,7 +357,67 @@ public final class ProtocolMessage implements ServerMessage {
         /**
          * Message edit
          */
-        MESSAGE_EDIT(14);
+        MESSAGE_EDIT(14),
+        /**
+         * Peer data operation request
+         */
+        PEER_DATA_OPERATION_REQUEST_MESSAGE(16),
+        /**
+         * Peer data operation request response
+         */
+        PEER_DATA_OPERATION_REQUEST_RESPONSE_MESSAGE(17),
+        /**
+         * Request welcome message
+         */
+        REQUEST_WELCOME_MESSAGE(18),
+        /**
+         * Bot feedback message
+         */
+        BOT_FEEDBACK_MESSAGE(19),
+        /**
+         * Media notify message
+         */
+        MEDIA_NOTIFY_MESSAGE(20),
+        /**
+         * Cloud API thread control notification
+         */
+        CLOUD_API_THREAD_CONTROL_NOTIFICATION(21),
+        /**
+         * LID migration mapping sync
+         */
+        LID_MIGRATION_MAPPING_SYNC(22),
+        /**
+         * Reminder message
+         */
+        REMINDER_MESSAGE(23),
+        /**
+         * Bot memu onboarding message
+         */
+        BOT_MEMU_ONBOARDING_MESSAGE(24),
+        /**
+         * Status mention message
+         */
+        STATUS_MENTION_MESSAGE(25),
+        /**
+         * Stop generation message
+         */
+        STOP_GENERATION_MESSAGE(26),
+        /**
+         * Limit sharing
+         */
+        LIMIT_SHARING(27),
+        /**
+         * AI PSI Metadata
+         */
+        AI_PSI_METADATA(28),
+        /**
+         * AI Query Fanout
+         */
+        AI_QUERY_FANOUT(29),
+        /**
+         * Group member label change
+         */
+        GROUP_MEMBER_LABEL_CHANGE(30);
 
         final int index;
 

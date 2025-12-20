@@ -9,7 +9,7 @@ import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificate
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameDetailsBuilder;
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameDetailsSpec;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.store.WhatsAppStore;
 import com.github.auties00.cobalt.util.SecureBytes;
 import com.github.auties00.curve25519.Curve25519;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
@@ -37,10 +37,10 @@ public abstract sealed class WhatsAppMobileClientRegistration implements AutoClo
     private static final String SIGNAL_PUBLIC_KEY_TYPE = Base64.getUrlEncoder().encodeToString(new byte[]{SignalIdentityPublicKey.type()});
 
     protected final HttpClient httpClient;
-    protected final WhatsappStore store;
+    protected final WhatsAppStore store;
     protected final WhatsAppClientVerificationHandler.Mobile verification;
 
-    protected WhatsAppMobileClientRegistration(WhatsappStore store, WhatsAppClientVerificationHandler.Mobile verification) {
+    protected WhatsAppMobileClientRegistration(WhatsAppStore store, WhatsAppClientVerificationHandler.Mobile verification) {
         Objects.requireNonNull(store, "store cannot be null");
         Objects.requireNonNull(verification, "verification cannot be null");
         this.store = store;
@@ -50,7 +50,7 @@ public abstract sealed class WhatsAppMobileClientRegistration implements AutoClo
                 .build();
     }
 
-    public static WhatsAppMobileClientRegistration of(WhatsappStore store, WhatsAppClientVerificationHandler.Mobile verification) {
+    public static WhatsAppMobileClientRegistration of(WhatsAppStore store, WhatsAppClientVerificationHandler.Mobile verification) {
         return switch (store.device().platform()) {
             case ANDROID -> new WhatsAppAndroidClientRegistration(store, verification);
             case IOS -> new WhatsAppIosClientRegistration(store, verification);
@@ -274,7 +274,7 @@ public abstract sealed class WhatsAppMobileClientRegistration implements AutoClo
         return Base64.getUrlEncoder().encodeToString(BusinessVerifiedNameCertificateSpec.encode(certificate));
     }
 
-    protected static PhoneNumber getPhoneNumber(WhatsappStore store) {
+    protected static PhoneNumber getPhoneNumber(WhatsAppStore store) {
         var phoneNumber = store.phoneNumber()
                 .orElseThrow(() -> new MobileRegistrationException("Phone number wasn't set"));
         try {

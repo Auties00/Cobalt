@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync.handler;
 
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.store.WhatsappStore;
 
 /**
  * Handles time format actions.
@@ -21,12 +21,13 @@ public final class TimeFormatHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var action = mutation.value()
                 .timeFormatAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing timeFormatAction"));
 
-        store.setTwentyFourHourFormat(action.twentyFourHourFormatEnabled());
+        client.store()
+                .setTwentyFourHourFormat(action.twentyFourHourFormatEnabled());
 
         return true;
     }

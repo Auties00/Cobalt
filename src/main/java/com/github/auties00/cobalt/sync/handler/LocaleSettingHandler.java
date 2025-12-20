@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync.handler;
 
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.store.WhatsappStore;
 
 /**
  * Handles locale setting changes.
@@ -21,12 +21,22 @@ public final class LocaleSettingHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var setting = mutation.value()
                 .localeSetting()
                 .orElseThrow(() -> new IllegalArgumentException("Missing localeSetting"));
 
-        store.setLocale(setting.locale());
+        var oldLocale = client.store()
+                .locale()
+                .orElse(null);
+        var newLocale = setting.locale();
+
+        client.store()
+                .setLocale(newLocale);
+
+        for(var listener : client.store().listeners()) {
+            Thread.startVirtualThread(() -> listener.onLocaleChanged(client, oldLocale, newLocale));
+        }
 
         return true;
     }

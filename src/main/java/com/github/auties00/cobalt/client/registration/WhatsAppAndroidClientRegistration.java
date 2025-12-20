@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.client.registration;
 
 import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
-import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.store.WhatsAppStore;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -9,7 +9,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 public final class WhatsAppAndroidClientRegistration extends WhatsAppMobileClientRegistration {
-    public WhatsAppAndroidClientRegistration(WhatsappStore store, WhatsAppClientVerificationHandler.Mobile verification) {
+    public WhatsAppAndroidClientRegistration(WhatsAppStore store, WhatsAppClientVerificationHandler.Mobile verification) {
         super(store, verification);
     }
 

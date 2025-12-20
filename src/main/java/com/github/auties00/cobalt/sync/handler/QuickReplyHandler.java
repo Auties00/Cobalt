@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.store.WhatsappStore;
 
 /**
  * Handles quick reply actions.
@@ -25,7 +25,7 @@ public final class QuickReplyHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var action = mutation.value()
                 .quickReplyAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing quickReplyAction"));
@@ -36,12 +36,15 @@ public final class QuickReplyHandler implements WebAppStateActionHandler {
         switch (mutation.operation()) {
             case SET -> {
                 if(action.deleted()) {
-                    store.removeQuickReply(shortcut);
+                    client.store()
+                            .removeQuickReply(shortcut);
                 }else {
-                    store.addQuickReply(action.toQuickReply());
+                    client.store()
+                            .addQuickReply(action.toQuickReply());
                 }
             }
-            case REMOVE -> store.removeQuickReply(shortcut);
+            case REMOVE -> client.store()
+                    .removeQuickReply(shortcut);
         }
 
         return true;

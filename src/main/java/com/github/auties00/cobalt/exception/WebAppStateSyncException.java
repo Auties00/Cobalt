@@ -5,7 +5,7 @@ package com.github.auties00.cobalt.exception;
  */
 public abstract sealed class WebAppStateSyncException
         extends RuntimeException
-        permits WebAppStateSyncFatalException, WebAppStateSyncGenericRetryableException {
+        permits WebAppStateFatalSyncException, WebAppStateRetryableSyncException {
     public WebAppStateSyncException(Throwable cause) {
         super(cause);
     }
@@ -28,4 +28,5 @@ public abstract sealed class WebAppStateSyncException
     public WebAppStateSyncException(String message, Throwable cause) {
         super(message, cause);
     }
+
 }

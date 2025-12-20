@@ -1,6 +1,6 @@
 package com.github.auties00.cobalt.sync.crypto;
 
-import com.github.auties00.cobalt.exception.WebAppStateSyncFatalException;
+import com.github.auties00.cobalt.exception.WebAppStateFatalSyncException;
 import com.github.auties00.cobalt.model.sync.ActionDataSyncSpec;
 import com.github.auties00.cobalt.model.sync.ActionValueSync;
 import com.github.auties00.cobalt.model.sync.RecordSync;
@@ -55,7 +55,7 @@ public sealed interface DecryptedMutation {
             mac.update(encryptedValue, IV_LENGTH, encryptedValue.length - IV_LENGTH - MAC_LENGTH);
             var expectedMac = mac.doFinal();
             if (!MessageDigest.isEqual(valueMac, expectedMac)) {
-                throw new WebAppStateSyncFatalException("Value MAC mismatch");
+                throw new WebAppStateFatalSyncException("Value MAC mismatch");
             }
 
             // 3. Decrypt payload with AES-256-CBC and decode protobuf
@@ -70,7 +70,7 @@ public sealed interface DecryptedMutation {
             mac.init(keys.indexKey());
             var expectedIndexMac = mac.doFinal(actionData.index());
             if (!MessageDigest.isEqual(indexMac, expectedIndexMac)) {
-                throw new WebAppStateSyncFatalException("Index MAC mismatch");
+                throw new WebAppStateFatalSyncException("Index MAC mismatch");
             }
 
             // 5. Build mutation

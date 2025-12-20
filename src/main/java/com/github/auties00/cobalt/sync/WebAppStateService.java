@@ -1,22 +1,21 @@
 package com.github.auties00.cobalt.sync;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.exception.*;
+import com.github.auties00.cobalt.exception.WebAppStateFatalSyncException;
+import com.github.auties00.cobalt.exception.WebAppStateMissingKeyException;
+import com.github.auties00.cobalt.exception.WebAppStateRetryableSyncException;
+import com.github.auties00.cobalt.model.sync.*;
+import com.github.auties00.cobalt.store.WhatsAppStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
+import com.github.auties00.cobalt.sync.crypto.MutationIntegrityVerifier;
 import com.github.auties00.cobalt.sync.crypto.MutationKeys;
 import com.github.auties00.cobalt.sync.crypto.MutationLTHash;
-import com.github.auties00.cobalt.model.sync.*;
-import com.github.auties00.cobalt.sync.crypto.MutationIntegrityVerifier;
-import com.github.auties00.cobalt.model.sync.CollectionState;
-import com.github.auties00.cobalt.model.sync.PendingMutation;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.sync.exchange.MutationSyncResponse;
-import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.sync.exchange.MutationRequestBuilder;
 import com.github.auties00.cobalt.sync.exchange.MutationResponseParser;
+import com.github.auties00.cobalt.sync.exchange.MutationSyncResponse;
 import com.github.auties00.cobalt.util.SecureBytes;
 import it.auties.protobuf.stream.ProtobufInputStream;
 
-import java.io.Closeable;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -41,9 +40,9 @@ import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Locat
  *   <li>Managing collection states</li>
  * </ul>
  */
-public final class WebAppState implements Closeable {
+public final class WebAppStateService {
     private final WhatsAppClient whatsapp;
-    private final WhatsappStore store;
+    private final WhatsAppStore store;
     private final MutationRequestBuilder requestBuilder;
     private final MutationResponseParser responseParser;
     private final MutationIntegrityVerifier integrityVerifier;
@@ -55,7 +54,7 @@ public final class WebAppState implements Closeable {
      *
      * @param whatsapp the Whatsapp instance to use for store access and node sending
      */
-    public WebAppState(WhatsAppClient whatsapp) {
+    public WebAppStateService(WhatsAppClient whatsapp) {
         this.whatsapp = whatsapp;
         this.store = whatsapp.store();
         this.requestBuilder = new MutationRequestBuilder(whatsapp);
@@ -232,7 +231,7 @@ public final class WebAppState implements Closeable {
                     .waitForMediaConnection()
                     .download(externalRef);
         }catch (Throwable throwable) {
-            throw new WebAppStateSyncGenericRetryableException("Failed to download external mutations", throwable);
+            throw new WebAppStateRetryableSyncException("Failed to download external mutations", throwable);
         }
     }
 
@@ -240,7 +239,7 @@ public final class WebAppState implements Closeable {
         try(var protobufStream = ProtobufInputStream.fromStream(downloadedData)) {
             return MutationsSyncSpec.decode(protobufStream);
         }catch (Throwable throwable) {
-            throw new WebAppStateSyncGenericRetryableException("Failed to decode external mutations", throwable);
+            throw new WebAppStateRetryableSyncException("Failed to decode external mutations", throwable);
         }
     }
 
@@ -262,7 +261,7 @@ public final class WebAppState implements Closeable {
             // Get encryption key
             var syncKey = whatsapp.store()
                     .findWebAppStateKeyById(keyId.id())
-                    .orElseThrow(() -> new WebAppStateSyncMissingKeyException(keyId.id()));
+                    .orElseThrow(() -> new WebAppStateMissingKeyException(keyId.id()));
             var keyData = syncKey.keyData();
             if (keyData == null || keyData.keyData() == null) {
                 continue;
@@ -278,7 +277,7 @@ public final class WebAppState implements Closeable {
                 );
                 decrypted.add(decryptedMutation);
             }catch (Exception e) {
-                throw new WebAppStateSyncGenericRetryableException("Failed to decrypt mutation", e);
+                throw new WebAppStateRetryableSyncException("Failed to decrypt mutation", e);
             }
         }
 
@@ -321,7 +320,7 @@ public final class WebAppState implements Closeable {
             var mutations = entry.getValue();
             for (var mutation : mutations) {
                 try {
-                    handler.get().applyMutation(store, mutation);
+                    handler.get().applyMutation(whatsapp, mutation);
                 }catch (Throwable throwable) {
                     whatsapp.handleFailure(WEB_APP_STATE, throwable);
                 }
@@ -395,12 +394,12 @@ public final class WebAppState implements Closeable {
 
         var metadata = store.findWebAppState(collectionName);
         switch (error) {
-            case WebAppStateSyncMissingKeyException missingKeyEx -> {
+            case WebAppStateMissingKeyException missingKeyEx -> {
                 store.markWebAppStateBlocked(collectionName);
                 var keyId = missingKeyEx.keyId();
                 // TODO: Request missing key with peer message
             }
-            case WebAppStateSyncGenericRetryableException _ -> {
+            case WebAppStateRetryableSyncException _ -> {
                 var result = retryScheduler.scheduleRetry(
                         collectionName,
                         metadata.retryCount(),
@@ -412,19 +411,18 @@ public final class WebAppState implements Closeable {
                     store.markWebAppStateErrorFatal(collectionName);
                 }
             }
-            case WebAppStateSyncFatalException fatalException -> {
+            case WebAppStateFatalSyncException fatalException -> {
                 store.markWebAppStateErrorFatal(collectionName);
                 throw fatalException;
             }
             default -> {
                 store.markWebAppStateErrorFatal(collectionName);
-                throw new WebAppStateSyncFatalException(error);
+                throw new WebAppStateFatalSyncException(error);
             }
         }
     }
 
-    @Override
-    public void close() {
+    public void reset() {
         retryScheduler.close();
     }
 }

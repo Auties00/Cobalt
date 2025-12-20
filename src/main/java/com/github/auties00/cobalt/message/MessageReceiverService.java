@@ -6,11 +6,11 @@ import com.github.auties00.cobalt.message.processor.MessageDecoder;
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificateSpec;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.info.*;
+import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.message.model.*;
 import com.github.auties00.cobalt.model.message.server.SenderKeyDistributionMessage;
 import com.github.auties00.cobalt.model.newsletter.NewsletterReaction;
-import com.github.auties00.cobalt.model.sync.*;
 import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.libsignal.SignalProtocolAddress;
 import com.github.auties00.libsignal.groups.SignalSenderKeyName;
@@ -22,12 +22,12 @@ import java.util.stream.Stream;
 
 import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.MESSAGE;
 
-public final class MessageReceiver {
+public final class MessageReceiverService {
     private final WhatsAppClient whatsapp;
     private final MessageDecoder messageDecoder;
     private final MessageAttributer messageAttributer;
 
-    public MessageReceiver(WhatsAppClient whatsapp) {
+    public MessageReceiverService(WhatsAppClient whatsapp) {
         this.whatsapp = whatsapp;
         this.messageDecoder = new MessageDecoder(whatsapp.store());
         this.messageAttributer = new MessageAttributer(whatsapp.store());
@@ -211,14 +211,15 @@ public final class MessageReceiver {
                     .status(MessageStatus.PENDING);
             var keyBuilder = new ChatMessageKeyBuilder()
                     .id(id);
-            if (from.hasServer(JidServer.user()) || from.hasServer(JidServer.legacyUser())) {
+            if (from.hasServer(JidServer.user()) || from.hasServer(JidServer.legacyUser()) || from.hasServer(JidServer.lid())) {
                 var recipient = infoNode
                         .getAttributeAsJid("recipient_pn")
                         .or(() -> infoNode.getAttributeAsJid("recipient"))
                         .orElse(from);
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
-                keyBuilder.fromMe(Objects.equals(from.withoutData(), selfJid.withoutData()));
+                var fromMe = isFromMe(from, selfJid);
+                keyBuilder.fromMe(fromMe);
                 messageBuilder.senderJid(from);
             }else if(from.hasServer(JidServer.bot())) {
                 var meta = infoNode.getChild("meta")
@@ -238,7 +239,8 @@ public final class MessageReceiver {
                         .orElseThrow(() -> new NoSuchElementException("Missing sender"));
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
-                keyBuilder.fromMe(Objects.equals(participant.withoutData(), selfJid.withoutData()));
+                var fromMe = isFromMe(participant, selfJid);
+                keyBuilder.fromMe(fromMe);
                 messageBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
             }else {
                 throw new RuntimeException("Unknown value server: " + from.server());
@@ -278,6 +280,16 @@ public final class MessageReceiver {
                         infoNode.hasAttribute("category", "peer")
                 );
             }
+        }
+    }
+
+    private boolean isFromMe(Jid participant, Jid selfJid) {
+        if(Objects.equals(participant.withoutData(), selfJid.withoutData())) {
+            return true;
+        } else {
+            return whatsapp.store().getAlternateJid(participant.withoutData())
+                    .map(alt -> Objects.equals(alt, selfJid.withoutData()))
+                    .orElse(false);
         }
     }
 

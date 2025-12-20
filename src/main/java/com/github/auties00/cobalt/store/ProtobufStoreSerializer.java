@@ -108,7 +108,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public void serialize(WhatsappStore store) {
+    public void serialize(WhatsAppStore store) {
         Objects.requireNonNull(store, "store cannot be null");
         try {
             storeLock.lock(store.uuid());
@@ -135,7 +135,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private void encodeStore(WhatsappStore store, Path path) {
+    private void encodeStore(WhatsAppStore store, Path path) {
         try {
             var tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
             try (var stream = Files.newOutputStream(tempFile)) {
@@ -147,7 +147,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private void serializeChat(WhatsappStore store, Chat chat) {
+    private void serializeChat(WhatsAppStore store, Chat chat) {
         Objects.requireNonNull(store, "store cannot be null");
         Objects.requireNonNull(chat, "chat cannot be null");
 
@@ -168,7 +168,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private void serializeNewsletter(WhatsappStore store, Newsletter newsletter) {
+    private void serializeNewsletter(WhatsAppStore store, Newsletter newsletter) {
         Objects.requireNonNull(store, "store cannot be null");
         Objects.requireNonNull(newsletter, "newsletter cannot be null");
 
@@ -188,7 +188,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private Path getMessagesContainerPathIfUpdated(WhatsappStore store, Jid jid, int hashCode, String filePrefix) {
+    private Path getMessagesContainerPathIfUpdated(WhatsAppStore store, Jid jid, int hashCode, String filePrefix) {
         var identifier = new StoreJidPair(store.uuid(), jid);
         var oldHashCode = jidsHashCodes.getOrDefault(identifier, -1);
         if (oldHashCode == hashCode) {
@@ -206,7 +206,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, UUID id) {
+    public Optional<WhatsAppStore> startDeserialize(WhatsAppClientType type, UUID id) {
         Objects.requireNonNull(type, "type cannot be null");
         Objects.requireNonNull(id, "id cannot be null");
 
@@ -214,7 +214,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, Long phoneNumber) {
+    public Optional<WhatsAppStore> startDeserialize(WhatsAppClientType type, Long phoneNumber) {
         Objects.requireNonNull(type, "type cannot be null");
         Objects.requireNonNull(phoneNumber, "phoneNumber cannot be null");
 
@@ -230,7 +230,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private Optional<WhatsappStore> deserializeStoreFromId(WhatsAppClientType type, String id) {
+    private Optional<WhatsAppStore> deserializeStoreFromId(WhatsAppClientType type, String id) {
         var path = getSessionFile(type, id, "store.proto");
         if (Files.notExists(path)) {
             return Optional.empty();
@@ -246,12 +246,12 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private void startAttribute(WhatsappStore store) {
+    private void startAttribute(WhatsAppStore store) {
         var task = Thread.startVirtualThread(() -> deserializeChatsAndNewsletters(store));
         storesAttributions.put(store.uuid(), task);
     }
 
-    private void deserializeChatsAndNewsletters(WhatsappStore store) {
+    private void deserializeChatsAndNewsletters(WhatsAppStore store) {
         var directory = getSessionDirectory(store.clientType(), store.uuid().toString());
         try (var walker = Files.walk(directory); var executor = newVirtualThreadPerTaskExecutor()) {
             walker.forEach(path -> executor.submit(() -> deserializeChatOrNewsletter(store, path)));
@@ -261,7 +261,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         attributeStoreContextualMessages(store);
     }
 
-    private void deserializeChatOrNewsletter(WhatsappStore store, Path path) {
+    private void deserializeChatOrNewsletter(WhatsAppStore store, Path path) {
         try {
             var fileName = path.getFileName().toString();
             if (fileName.startsWith(CHAT_PREFIX)) {
@@ -274,7 +274,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private void deserializeChat(WhatsappStore store, Path chatFile) {
+    private void deserializeChat(WhatsAppStore store, Path chatFile) {
         try (var stream = Files.newInputStream(chatFile)) {
             var chat = ChatSpec.decode(ProtobufInputStream.fromStream(stream));
             var storeJidPair = new StoreJidPair(store.uuid(), chat.jid());
@@ -298,7 +298,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private void deserializeNewsletter(WhatsappStore store, Path newsletterFile) {
+    private void deserializeNewsletter(WhatsAppStore store, Path newsletterFile) {
         try (var stream = Files.newInputStream(newsletterFile)) {
             var newsletter = NewsletterSpec.decode(ProtobufInputStream.fromStream(stream));
             var storeJidPair = new StoreJidPair(store.uuid(), newsletter.jid());
@@ -321,7 +321,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public void finishDeserialize(WhatsappStore store) {
+    public void finishDeserialize(WhatsAppStore store) {
         Objects.requireNonNull(store, "store cannot be null");
 
         var task = storesAttributions.get(store.uuid());
@@ -337,7 +337,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
     }
 
     // Do this after we have all the chats, or it won't work for obvious reasons
-    private void attributeStoreContextualMessages(WhatsappStore store) {
+    private void attributeStoreContextualMessages(WhatsAppStore store) {
         store.chats()
                 .parallelStream()
                 .map(Chat::messages)
@@ -345,14 +345,14 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
                 .forEach(message -> attributeStoreContextualMessage(store, message));
     }
 
-    private void attributeStoreContextualMessage(WhatsappStore store, MessageInfo message) {
+    private void attributeStoreContextualMessage(WhatsAppStore store, MessageInfo message) {
         message.message()
                 .contentWithContext()
                 .flatMap(ContextualMessage::contextInfo)
                 .ifPresent(contextInfo -> attributeStoreContextInfo(store, contextInfo));
     }
 
-    private void attributeStoreContextInfo(WhatsappStore store, ContextInfo contextInfo) {
+    private void attributeStoreContextInfo(WhatsAppStore store, ContextInfo contextInfo) {
         contextInfo.quotedMessageParentJid()
                 .flatMap(store::findChatByJid)
                 .ifPresent(contextInfo::setQuotedMessageParent);
@@ -418,7 +418,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         }
     }
 
-    private Path getSessionFile(WhatsappStore store, String fileName) {
+    private Path getSessionFile(WhatsAppStore store, String fileName) {
         try {
             var result = getSessionFile(store.clientType(), store.uuid().toString(), fileName);
             Files.createDirectories(result.getParent());

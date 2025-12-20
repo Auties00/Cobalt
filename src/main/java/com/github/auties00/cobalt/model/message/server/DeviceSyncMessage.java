@@ -10,7 +10,7 @@ import java.util.Objects;
 
 /**
  * A model class that represents a message that refers to a message sent by the device paired with
- * the active WhatsappWeb session to dataSync.
+ * the active WhatsappWeb session to sync.
  */
 @ProtobufMessage(name = "Message.DeviceSyncMessage")
 public final class DeviceSyncMessage implements ServerMessage {

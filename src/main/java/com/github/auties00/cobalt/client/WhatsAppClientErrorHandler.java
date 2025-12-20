@@ -1,9 +1,6 @@
 package com.github.auties00.cobalt.client;
 
-import com.github.auties00.cobalt.exception.MalformedNodeException;
-import com.github.auties00.cobalt.exception.SessionBadMacException;
-import com.github.auties00.cobalt.exception.SessionConflictException;
-import com.github.auties00.cobalt.exception.WebAppStateSyncFatalException;
+import com.github.auties00.cobalt.exception.*;
 import com.github.auties00.cobalt.model.jid.Jid;
 
 import java.io.IOException;
@@ -120,9 +117,10 @@ public interface WhatsAppClientErrorHandler {
 
     private static boolean isCriticalError(Location location, Throwable throwable) {
         return location == AUTH // Can't log in
-               || (location == WEB_APP_STATE && throwable instanceof WebAppStateSyncFatalException) // Web app state sync failed
+               || (location == WEB_APP_STATE && throwable instanceof WebAppStateFatalSyncException) // Web app state sync failed
                || location == CRYPTOGRAPHY // Can't encrypt/decrypt a node
-               || (location == STREAM && (throwable instanceof SessionConflictException || throwable instanceof SessionBadMacException || throwable instanceof MalformedNodeException)); // Something went wrong in the stream
+               || (location == STREAM && (throwable instanceof SessionConflictException || throwable instanceof SessionBadMacException || throwable instanceof MalformedNodeException)) // Something went wrong in the stream
+               || (location == LID_MIGRATION && throwable instanceof LidMigrationException); // LID migration failed critically
     }
 
     /**
@@ -175,7 +173,12 @@ public interface WhatsAppClientErrorHandler {
         /**
          * Indicates an error that occurred during connection re-establishment
          */
-        RECONNECT
+        RECONNECT,
+
+        /**
+         * Indicates an error that occurred when migrating to the new lid addressing mode
+         */
+        LID_MIGRATION
     }
 
     /**

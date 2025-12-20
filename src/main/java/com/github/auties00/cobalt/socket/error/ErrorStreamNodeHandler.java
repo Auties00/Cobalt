@@ -76,7 +76,7 @@ public final class ErrorStreamNodeHandler extends SocketStream.Handler {
     }
 
     @Override
-    public void dispose() {
+    public void reset() {
         retriedConnection.set(false);
     }
 }

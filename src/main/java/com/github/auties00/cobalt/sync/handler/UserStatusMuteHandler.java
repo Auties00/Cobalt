@@ -1,9 +1,9 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles user status mute actions.
@@ -25,7 +25,7 @@ public final class UserStatusMuteHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var action = mutation.value()
                 .userStatusMuteAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing userStatusMuteAction"));
@@ -34,8 +34,9 @@ public final class UserStatusMuteHandler implements WebAppStateActionHandler {
         var userJidString = indexArray.getString(1);
         var userJid = Jid.of(userJidString);
 
-        var contact = store.findContactByJid(userJid)
-                .orElseGet(() -> store.addNewContact(userJid));
+        var contact = client.store()
+                .findContactByJid(userJid)
+                .orElseGet(() -> client.store().addNewContact(userJid));
 
         switch (mutation.operation()) {
             case SET -> contact.setStatusMuted(action.muted());

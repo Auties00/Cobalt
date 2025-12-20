@@ -12,7 +12,7 @@ import com.github.auties00.cobalt.model.message.standard.PollUpdateMessage;
 import com.github.auties00.cobalt.model.message.standard.ReactionMessage;
 import com.github.auties00.cobalt.model.poll.PollUpdateBuilder;
 import com.github.auties00.cobalt.model.poll.PollUpdateEncryptedOptionsSpec;
-import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.store.WhatsAppStore;
 import com.github.auties00.cobalt.util.Clock;
 
 import javax.crypto.Cipher;
@@ -27,9 +27,9 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 public final class MessageAttributer {
-    private final WhatsappStore store;
+    private final WhatsAppStore store;
 
-    public MessageAttributer(WhatsappStore store) {
+    public MessageAttributer(WhatsAppStore store) {
         this.store = store;
     }
 
@@ -143,7 +143,7 @@ public final class MessageAttributer {
     }
 
     private void attributeSender(ChatMessageInfo info, Jid senderJid) {
-        if (senderJid.server() != JidServer.user() && senderJid.server() != JidServer.legacyUser()) {
+        if (!senderJid.isPhone() && !senderJid.isLid()) {
             return;
         }
 

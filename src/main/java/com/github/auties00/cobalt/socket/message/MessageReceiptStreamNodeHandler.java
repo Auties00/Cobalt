@@ -115,7 +115,7 @@ public final class MessageReceiptStreamNodeHandler extends SocketStream.Handler 
     }
 
     @Override
-    public void dispose() {
+    public void reset() {
         retries.clear();
     }
 }

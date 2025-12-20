@@ -1,8 +1,10 @@
 package com.github.auties00.cobalt.sync;
 
 import com.github.auties00.cobalt.model.sync.PatchType;
+import com.github.auties00.cobalt.util.DelayedScheduler;
 
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.concurrent.*;
 
 public final class WebAppStateBackoffScheduler implements Closeable {
@@ -31,14 +33,12 @@ public final class WebAppStateBackoffScheduler implements Closeable {
         var delayMs = calculateBackoff(attemptNumber);
 
         // Schedule the retry
-        // TODO: Can this be improved?
-        var delayedExecutor = CompletableFuture.delayedExecutor(delayMs, TimeUnit.MILLISECONDS, Thread::startVirtualThread);
-        var future = CompletableFuture.runAsync(() -> {
+        var future = DelayedScheduler.scheduleDelayed(Duration.ofMillis(delayMs), () -> {
             pendingRetries.remove(collectionName);
             retryAction.run();
-        }, delayedExecutor);
-
+        });
         pendingRetries.put(collectionName, future);
+
         return true;
     }
 

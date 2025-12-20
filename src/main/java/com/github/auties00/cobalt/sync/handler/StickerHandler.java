@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.store.WhatsappStore;
 
 /**
  * Handles sticker actions.
@@ -24,7 +24,7 @@ public final class StickerHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var action = mutation.value()
                 .stickerAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing stickerAction"));
@@ -33,8 +33,10 @@ public final class StickerHandler implements WebAppStateActionHandler {
         var stickerHash = indexArray.getString(1);
 
         switch (mutation.operation()) {
-            case SET -> store.addRecentSticker(stickerHash, action.toSticker());
-            case REMOVE -> store.removeRecentSticker(stickerHash);
+            case SET -> client.store()
+                    .addRecentSticker(stickerHash, action.toSticker());
+            case REMOVE -> client.store()
+                    .removeRecentSticker(stickerHash);
         }
 
         return true;

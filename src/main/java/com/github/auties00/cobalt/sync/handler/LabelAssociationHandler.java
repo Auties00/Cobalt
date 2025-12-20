@@ -1,10 +1,10 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.sync.RecordSync;
-import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Handles label association actions.
@@ -26,7 +26,7 @@ public final class LabelAssociationHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var action = mutation.value()
                 .labelAssociationAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing labelAssociationAction"));
@@ -39,7 +39,8 @@ public final class LabelAssociationHandler implements WebAppStateActionHandler {
         var targetJid = Jid.of(targetJidString);
 
         // Find label
-        var label = store.findLabel(labelId);
+        var label = client.store()
+                .findLabel(labelId);
         if (label.isEmpty()) {
             return false;
         }

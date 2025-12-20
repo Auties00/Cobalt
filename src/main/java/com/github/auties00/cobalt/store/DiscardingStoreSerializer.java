@@ -25,17 +25,17 @@ final class DiscardingStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public void serialize(WhatsappStore store) {
+    public void serialize(WhatsAppStore store) {
 
     }
 
     @Override
-    public Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, UUID id) {
+    public Optional<WhatsAppStore> startDeserialize(WhatsAppClientType type, UUID id) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, Long phoneNumber) {
+    public Optional<WhatsAppStore> startDeserialize(WhatsAppClientType type, Long phoneNumber) {
         return Optional.empty();
     }
 
@@ -45,7 +45,7 @@ final class DiscardingStoreSerializer implements WhatsappStoreSerializer {
     }
 
     @Override
-    public void finishDeserialize(WhatsappStore store) {
+    public void finishDeserialize(WhatsAppStore store) {
 
     }
 }

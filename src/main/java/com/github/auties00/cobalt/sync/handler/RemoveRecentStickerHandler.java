@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.store.WhatsappStore;
 
 /**
  * Handles remove recent sticker actions.
@@ -24,11 +24,12 @@ public final class RemoveRecentStickerHandler implements WebAppStateActionHandle
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var indexArray = JSON.parseArray(mutation.index());
         var stickerHash = indexArray.getString(1);
 
-        store.removeRecentSticker(stickerHash);
+        client.store()
+                .removeRecentSticker(stickerHash);
 
         return true;
     }

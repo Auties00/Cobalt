@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync.handler;
 
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.store.WhatsappStore;
 
 /**
  * Handles unarchive chats setting changes.
@@ -22,12 +22,13 @@ public final class UnarchiveChatsSettingHandler implements WebAppStateActionHand
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var setting = mutation.value()
                 .unarchiveChatsSetting()
                 .orElseThrow(() -> new IllegalArgumentException("Missing unarchiveChatsSetting"));
 
-        store.setUnarchiveChats(setting.unarchiveChats());
+        client.store()
+                .setUnarchiveChats(setting.unarchiveChats());
 
         return true;
     }

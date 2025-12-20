@@ -9,7 +9,7 @@ import java.util.*;
 /**
  * A serialization interface for managing persistent storage of WhatsApp session data.
  * <p>
- * This interface provides a standardized mechanism for serializing and deserializing ({@link WhatsappStore}).
+ * This interface provides a standardized mechanism for serializing and deserializing ({@link WhatsAppStore}).
  * <p>
  * The interface supports multiple client types ({@link WhatsAppClientType#WEB} and {@link WhatsAppClientType#MOBILE})
  * and can be implemented to provide different storage backends. Two built-in implementations are provided:
@@ -23,7 +23,7 @@ import java.util.*;
  * <b>Thread Safety:</b> Implementations should be thread-safe, as serialization operations may be
  * called concurrently from different parts of the WhatsApp API.
  *
- * @see WhatsappStore
+ * @see WhatsAppStore
  */
 @SuppressWarnings("unused")
 public interface WhatsappStoreSerializer {
@@ -81,7 +81,7 @@ public interface WhatsappStoreSerializer {
      * @param phoneNumber the phone number associated with the session; may be null
      * @return an {@link Optional} containing the session if found, or empty if no matching session exists
      */
-    default Optional<WhatsappStore> startDeserialize(WhatsAppClientType clientType, UUID id, Long phoneNumber) {
+    default Optional<WhatsAppStore> startDeserialize(WhatsAppClientType clientType, UUID id, Long phoneNumber) {
         if (id != null) {
             var store = startDeserialize(clientType, id);
             if(store.isPresent()) {
@@ -130,18 +130,18 @@ public interface WhatsappStoreSerializer {
     /**
      * Persists session state to storage.
      * <p>
-     * This method serializes the provided {@link WhatsappStore} instance to persistent storage,
+     * This method serializes the provided {@link WhatsAppStore} instance to persistent storage,
      * overwriting any existing store for the same session. Implementations should ensure
      * that the serialization is atomic to prevent data corruption in case of interruption.
      *
      * @param store the store to serialize; must not be null
      */
-    void serialize(WhatsappStore store);
+    void serialize(WhatsAppStore store);
 
     /**
      * Retrieves session state from storage by UUID.
      * <p>
-     * This method deserializes a {@link WhatsappStore} instance from persistent storage using
+     * This method deserializes a {@link WhatsAppStore} instance from persistent storage using
      * the session's UUID as the identifier.
      * <p>
      * <b>Important:</b> Implementations should only block while deserializing data that is
@@ -152,14 +152,14 @@ public interface WhatsappStoreSerializer {
      * @param type the WhatsApp client type; must not be null
      * @param id   the UUID of the session whose store should be retrieved; must not be null
      * @return an {@link Optional} containing the store if found, or empty if no store exists for this UUID
-     * @see #finishDeserialize(WhatsappStore)
+     * @see #finishDeserialize(WhatsAppStore)
      */
-    Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, UUID id);
+    Optional<WhatsAppStore> startDeserialize(WhatsAppClientType type, UUID id);
 
     /**
      * Retrieves session state from storage by phone number.
      * <p>
-     * This method deserializes a {@link WhatsappStore} instance from persistent storage using
+     * This method deserializes a {@link WhatsAppStore} instance from persistent storage using
      * the session's phone number as the identifier.
      * <p>
      * <b>Important:</b> Implementations should only block while deserializing data that is
@@ -170,9 +170,9 @@ public interface WhatsappStoreSerializer {
      * @param type        the WhatsApp client type; must not be null
      * @param phoneNumber the phone number of the session whose store should be retrieved; must not be null
      * @return an {@link Optional} containing the store if found, or empty if no store exists for this phone number
-     * @see #finishDeserialize(WhatsappStore)
+     * @see #finishDeserialize(WhatsAppStore)
      */
-    Optional<WhatsappStore> startDeserialize(WhatsAppClientType type, Long phoneNumber);
+    Optional<WhatsAppStore> startDeserialize(WhatsAppClientType type, Long phoneNumber);
 
     /**
      * Blocks until all asynchronous deserialization operations for a store are complete.
@@ -187,7 +187,7 @@ public interface WhatsappStoreSerializer {
      *
      * @param store the store whose deserialization should be completed; must not be null
      */
-    void finishDeserialize(WhatsappStore store);
+    void finishDeserialize(WhatsAppStore store);
 
     /**
      * Permanently removes a session from storage.

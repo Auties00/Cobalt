@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.sync.handler;
 
-import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.sync.ActionValueSync;
-import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
  * Interface for handling specific action types in app state sync.
@@ -29,9 +29,9 @@ public interface WebAppStateActionHandler {
     /**
      * Applies mutation to local state
      *
-     * @param store    the WhatsApp store for accessing state
+     * @param client   the WhatsAppClient instance linked to the mutation
      * @param mutation the mutation to apply
      * @return {@code true} if the mutation was applied successfully, {@code false} otherwise
      */
-    boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation);
+    boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation);
 }

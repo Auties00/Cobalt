@@ -1,8 +1,8 @@
 package com.github.auties00.cobalt.sync.handler;
 
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.auth.Version;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
-import com.github.auties00.cobalt.store.WhatsappStore;
 
 /**
  * Handles primary version actions.
@@ -22,14 +22,14 @@ public final class PrimaryVersionHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var action = mutation.value()
                 .primaryVersionAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing primaryVersionAction"));
 
         action.version()
                 .map(Version::of)
-                .ifPresent(store::setCompanionVersion);
+                .ifPresent(client.store()::setCompanionVersion);
 
         return true;
     }

@@ -1,7 +1,7 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
-import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
@@ -24,7 +24,7 @@ public final class FavoriteStickerHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
         var action = mutation.value()
                 .favoriteStickerAction()
                 .orElseThrow(() -> new IllegalArgumentException("Missing favoriteStickerAction"));
@@ -32,8 +32,10 @@ public final class FavoriteStickerHandler implements WebAppStateActionHandler {
         var stickerHash = indexArray.getString(1);
 
         switch (mutation.operation()) {
-            case SET -> store.addFavouriteSticker(stickerHash, action.toSticker());
-            case REMOVE -> store.removeFavouriteSticker(stickerHash);
+            case SET -> client.store()
+                    .addFavouriteSticker(stickerHash, action.toSticker());
+            case REMOVE -> client.store()
+                    .removeFavouriteSticker(stickerHash);
         }
 
         return true;

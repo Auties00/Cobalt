@@ -1,12 +1,12 @@
 package com.github.auties00.cobalt.sync.handler;
 
 import com.alibaba.fastjson2.JSON;
+import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
 import com.github.auties00.cobalt.model.info.QuotedMessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.store.WhatsappStore;
 import com.github.auties00.cobalt.sync.crypto.DecryptedMutation;
 
 /**
@@ -29,7 +29,7 @@ public final class StarMessageHandler implements WebAppStateActionHandler {
     }
 
     @Override
-    public boolean applyMutation(WhatsappStore store, DecryptedMutation.Trusted mutation) {
+    public boolean applyMutation(WhatsAppClient client, DecryptedMutation.Trusted mutation) {
 
         var action = mutation.value().starAction().orElseThrow(() -> new IllegalArgumentException("Missing starAction"));
 
@@ -40,7 +40,8 @@ public final class StarMessageHandler implements WebAppStateActionHandler {
 
         var chatJid = Jid.of(chatJidString);
 
-        var message = store.findMessageById(chatJid, messageId);
+        var message = client.store()
+                .findMessageById(chatJid, messageId);
         if (message.isEmpty()) {
             return false;
         }

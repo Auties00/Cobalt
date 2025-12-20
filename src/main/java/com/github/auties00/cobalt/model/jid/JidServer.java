@@ -20,6 +20,8 @@ public final class JidServer implements JidProvider { // String parsing is hard 
     private static final String BOT_ADDRESS = "bot";
     private static final String HOSTED_ADDRESS = "hosted";
     private static final String HOSTED_LID_ADDRESS = "hosted.lid";
+    private static final String MSGR_ADDRESS = "msgr";
+    private static final String INTEROP_ADDRESS = "interop";
 
     private static final JidServer LEGACY_USER = new JidServer(LEGACY_USER_ADDRESS, Type.LEGACY_USER);
     private static final JidServer GROUP_OR_COMMUNITY = new JidServer(GROUP_OR_COMMUNITY_ADDRESS, Type.GROUP_OR_COMMUNITY);
@@ -31,6 +33,8 @@ public final class JidServer implements JidProvider { // String parsing is hard 
     private static final JidServer BOT = new JidServer(BOT_ADDRESS, Type.BOT);
     private static final JidServer HOSTED = new JidServer(HOSTED_ADDRESS, Type.HOSTED);
     private static final JidServer HOSTED_LID = new JidServer(HOSTED_LID_ADDRESS, Type.HOSTED_LID);
+    private static final JidServer MSGR = new JidServer(MSGR_ADDRESS, Type.MSGR);
+    private static final JidServer INTEROP = new JidServer(INTEROP_ADDRESS, Type.INTEROP);
     private static final ConcurrentMap<String, JidServer> unknownServersStore = new ConcurrentHashMap<>();
 
     private final String address;
@@ -80,6 +84,14 @@ public final class JidServer implements JidProvider { // String parsing is hard 
         return HOSTED_LID;
     }
 
+    public static JidServer msgr() {
+        return MSGR;
+    }
+
+    public static JidServer interop() {
+        return INTEROP;
+    }
+
     public static JidServer unknown(String address) {
         return unknownServersStore.computeIfAbsent(address, value -> new JidServer(value, Type.UNKNOWN));
     }
@@ -100,6 +112,8 @@ public final class JidServer implements JidProvider { // String parsing is hard 
             case BOT_ADDRESS -> BOT;
             case HOSTED_ADDRESS -> HOSTED;
             case HOSTED_LID_ADDRESS -> HOSTED_LID;
+            case MSGR_ADDRESS -> MSGR;
+            case INTEROP_ADDRESS -> INTEROP;
             default -> allowUnknown ? unknown(address) : null;
         };
     }
@@ -152,6 +166,13 @@ public final class JidServer implements JidProvider { // String parsing is hard 
                             return GROUP_OR_COMMUNITY;
                         }
                     }
+                    case 'm' -> {
+                        if (address.charAt(offset + 1) == 's'
+                            && address.charAt(offset + 2) == 'g'
+                            && address.charAt(offset + 3) == 'r') {
+                            return MSGR;
+                        }
+                    }
                 }
             }
             case 6 -> {
@@ -162,6 +183,17 @@ public final class JidServer implements JidProvider { // String parsing is hard 
                     && address.charAt(offset + 4) == 'e'
                     && address.charAt(offset + 5) == 'd') {
                     return HOSTED;
+                }
+            }
+            case 7 -> {
+                if (address.charAt(offset) == 'i'
+                    && address.charAt(offset + 1) == 'n'
+                    && address.charAt(offset + 2) == 't'
+                    && address.charAt(offset + 3) == 'e'
+                    && address.charAt(offset + 4) == 'r'
+                    && address.charAt(offset + 5) == 'o'
+                    && address.charAt(offset + 6) == 'p') {
+                    return INTEROP;
                 }
             }
             case 9 -> {
@@ -279,6 +311,13 @@ public final class JidServer implements JidProvider { // String parsing is hard 
                             return GROUP_OR_COMMUNITY;
                         }
                     }
+                    case 'm' -> {
+                        if ((char) (source[offset + 1] & 0x7F) == 's'
+                            && (char) (source[offset + 2] & 0x7F) == 'g'
+                            && (char) (source[offset + 3] & 0x7F) == 'r') {
+                            return MSGR;
+                        }
+                    }
                 }
             }
             case 6 -> {
@@ -289,6 +328,17 @@ public final class JidServer implements JidProvider { // String parsing is hard 
                     && (char) (source[offset + 4] & 0x7F) == 'e'
                     && (char) (source[offset + 5] & 0x7F) == 'd') {
                     return HOSTED;
+                }
+            }
+            case 7 -> {
+                if ((char) (source[offset] & 0x7F) == 'i'
+                    && (char) (source[offset + 1] & 0x7F) == 'n'
+                    && (char) (source[offset + 2] & 0x7F) == 't'
+                    && (char) (source[offset + 3] & 0x7F) == 'e'
+                    && (char) (source[offset + 4] & 0x7F) == 'r'
+                    && (char) (source[offset + 5] & 0x7F) == 'o'
+                    && (char) (source[offset + 6] & 0x7F) == 'p') {
+                    return INTEROP;
                 }
             }
             case 9 -> {
@@ -398,6 +448,8 @@ public final class JidServer implements JidProvider { // String parsing is hard 
         NEWSLETTER,
         BOT,
         HOSTED,
-        HOSTED_LID
+        HOSTED_LID,
+        MSGR,
+        INTEROP
     }
 }

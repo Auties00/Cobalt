@@ -4,7 +4,7 @@ import com.github.auties00.cobalt.client.registration.WhatsAppMobileClientRegist
 import com.github.auties00.cobalt.model.auth.Version;
 import com.github.auties00.cobalt.model.business.BusinessCategory;
 import com.github.auties00.cobalt.model.jid.JidCompanion;
-import com.github.auties00.cobalt.store.WhatsappStore;
+import com.github.auties00.cobalt.store.WhatsAppStore;
 import com.github.auties00.cobalt.store.WhatsappStoreBuilder;
 import com.github.auties00.cobalt.store.WhatsappStoreSerializer;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
@@ -165,12 +165,12 @@ public sealed class WhatsAppClientBuilder {
          */
         public abstract Options loadOrCreateConnection(Long phoneNumber);
 
-        private static WhatsappStore newStore(UUID id, Long phoneNumber, WhatsAppClientType clientType, SignalIdentityKeyPair identityKeyPair, SignalIdentityKeyPair noiseKeyPair, boolean registered, byte[] identityId) {
+        WhatsAppStore newStore(UUID id, Long phoneNumber, WhatsAppClientType clientType, SignalIdentityKeyPair identityKeyPair, SignalIdentityKeyPair noiseKeyPair, boolean registered, byte[] identityId) {
             var device = switch (clientType) {
                 case WEB -> JidCompanion.web();
                 case MOBILE -> JidCompanion.ios(false);
             };
-            return new WhatsappStoreBuilder()
+            var result = new WhatsappStoreBuilder()
                     .uuid(Objects.requireNonNullElseGet(id, UUID::randomUUID))
                     .phoneNumber(phoneNumber)
                     .clientType(Objects.requireNonNull(clientType, "clientType must not be null"))
@@ -180,6 +180,9 @@ public sealed class WhatsAppClientBuilder {
                     .noiseKeyPair(noiseKeyPair)
                     .registered(registered)
                     .build();
+            result.setSerializable(true);
+            result.setSerializer(serializer);
+            return result;
         }
 
         public static final class Web extends Client {
@@ -410,12 +413,25 @@ public sealed class WhatsAppClientBuilder {
     }
 
     public static sealed class Options extends WhatsAppClientBuilder {
-        final WhatsappStore store;
+        final WhatsAppStore store;
         WhatsAppClientMessagePreviewHandler messagePreviewHandler;
         WhatsAppClientErrorHandler errorHandler;
 
-        private Options(WhatsappStore store) {
+        private Options(WhatsAppStore store) {
             this.store = Objects.requireNonNull(store, "store must not be null");
+        }
+
+        /**
+         * Sets the display name
+         * On Mobile, this is the preferred name that contacts that haven't saved you yet see next to your phone number.
+         * On Web, this is the name of the companion device, visible in the "Linked Devices" tab
+         *
+         * @param name the name to set, can be null
+         * @return the same instance for chaining
+         */
+        public Options name(String name) {
+            store.setName(name);
+            return this;
         }
 
         /**
@@ -488,8 +504,19 @@ public sealed class WhatsAppClientBuilder {
         }
 
         public static final class Web extends Options {
-            private Web(WhatsappStore store) {
+            private Web(WhatsAppStore store) {
                 super(store);
+            }
+
+            /**
+             * Sets the display name for the companion device, visible in the "Linked Devices" tab
+             *
+             * @param name the name to set, can be null
+             * @return the same instance for chaining
+             */
+            @Override
+            public Mobile name(String name) {
+                return (Mobile) super.name(name);
             }
 
             /**
@@ -625,7 +652,7 @@ public sealed class WhatsAppClientBuilder {
         }
 
         public static final class Mobile extends Options {
-            private Mobile(WhatsappStore store) {
+            private Mobile(WhatsAppStore store) {
                 super(store);
             }
 
@@ -693,13 +720,14 @@ public sealed class WhatsAppClientBuilder {
 
             /**
              * Sets the display name for the WhatsApp account
+             * This is the preferred name that contacts that haven't saved you yet see next to your phone number.
              *
              * @param name the name to set, can be null
              * @return the same instance for chaining
              */
-            public Options name(String name) {
-                store.setName(name);
-                return this;
+            @Override
+            public Mobile name(String name) {
+                return (Mobile) super.name(name);
             }
 
             /**
@@ -708,7 +736,7 @@ public sealed class WhatsAppClientBuilder {
              * @param about the about message to set, can be null
              * @return the same instance for chaining
              */
-            public Options about(String about) {
+            public Mobile about(String about) {
                 store.setAbout(about);
                 return this;
             }
@@ -841,7 +869,7 @@ public sealed class WhatsAppClientBuilder {
     }
 
     public static final class Custom extends WhatsAppClientBuilder {
-        private WhatsappStore store;
+        private WhatsAppStore store;
         private WhatsAppClientMessagePreviewHandler messagePreviewHandler;
         private WhatsAppClientErrorHandler errorHandler;
         private WhatsAppClientVerificationHandler.Web webVerificationHandler;
@@ -856,7 +884,7 @@ public sealed class WhatsAppClientBuilder {
          * @param store the store to use, can be null
          * @return the same instance for chaining
          */
-        public Custom store(WhatsappStore store) {
+        public Custom store(WhatsAppStore store) {
             this.store = store;
             return this;
         }

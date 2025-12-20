@@ -1,8 +1,10 @@
 package com.github.auties00.cobalt.socket.message;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.exception.LidMigrationException;
 import com.github.auties00.cobalt.exception.MediaDownloadException;
-import com.github.auties00.cobalt.message.MessageReceiver;
+import com.github.auties00.cobalt.message.MessageReceiverService;
+import com.github.auties00.cobalt.migration.LidMigrationService;
 import com.github.auties00.cobalt.model.action.ContactActionBuilder;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.chat.ChatEphemeralTimer;
@@ -21,6 +23,7 @@ import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.Clock;
 import it.auties.protobuf.stream.ProtobufInputStream;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
 import java.util.BitSet;
@@ -31,24 +34,28 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
 import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.HISTORY_SYNC;
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.LID_MIGRATION;
 
 public final class MessageStreamNodeHandler extends SocketStream.Handler {
     private static final int HISTORY_SYNC_MAX_TIMEOUT = 25;
     private static final Set<HistorySync.Type> REQUIRED_HISTORY_SYNC_TYPES = Set.of(HistorySync.Type.INITIAL_BOOTSTRAP, HistorySync.Type.PUSH_NAME, HistorySync.Type.NON_BLOCKING_DATA);
 
-    private final MessageReceiver messageReceiver;
+    private final MessageReceiverService messageReceiverService;
+    private final LidMigrationService lidMigrationService;
     private final Set<Jid> historyCache;
     private final HistorySyncProgressTracker recentHistorySyncTracker;
     private final HistorySyncProgressTracker fullHistorySyncTracker;
     private final Set<HistorySync.Type> historySyncTypes;
     private CompletableFuture<Void> historySyncTask;
 
-    public MessageStreamNodeHandler(WhatsAppClient whatsapp) {
+    public MessageStreamNodeHandler(WhatsAppClient whatsapp, LidMigrationService lidMigrationService) {
         super(whatsapp, "message");
-        this.messageReceiver = new MessageReceiver(whatsapp);
+        this.messageReceiverService = new MessageReceiverService(whatsapp);
+        this.lidMigrationService = lidMigrationService;
         this.historyCache = new HashSet<>();
         this.historySyncTypes = new HashSet<>();
         this.recentHistorySyncTracker = new HistorySyncProgressTracker();
@@ -57,7 +64,7 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        var messageInfos = messageReceiver.readMessages(node);
+        var messageInfos = messageReceiverService.readMessages(node);
         for(var messageInfo : messageInfos) {
             if(messageInfo instanceof ChatMessageInfo chatMessageInfo && chatMessageInfo.message().content() instanceof ProtocolMessage protocolMessage) {
                 handleProtocolMessage(chatMessageInfo, protocolMessage);
@@ -132,10 +139,120 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
     private void handleProtocolMessage(ChatMessageInfo info, ProtocolMessage protocolMessage) {
         switch (protocolMessage.protocolType()) {
             case HISTORY_SYNC_NOTIFICATION -> onHistorySyncNotification(info, protocolMessage);
+
             case APP_STATE_SYNC_KEY_SHARE -> onAppStateSyncKeyShare(protocolMessage);
+
             case REVOKE -> onMessageRevoked(info, protocolMessage);
+
             case EPHEMERAL_SETTING -> onEphemeralSettings(info, protocolMessage);
-            case null, default -> {}
+
+            case EPHEMERAL_SYNC_RESPONSE -> {
+                // TODO
+            }
+
+            case APP_STATE_SYNC_KEY_REQUEST -> {
+                // TODO
+            }
+
+            case MSG_FANOUT_BACKFILL_REQUEST -> {
+                // TODO
+            }
+
+            case INITIAL_SECURITY_NOTIFICATION_SETTING_SYNC -> {
+                // TODO
+            }
+
+            case APP_STATE_FATAL_EXCEPTION_NOTIFICATION -> {
+                // TODO
+            }
+
+            case SHARE_PHONE_NUMBER -> {
+                // TODO
+            }
+
+            case MESSAGE_EDIT -> {
+                // TODO
+            }
+
+            case PEER_DATA_OPERATION_REQUEST_MESSAGE -> {
+                // TODO
+            }
+
+            case PEER_DATA_OPERATION_REQUEST_RESPONSE_MESSAGE -> {
+                // TODO
+            }
+
+            case REQUEST_WELCOME_MESSAGE -> {
+                // TODO
+            }
+
+            case BOT_FEEDBACK_MESSAGE -> {
+                // TODO
+            }
+
+            case MEDIA_NOTIFY_MESSAGE -> {
+                // TODO
+            }
+
+            case CLOUD_API_THREAD_CONTROL_NOTIFICATION -> {
+                // TODO
+            }
+
+            case LID_MIGRATION_MAPPING_SYNC -> onLidMigrationMappingSync(protocolMessage);
+
+            case REMINDER_MESSAGE -> {
+                // TODO
+            }
+
+            case BOT_MEMU_ONBOARDING_MESSAGE -> {
+                // TODO
+            }
+
+            case STATUS_MENTION_MESSAGE -> {
+                // TODO
+            }
+
+            case STOP_GENERATION_MESSAGE -> {
+                // TODO
+            }
+
+            case LIMIT_SHARING -> {
+                // TODO
+            }
+
+            case AI_PSI_METADATA -> {
+                // TODO
+            }
+
+            case AI_QUERY_FANOUT -> {
+                // TODO
+            }
+
+            case GROUP_MEMBER_LABEL_CHANGE -> {
+                // TODO
+            }
+        }
+    }
+
+    private void onLidMigrationMappingSync(ProtocolMessage protocolMessage) {
+        var lidMigrationMappingSyncMessage = protocolMessage.lidMigrationMappingSyncMessage();
+        if(lidMigrationMappingSyncMessage.isEmpty()) {
+            whatsapp.handleFailure(LID_MIGRATION, new LidMigrationException.FailedToParseMappings("missing mapping sync message"));
+            return;
+        }
+
+        var lidMigrationMappingPayload =  lidMigrationMappingSyncMessage.get()
+                .encodedMappingPayload();
+        if(lidMigrationMappingPayload.isEmpty()) {
+            whatsapp.handleFailure(LID_MIGRATION, new LidMigrationException.FailedToParseMappings("missing encoded mapping payload"));
+            return;
+        }
+
+        try(var stream = new GZIPInputStream(new ByteArrayInputStream(lidMigrationMappingPayload.get()))) {
+            var lidMigrationMapping = LIDMigrationMappingSyncPayloadSpec.decode(ProtobufInputStream.fromStream(stream));
+            lidMigrationService.handleProtocolMessage(lidMigrationMapping);
+        } catch (Throwable throwable) {
+            whatsapp.handleFailure(LID_MIGRATION, new LidMigrationException.FailedToParseMappings("cannot parse protobuf message", throwable));
         }
     }
 
@@ -276,6 +393,7 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
             case FULL -> handleChatsSync(history, false);
             case RECENT -> handleChatsSync(history, true);
             case NON_BLOCKING_DATA -> handleNonBlockingData(history);
+            case ON_DEMAND -> {} // No specific handling needed
         }
     }
 
@@ -416,12 +534,17 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
 
     private void handleConversations(HistorySync history) {
         for (var chat : history.conversations()) {
-            messageReceiver.validateMessages(chat);
+            messageReceiverService.validateMessages(chat);
             whatsapp.store().addChat(chat);
         }
     }
 
     private void handleNonBlockingData(HistorySync history) {
+        handlePastParticipants(history);
+        handleLidMappings(history);
+    }
+
+    private void handlePastParticipants(HistorySync history) {
         for (var pastParticipants : history.pastParticipants()) {
             for (var listener : whatsapp.store().listeners()) {
                 Thread.startVirtualThread(() -> listener.onWebHistorySyncPastParticipants(whatsapp, pastParticipants.groupJid(), pastParticipants.pastParticipants()));
@@ -429,8 +552,12 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
         }
     }
 
+    private void handleLidMappings(HistorySync history) {
+        lidMigrationService.handleHistorySync(history);
+    }
+
     @Override
-    public void dispose() {
+    public void reset() {
         historyCache.clear();
         if (historySyncTask != null) {
             historySyncTask.cancel(true);

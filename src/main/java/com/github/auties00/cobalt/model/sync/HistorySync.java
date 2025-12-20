@@ -27,9 +27,20 @@ public record HistorySync(@ProtobufProperty(index = 1, type = ENUM, required = t
                           @ProtobufProperty(index = 11, type = MESSAGE)
                           List<StickerMetadata> recentStickers,
                           @ProtobufProperty(index = 12, type = MESSAGE)
-                          List<GroupPastParticipants> pastParticipants) {
+                          List<GroupPastParticipants> pastParticipants,
+                          @ProtobufProperty(index = 15, type = MESSAGE)
+                          List<PhoneNumberToLidMapping> phoneNumberToLidMappings) {
     public HistorySync {
         Objects.requireNonNull(syncType, "Missing mandatory field: syncType");
+    }
+
+    /**
+     * Returns whether this history sync contains LID mappings.
+     *
+     * @return true if LID mappings are present
+     */
+    public boolean hasLidMappings() {
+        return phoneNumberToLidMappings != null && !phoneNumberToLidMappings.isEmpty();
     }
 
     @ProtobufEnum(name = "HistorySync.HistorySyncType")
@@ -39,7 +50,8 @@ public record HistorySync(@ProtobufProperty(index = 1, type = ENUM, required = t
         FULL(2),
         RECENT(3),
         PUSH_NAME(4),
-        NON_BLOCKING_DATA(5);
+        NON_BLOCKING_DATA(5),
+        ON_DEMAND(6);
 
         Type(@ProtobufEnumIndex int index) {
             this.index = index;
