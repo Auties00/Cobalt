@@ -2455,6 +2455,10 @@ public final class WhatsAppClient {
                 .orElse(null);
         var policies = new HashMap<Integer, ChatSettingPolicy>();
         var lidAddressingMode = node.hasAttribute("addressing_mode", "lid");
+        var linkedParent = node.getChild("linked_parent")
+                .flatMap(parent -> parent.getAttributeAsJid("jid"))
+                .orElse(null);
+        var isIncognito = node.hasChild("incognito");
         if (communityNode == null) {
             policies.put(GroupSetting.EDIT_GROUP_INFO.index(), ChatSettingPolicy.of(node.hasChild("announce")));
             policies.put(GroupSetting.SEND_MESSAGES.index(), ChatSettingPolicy.of(node.hasChild("restrict")));
@@ -2489,8 +2493,10 @@ public final class WhatsAppClient {
                     .settings(policies)
                     .participants(participants)
                     .ephemeralExpirationSeconds(ephemeral)
-                    .isCommunity(false)
                     .isLidAddressingMode(lidAddressingMode)
+                    .isCommunity(false)
+                    .isIncognito(isIncognito)
+                    .parentCommunityJid(linkedParent)
                     .build();
         } else {
             policies.put(CommunitySetting.MODIFY_GROUPS.index(), ChatSettingPolicy.of(communityNode.hasChild("allow_non_admin_sub_group_creation")));

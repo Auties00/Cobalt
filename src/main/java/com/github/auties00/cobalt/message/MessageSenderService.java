@@ -6,6 +6,7 @@ import com.github.auties00.cobalt.message.crypto.MessageContentBindingEncoder;
 import com.github.auties00.cobalt.message.crypto.MessageEncoder;
 import com.github.auties00.cobalt.model.auth.SignedDeviceIdentitySpec;
 import com.github.auties00.cobalt.model.chat.ChatParticipant;
+import com.github.auties00.cobalt.model.chat.ChatRole;
 import com.github.auties00.cobalt.model.chat.GroupOrCommunityMetadata;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfo;
@@ -245,24 +246,38 @@ public final class MessageSenderService {
     /**
      * Sends a message to a group chat using sender key encryption.
      */
-    private void sendGroupMessage(MessageInfo info, Map<String, ?> attributes) {
-        var groupJid = info.parentJid();
-        var senderDevice = store.jid()
-                .orElseThrow(() -> new IllegalStateException("No local JID available"));
-
-        // Get group participants
-        var metadata = store.findGroupOrCommunityMetadata(groupJid)
-                .orElseThrow(() -> new IllegalStateException("Group metadata not found for: " + groupJid));
-        var participants = metadata.participants()
-                .stream()
-                .map(ChatParticipant::jid)
-                .toList();
-
-        // Query devices for all participants
-        var devices = whatsapp.querySessions(participants);
-
-        // Generate message secret for content binding (RCAT)
-        var messageSecret = MessageContentBindingEncoder.generateMessageSecret();
+        private void sendGroupMessage(MessageInfo info, Map<String, ?> attributes) {
+            var groupJid = info.parentJid();
+            var senderDevice = store.jid()
+                    .orElseThrow(() -> new IllegalStateException("No local JID available"));
+    
+            // Get group participants
+            var metadata = store.findGroupOrCommunityMetadata(groupJid)
+                    .orElseThrow(() -> new IllegalStateException("Group metadata not found for: " + groupJid));
+            var participants = metadata.participants()
+                    .stream()
+                    .map(ChatParticipant::jid)
+                    .toList();
+    
+            // Query devices for all participants
+            var devices = whatsapp.querySessions(participants);
+    
+            // Check for CAG logic
+            if (metadata.parentCommunityJid().isPresent() && metadata.isIncognito()) {
+                var amIAdmin = metadata.participants().stream()
+                        .filter(p -> p.jid().toUserJid().equals(senderDevice.toUserJid()))
+                        .findFirst()
+                        .map(p -> p.role() == ChatRole.ADMIN || p.role() == ChatRole.FOUNDER)
+                        .orElse(false);
+    
+                if (!amIAdmin) {
+                    sendGroupMessageDirect(info, attributes, metadata, devices, false);
+                    return;
+                }
+            }
+    
+            // Generate message secret for content binding (RCAT)
+            var messageSecret = MessageContentBindingEncoder.generateMessageSecret();
 
         // Generate content bindings for all participants
         var contentBindings = MessageContentBindingEncoder.generateContentBindings(info.id(), messageSecret, senderDevice, devices);
@@ -661,14 +676,14 @@ public final class MessageSenderService {
             return;
         }
 
-        resendGroupMessageDirect(info, attributes, metadata, missingDevices);
+        sendGroupMessageDirect(info, attributes, metadata, missingDevices, true);
     }
 
     /**
      * Resends a group message using direct fanout (individual encryption).
      * This is used for phash mismatch recovery.
      */
-    private void resendGroupMessageDirect(MessageInfo info, Map<String, ?> attributes, GroupOrCommunityMetadata metadata, Collection<? extends Jid> devices) {
+    private void sendGroupMessageDirect(MessageInfo info, Map<String, ?> attributes, GroupOrCommunityMetadata metadata, Collection<? extends Jid> devices, boolean isResend) {
         var participantNodes = new ArrayList<Node>();
 
         var hasPreKeyMessage = false;
@@ -684,7 +699,7 @@ public final class MessageSenderService {
             participantNodes.add(toNode);
         }
 
-        // Build the resend stanza
+        // Build the stanza
         var messageId = info.id();
         var participantsNode = new NodeBuilder()
                 .description("participants")
@@ -697,8 +712,11 @@ public final class MessageSenderService {
                 .attribute("to", metadata.jid())
                 .attribute("type", getMessageType(info.message()))
                 .attribute("addressing_mode", metadata.isLidAddressingMode() ? "lid" : "pn")
-                .attribute("device_fanout", "false") // Indicate this is a resend
                 .content(participantsNode);
+
+        if (isResend) {
+            messageBuilder.attribute("device_fanout", "false");
+        }
 
         // Add additional attributes
         attributes.forEach((key, value) -> {
@@ -714,7 +732,7 @@ public final class MessageSenderService {
                     .ifPresent(messageBuilder::content);
         }
 
-        // Send the resend
+        // Send the message
         whatsapp.sendNode(messageBuilder);
     }
 
