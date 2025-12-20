@@ -207,7 +207,6 @@ public final class MessageEncoder {
 
         return result;
     }
-
     /**
      * Represents the result of message encryption.
      * Contains the encrypted ciphertext, the encryption type, and optionally the sender key bytes for group messages.

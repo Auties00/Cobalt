@@ -40,6 +40,7 @@ import com.github.auties00.cobalt.socket.SocketSession;
 import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.store.WhatsAppStore;
 import com.github.auties00.cobalt.sync.WebAppStateService;
+import com.github.auties00.cobalt.util.ADVValidator;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.cobalt.util.MetaBots;
 import com.github.auties00.cobalt.util.SecureBytes;
@@ -4814,16 +4815,20 @@ public final class WhatsAppClient {
                 .flatMap(Node::toContentBytes)
                 .map(bytes -> SecureBytes.bytesToInt(bytes, Math.min(bytes.length, 4)))
                 .orElse(0);
-        var identityKey = userNode.getChild("identity")
+        var identityKeyBytes = userNode.getChild("identity")
                 .flatMap(Node::toContentBytes)
-                .map(SignalIdentityPublicKey::ofDirect)
                 .orElse(null);
+        var identityKey = identityKeyBytes != null
+                ? SignalIdentityPublicKey.ofDirect(identityKeyBytes)
+                : null;
 
         var signedPreKey = userNode.getChild("skey", null);
         var preKey = userNode.getChild("key", null);
         if (identityKey == null || signedPreKey == null) {
             return;
         }
+
+        ADVValidator.validatePreKeyResponse(jid, userNode, identityKeyBytes);
 
         var signedPreKeyId = signedPreKey.getChild("id")
                 .flatMap(Node::toContentBytes)

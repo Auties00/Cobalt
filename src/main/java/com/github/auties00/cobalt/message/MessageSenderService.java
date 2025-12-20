@@ -1,6 +1,7 @@
 package com.github.auties00.cobalt.message;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.message.crypto.MessageContentBindingEncoder;
 import com.github.auties00.cobalt.message.crypto.DevicePhashEncoder;
 import com.github.auties00.cobalt.message.crypto.MessageEncoder;
 import com.github.auties00.cobalt.model.auth.SignedDeviceIdentitySpec;
@@ -162,6 +163,13 @@ public final class MessageSenderService {
      */
     private Node sendToDevices(MessageInfo info, Map<String, ?> attributes, Jid recipientJid, Collection<? extends Jid> devices,
                                Collection<? extends Jid> ownDevices, String phash, boolean isResend) {
+        var senderJid = store.jid()
+                .orElseThrow(() -> new IllegalStateException("No local JID available"));
+
+        // Generate content bindings for all recipient users
+        var messageSecret = MessageContentBindingEncoder.generateMessageSecret();
+        var contentBindings = MessageContentBindingEncoder.generateContentBindings(info.id(), messageSecret, senderJid, devices);
+
         // Build encrypted message nodes for each device
         var participantNodes = new ArrayList<Node>();
         var hasPreKeyMessage = false;
@@ -228,10 +236,18 @@ public final class MessageSenderService {
 
         // Add device identity if any pre-key messages
         if (hasPreKeyMessage) {
-            var deviceIdentityNode = buildDeviceIdentityNode();
-            if (deviceIdentityNode != null) {
-                messageBuilder.content(deviceIdentityNode);
-            }
+            buildDeviceIdentityNode()
+                    .ifPresent(messageBuilder::content);
+        }
+
+        // Add sender content binding node for the sender's own content binding
+        var senderContentBinding = contentBindings.get(senderJid.toUserJid().toString());
+        if (senderContentBinding != null) {
+            var contentBindingNode = new NodeBuilder()
+                    .description("sender_content_binding")
+                    .content(senderContentBinding.getBytes())
+                    .build();
+            messageBuilder.content(contentBindingNode);
         }
 
         // Send the message
@@ -243,7 +259,8 @@ public final class MessageSenderService {
      */
     private void sendGroupMessage(MessageInfo info, Map<String, ?> attributes) {
         var groupJid = info.parentJid();
-        var senderDevice = store.jid().orElseThrow(() -> new IllegalStateException("No local JID available"));
+        var senderDevice = store.jid()
+                .orElseThrow(() -> new IllegalStateException("No local JID available"));
 
         // Get group participants
         var participants = store.findGroupOrCommunityMetadata(groupJid)
@@ -254,6 +271,14 @@ public final class MessageSenderService {
 
         // Query devices for all participants
         var devices = whatsapp.querySessions(participants);
+
+        // Generate message secret for content binding (RCAT)
+        var messageSecret = MessageContentBindingEncoder.generateMessageSecret();
+
+        // Generate content bindings for all participants
+        var contentBindings = MessageContentBindingEncoder.generateContentBindings(
+                info.id(), messageSecret, senderDevice, devices
+        );
 
         // Separate devices that need sender key distribution from those that already have it
         var devicesNeedingKey = devices.stream()
@@ -326,10 +351,18 @@ public final class MessageSenderService {
 
         // Add device identity if any pre-key messages
         if (hasPreKeyMessage) {
-            var deviceIdentityNode = buildDeviceIdentityNode();
-            if (deviceIdentityNode != null) {
-                messageBuilder.content(deviceIdentityNode);
-            }
+            buildDeviceIdentityNode()
+                    .ifPresent(messageBuilder::content);
+        }
+
+        // Add sender content binding node
+        var senderContentBinding = contentBindings.get(senderDevice.toUserJid().toString());
+        if (senderContentBinding != null) {
+            var contentBindingNode = new NodeBuilder()
+                    .description("sender_content_binding")
+                    .content(senderContentBinding.getBytes())
+                    .build();
+            messageBuilder.content(contentBindingNode);
         }
 
         // Send the message
@@ -350,7 +383,8 @@ public final class MessageSenderService {
      */
     private void sendBroadcastMessage(MessageInfo info, Map<String, ?> attributes) {
         var broadcastJid = info.parentJid();
-        var senderJid = store.jid().orElseThrow(() -> new IllegalStateException("No local JID available"));
+        var senderJid = store.jid()
+                .orElseThrow(() -> new IllegalStateException("No local JID available"));
 
         var metadata = store.findGroupOrCommunityMetadata(broadcastJid)
                 .orElseThrow(() -> new IllegalStateException("Broadcast list metadata not found for: " + broadcastJid));
@@ -361,6 +395,14 @@ public final class MessageSenderService {
                 .collect(Collectors.toSet());
         jidsToQuery.add(senderJid.toUserJid());
         var allDevices = whatsapp.querySessions(jidsToQuery);
+
+        // Generate message secret for content binding (RCAT)
+        var messageSecret = MessageContentBindingEncoder.generateMessageSecret();
+
+        // Generate content bindings for all recipients
+        var contentBindings = MessageContentBindingEncoder.generateContentBindings(
+                info.id(), messageSecret, senderJid, allDevices
+        );
 
         // Separate own devices (excluding current device)
         var ownDevices = allDevices.stream()
@@ -442,10 +484,18 @@ public final class MessageSenderService {
 
         // Add device identity if any pre-key messages
         if (hasPreKeyMessage) {
-            var deviceIdentityNode = buildDeviceIdentityNode();
-            if (deviceIdentityNode != null) {
-                messageBuilder.content(deviceIdentityNode);
-            }
+            buildDeviceIdentityNode()
+                    .ifPresent(messageBuilder::content);
+        }
+
+        // Add sender content binding node
+        var senderContentBinding = contentBindings.get(senderJid.toUserJid().toString());
+        if (senderContentBinding != null) {
+            var contentBindingNode = new NodeBuilder()
+                    .description("sender_content_binding")
+                    .content(senderContentBinding.getBytes())
+                    .build();
+            messageBuilder.content(contentBindingNode);
         }
 
         // Send the message
@@ -480,13 +530,17 @@ public final class MessageSenderService {
     /**
      * Builds the device identity node for pre-key messages.
      */
-    private Node buildDeviceIdentityNode() {
-        return store.companionIdentity()
-                .map(identity -> new NodeBuilder()
-                        .description("device-identity")
-                        .content(SignedDeviceIdentitySpec.encode(identity))
-                        .build())
-                .orElse(null);
+    private Optional<Node> buildDeviceIdentityNode() {
+        var companionIdentity = store.companionIdentity();
+        if(companionIdentity.isEmpty()) {
+            return Optional.empty();
+        } else {
+            var result = new NodeBuilder()
+                    .description("device-identity")
+                    .content(SignedDeviceIdentitySpec.encode(companionIdentity.get()))
+                    .build();
+            return Optional.of(result);
+        }
     }
 
     /**
@@ -522,10 +576,7 @@ public final class MessageSenderService {
     private void handleIndividualPhashMismatch(Node response, MessageInfo info, Map<String, ?> attributes,
                                                Collection<? extends Jid> oldDevices, long sendTime) {
         var senderJid = store.jid()
-                .orElse(null);
-        if(senderJid == null) {
-            return;
-        }
+                .orElseThrow(() -> new IllegalStateException("No local JID available"));
 
         var serverPhash = response.getAttributeAsString("phash")
                 .orElse(null);
@@ -666,10 +717,8 @@ public final class MessageSenderService {
         addAdditionalAttributes(messageBuilder, attributes);
 
         if (hasPreKeyMessage) {
-            var deviceIdentityNode = buildDeviceIdentityNode();
-            if (deviceIdentityNode != null) {
-                messageBuilder.content(deviceIdentityNode);
-            }
+            buildDeviceIdentityNode()
+                    .ifPresent(messageBuilder::content);
         }
 
         // Send the resend
