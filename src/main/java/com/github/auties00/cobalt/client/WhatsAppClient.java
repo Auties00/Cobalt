@@ -1700,17 +1700,16 @@ public final class WhatsAppClient {
         return info;
     }
 
-    private String determineMessageType(MessageContainer message) {
-        return switch (message.content().type()) {
-            case IMAGE -> "image";
-            case VIDEO -> "video";
-            case AUDIO -> "audio";
-            case DOCUMENT -> "document";
-            case STICKER -> "sticker";
-            default -> "text";
-        };
-    }
 
+    /**
+     * Resends a message
+     *
+     * @param messsage the message to resend
+     * @param deviceJid the device to resend the message to
+     */
+    public void resendMessage(ChatMessageInfo messsage, Jid deviceJid) {
+        messageSenderService.resendToDevice(messsage, deviceJid);
+    }
 
     //</editor-fold>
 
@@ -2455,6 +2454,7 @@ public final class WhatsAppClient {
         var communityNode = node.getChild("parent")
                 .orElse(null);
         var policies = new HashMap<Integer, ChatSettingPolicy>();
+        var lidAddressingMode = node.hasAttribute("addressing_mode", "lid");
         if (communityNode == null) {
             policies.put(GroupSetting.EDIT_GROUP_INFO.index(), ChatSettingPolicy.of(node.hasChild("announce")));
             policies.put(GroupSetting.SEND_MESSAGES.index(), ChatSettingPolicy.of(node.hasChild("restrict")));
@@ -2490,6 +2490,7 @@ public final class WhatsAppClient {
                     .participants(participants)
                     .ephemeralExpirationSeconds(ephemeral)
                     .isCommunity(false)
+                    .isLidAddressingMode(lidAddressingMode)
                     .build();
         } else {
             policies.put(CommunitySetting.MODIFY_GROUPS.index(), ChatSettingPolicy.of(communityNode.hasChild("allow_non_admin_sub_group_creation")));
@@ -2545,6 +2546,7 @@ public final class WhatsAppClient {
                     .ephemeralExpirationSeconds(ephemeral)
                     .isCommunity(true)
                     .communityGroups(communityLinkedGroups)
+                    .isLidAddressingMode(lidAddressingMode)
                     .build();
         }
     }
@@ -4695,15 +4697,15 @@ public final class WhatsAppClient {
      * @param jids the list of user JIDs to query devices for
      * @return the list of device JIDs that should receive the encrypted message
      */
-    public Collection<? extends Jid> querySessions(Collection<? extends Jid> jids) {
+    public Set<? extends Jid> querySessions(Collection<? extends Jid> jids) {
         if (jids == null || jids.isEmpty()) {
-            return List.of();
+            return Set.of();
         }
 
         // Get all devices for the given JIDs
         var devices = queryDevicesForJids(jids);
         if (devices.isEmpty()) {
-            return List.of();
+            return Set.of();
         }
 
         // Ensure sessions exist for all devices
@@ -4718,7 +4720,7 @@ public final class WhatsAppClient {
         return devices;
     }
 
-    private Collection<? extends Jid> queryDevicesForJids(Collection<? extends Jid> jids) {
+    private Set<? extends Jid> queryDevicesForJids(Collection<? extends Jid> jids) {
         var userNodes = jids.stream()
                 .map(jid -> buildUserNode(jid.toUserJid()))
                 .toList();
@@ -4759,7 +4761,7 @@ public final class WhatsAppClient {
                 .flatMap(node -> node.streamChild("list"))
                 .flatMap(node -> node.streamChildren("user"))
                 .flatMap(WhatsAppClient::parseDevice)
-                .toList();
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private static Stream<Jid> parseDevice(Node user) {

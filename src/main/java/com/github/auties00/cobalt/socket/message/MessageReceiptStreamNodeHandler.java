@@ -1,18 +1,22 @@
 package com.github.auties00.cobalt.socket.message;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
+import com.github.auties00.cobalt.model.info.QuotedMessageInfo;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.message.model.MessageStatus;
+import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.socket.SocketStream;
 import com.github.auties00.cobalt.util.Clock;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.*;
 
 public final class MessageReceiptStreamNodeHandler extends SocketStream.Handler {
     private final Set<String> retries;
@@ -80,7 +84,7 @@ public final class MessageReceiptStreamNodeHandler extends SocketStream.Handler 
             }
         });
         if(node.hasAttribute("type", "retry")) {
-            acceptMessageRetry(message);
+            acceptMessageRetry(node, message);
         }
         message.setStatus(status);
     }
@@ -93,25 +97,57 @@ public final class MessageReceiptStreamNodeHandler extends SocketStream.Handler 
         for (var listener : whatsapp.store().listeners()) {
             Thread.startVirtualThread(() -> listener.onMessageStatus(whatsapp, message));
         }
-        if(node.hasAttribute("type", "retry")) {
-            acceptMessageRetry(message);
-        }
+        // Newsletter messages don't support retry (they're plaintext)
     }
 
-    private void acceptMessageRetry(MessageInfo message) {
+    private void acceptMessageRetry(Node node, MessageInfo message) {
+        // Only retry messages we sent
         var meJid = whatsapp.store()
                 .jid()
                 .orElse(null);
-        var senderJid = message.senderJid();
-        if (meJid != null && meJid.equals(senderJid)) {
+        if (meJid == null) {
             return;
         }
 
+        // Check if this message is from us (comparing sender with our JID)
+        var senderJid = message.senderJid();
+        if (senderJid == null || !senderJid.toUserJid().equals(meJid.toUserJid())) {
+            return;
+        }
+
+        // Prevent duplicate retry attempts for the same message
         if (!retries.add(message.id())) {
             return;
         }
 
-        // TODO: Rewrite retry logic
+        // Get the device that needs the retry from the receipt
+        var retryDeviceJid = node.getAttributeAsJid("from").orElse(null);
+        if (retryDeviceJid == null) {
+            return;
+        }
+
+        switch (message) {
+            // Chat messages support messages retries
+            case ChatMessageInfo chatMessage -> Thread.startVirtualThread(() -> {
+                try {
+                    // Query fresh session for the retry device
+                    var deviceJids = whatsapp.querySessions(List.of(retryDeviceJid.toUserJid()));
+                    if (deviceJids.isEmpty()) {
+                        return;
+                    }
+
+                    // Resend the message to the specific device
+                    whatsapp.resendMessage(chatMessage, retryDeviceJid);
+                } catch (Throwable throwable) {
+                    whatsapp.handleFailure(MESSAGE, throwable);
+                }
+            });
+
+            // Newsletter messages don't support retry (they're plaintext)
+            case NewsletterMessageInfo _ -> {}
+
+            case QuotedMessageInfo _ -> throw new IllegalArgumentException("QuotedMessages cannot be retried");
+        }
     }
 
     @Override

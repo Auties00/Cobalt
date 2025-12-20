@@ -30,8 +30,19 @@ public final class MessageDecoder {
     // TODO: Can everything here be streamed? I think it's possible but very hard
     public MessageContainer decode(ChatMessageKey messageKey, String type, byte[] encodedMessage) {
         if(MSMSG.equals(type)) {
-            return MessageContainer.empty();
-        }else {
+            // MSMSG (Multi-Sender Message) is used for bot messages with special encryption.
+            // Decryption requires:
+            // 1. Parsing MessageSecretMessage protobuf (version, encIv, encPayload)
+            // 2. Finding the target message by ID from bot metadata
+            // 3. Getting messageSecret from the target message
+            // 4. HKDF key derivation: HKDF("Bot Message", messageSecret) -> derivedKey
+            // 5. Second HKDF: HKDF(externalId + senderJid + recipientJid, derivedKey) -> finalKey
+            // 6. AES-GCM decrypt with finalKey, encIv, encPayload, AAD = externalId + "\0" + recipientJid
+            throw new UnsupportedOperationException(
+                    "MSMSG (bot message) decryption is not yet implemented. " +
+                    "This message type requires special key derivation from a referenced target message."
+            );
+        } else {
             var result = switch (type) {
                 case MSG -> {
                     var signalAddress = messageKey.senderJid()

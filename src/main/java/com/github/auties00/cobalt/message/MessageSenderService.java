@@ -1,17 +1,21 @@
 package com.github.auties00.cobalt.message;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.message.crypto.MessageContentBindingEncoder;
 import com.github.auties00.cobalt.message.crypto.DevicePhashEncoder;
+import com.github.auties00.cobalt.message.crypto.MessageContentBindingEncoder;
 import com.github.auties00.cobalt.message.crypto.MessageEncoder;
 import com.github.auties00.cobalt.model.auth.SignedDeviceIdentitySpec;
 import com.github.auties00.cobalt.model.chat.ChatParticipant;
+import com.github.auties00.cobalt.model.chat.GroupOrCommunityMetadata;
+import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidServer;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
 import com.github.auties00.cobalt.model.message.server.DeviceSentMessage;
 import com.github.auties00.cobalt.model.message.server.DeviceSentMessageBuilder;
+import com.github.auties00.cobalt.model.message.server.ProtocolMessage;
+import com.github.auties00.cobalt.model.message.standard.*;
 import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.node.NodeBuilder;
 import com.github.auties00.cobalt.store.WhatsAppStore;
@@ -21,9 +25,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.github.auties00.cobalt.util.SignalProtocolConstants.*;
 
 /**
  * Service for sending encrypted messages through the WhatsApp protocol.
@@ -126,27 +127,17 @@ public final class MessageSenderService {
         // Query devices from server (this also ensures sessions exist)
         var devices = whatsapp.querySessions(jidsToQuery);
 
-        // Separate own devices from recipient devices
-        var ownDevices = devices.stream()
-                .filter(d -> d.user().equals(senderJid.user()))
-                .filter(d -> d.device() != senderJid.device()) // Exclude current device
-                .toList();
-        var recipientDevices = devices.stream()
-                .filter(d -> d.user().equals(recipientJid.user()))
-                .toList();
-
-        // Combine all devices
-        var allDevices = Stream.concat(ownDevices.stream(), recipientDevices.stream())
-                .toList();
-
         // Calculate phash for all devices
-        var phash = DevicePhashEncoder.calculatePhash(allDevices);
+        var phash = DevicePhashEncoder.calculatePhash(devices);
 
         // Send to all devices and handle response
-        var response = sendToDevices(info, attributes, recipientJid, allDevices, ownDevices, phash, false);
+        var ownDevices = devices.stream()
+                .filter(device -> device.user().equals(senderJid.user()) && device.device() != senderJid.device())
+                .collect(Collectors.toUnmodifiableSet());
+        var response = sendToDevices(info, attributes, recipientJid, devices, ownDevices, phash, false);
 
         // Handle phash mismatch if needed
-        handleIndividualPhashMismatch(response, info, attributes, allDevices, Clock.nowSeconds());
+        handleIndividualPhashMismatch(response, info, attributes, devices, Clock.nowSeconds());
     }
 
     /**
@@ -161,8 +152,7 @@ public final class MessageSenderService {
      * @param isResend     whether this is a resend operation
      * @return the server response node
      */
-    private Node sendToDevices(MessageInfo info, Map<String, ?> attributes, Jid recipientJid, Collection<? extends Jid> devices,
-                               Collection<? extends Jid> ownDevices, String phash, boolean isResend) {
+    private Node sendToDevices(MessageInfo info, Map<String, ?> attributes, Jid recipientJid, Set<? extends Jid> devices, Set<? extends Jid> ownDevices, String phash, boolean isResend) {
         var senderJid = store.jid()
                 .orElseThrow(() -> new IllegalStateException("No local JID available"));
 
@@ -187,17 +177,13 @@ public final class MessageSenderService {
             hasPreKeyMessage |= result.isPreKeyMessage();
 
             // Build the participant node
-            var encNode = buildEncNode(result);
+            var encNode = buildEncNode(result, getMediaType(info.message()));
             var toNode = new NodeBuilder()
                     .description("to")
                     .attribute("jid", device)
                     .content(encNode)
                     .build();
             participantNodes.add(toNode);
-        }
-
-        if (participantNodes.isEmpty()) {
-            throw new IllegalStateException("Encryption failed for all devices");
         }
 
         // Build the message stanza
@@ -211,8 +197,10 @@ public final class MessageSenderService {
                 .description("message")
                 .attribute("id", messageId)
                 .attribute("to", recipientJid)
-                .attribute("type", getMessageType(info.message()));
+                .attribute("type", getMessageType(info.message()))
+                .attribute("addressing_mode", getAddressingMode(recipientJid));
 
+        // Add additional attributes
         attributes.forEach((key, value) -> {
             if(value == null) {
                 messageBuilder.attribute(key, "");
@@ -263,11 +251,12 @@ public final class MessageSenderService {
                 .orElseThrow(() -> new IllegalStateException("No local JID available"));
 
         // Get group participants
-        var participants = store.findGroupOrCommunityMetadata(groupJid)
-                .map(meta -> meta.participants().stream()
-                        .map(ChatParticipant::jid)
-                        .toList())
+        var metadata = store.findGroupOrCommunityMetadata(groupJid)
                 .orElseThrow(() -> new IllegalStateException("Group metadata not found for: " + groupJid));
+        var participants = metadata.participants()
+                .stream()
+                .map(ChatParticipant::jid)
+                .toList();
 
         // Query devices for all participants
         var devices = whatsapp.querySessions(participants);
@@ -276,16 +265,11 @@ public final class MessageSenderService {
         var messageSecret = MessageContentBindingEncoder.generateMessageSecret();
 
         // Generate content bindings for all participants
-        var contentBindings = MessageContentBindingEncoder.generateContentBindings(
-                info.id(), messageSecret, senderDevice, devices
-        );
+        var contentBindings = MessageContentBindingEncoder.generateContentBindings(info.id(), messageSecret, senderDevice, devices);
 
         // Separate devices that need sender key distribution from those that already have it
         var devicesNeedingKey = devices.stream()
                 .filter(d -> !hasSenderKeyForDevice(groupJid, d))
-                .toList();
-        var devicesWithKey = devices.stream()
-                .filter(d -> hasSenderKeyForDevice(groupJid, d))
                 .toList();
 
         // Calculate phash (all devices + sender)
@@ -304,7 +288,7 @@ public final class MessageSenderService {
             var skdmResult = encoder.wrapSenderKeyDistribution(device.toSignalAddress(), groupJid, senderDevice);
             hasPreKeyMessage |= skdmResult.isPreKeyMessage();
 
-            var encNode = buildEncNode(skdmResult);
+            var encNode = buildEncNode(skdmResult, null);
             var toNode = new NodeBuilder()
                     .description("to")
                     .attribute("jid", device)
@@ -321,8 +305,10 @@ public final class MessageSenderService {
                 .attribute("id", messageId)
                 .attribute("to", groupJid)
                 .attribute("type", getMessageType(info.message()))
+                .attribute("addressing_mode", metadata.isLidAddressingMode() ? "lid" : "pn")
                 .attribute("phash", phash);
 
+        // Add additional attributes
         attributes.forEach((key, value) -> {
             if(value == null) {
                 messageBuilder.attribute(key, "");
@@ -341,12 +327,7 @@ public final class MessageSenderService {
         }
 
         // Add the sender key encrypted message
-        var skmsgNode = new NodeBuilder()
-                .description("enc")
-                .attribute("v", ENC_VERSION)
-                .attribute("type", SKMSG)
-                .content(groupEncResult.ciphertext())
-                .build();
+        var skmsgNode = buildEncNode(groupEncResult, getMediaType(info.message()));
         messageBuilder.content(skmsgNode);
 
         // Add device identity if any pre-key messages
@@ -369,12 +350,10 @@ public final class MessageSenderService {
         var response = whatsapp.sendNode(messageBuilder);
 
         // Handle phash mismatch and 421 errors
-        var success = handleGroupMessageResponse(response, info, attributes, phash, devices, Clock.nowSeconds());
+        handleGroupMessageResponse(response, info, attributes, phash, devices, Clock.nowSeconds());
 
-        // If successful, mark sender key as distributed to these devices
-        if (success) {
-            markSenderKeyDistributed(groupJid, distributedDevices);
-        }
+        // Mark sender key as distributed to these devices
+        markSenderKeyDistributed(groupJid, distributedDevices);
     }
 
     /**
@@ -382,10 +361,10 @@ public final class MessageSenderService {
      * Broadcast messages are sent as individual encrypted messages to each recipient (no sender key).
      */
     private void sendBroadcastMessage(MessageInfo info, Map<String, ?> attributes) {
-        var broadcastJid = info.parentJid();
         var senderJid = store.jid()
                 .orElseThrow(() -> new IllegalStateException("No local JID available"));
 
+        var broadcastJid = info.parentJid();
         var metadata = store.findGroupOrCommunityMetadata(broadcastJid)
                 .orElseThrow(() -> new IllegalStateException("Broadcast list metadata not found for: " + broadcastJid));
 
@@ -430,7 +409,7 @@ public final class MessageSenderService {
             var result = encoder.encode(device, messageToEncrypt);
             hasPreKeyMessage |= result.isPreKeyMessage();
 
-            var encNode = buildEncNode(result);
+            var encNode = buildEncNode(result, getMediaType(info.message()));
             var toNode = new NodeBuilder()
                     .description("to")
                     .attribute("jid", device)
@@ -440,23 +419,17 @@ public final class MessageSenderService {
         }
 
         // Then, encrypt for recipient devices (normal message)
-        boolean hasPreKeyMessage1 = hasPreKeyMessage;
         for (var device : recipientDevices) {
             var result = encoder.encode(device, info.message());
-            hasPreKeyMessage1 |= result.isPreKeyMessage();
+            hasPreKeyMessage |= result.isPreKeyMessage();
 
-            var encNode = buildEncNode(result);
+            var encNode = buildEncNode(result, getMediaType(info.message()));
             var toNode = new NodeBuilder()
                     .description("to")
                     .attribute("jid", device)
                     .content(encNode)
                     .build();
             participantNodes.add(toNode);
-        }
-        hasPreKeyMessage = hasPreKeyMessage1;
-
-        if (participantNodes.isEmpty()) {
-            throw new IllegalStateException("Encryption failed for all broadcast devices");
         }
 
         // Build the message stanza
@@ -473,6 +446,7 @@ public final class MessageSenderService {
                 .attribute("type", getMessageType(info.message()))
                 .content(participantsNode);
 
+        // Add additional attributes
         attributes.forEach((key, value) -> {
             if(value == null) {
                 messageBuilder.attribute(key, "");
@@ -518,13 +492,17 @@ public final class MessageSenderService {
     /**
      * Builds an encryption node for the message.
      */
-    private Node buildEncNode(MessageEncoder.Result result) {
-        return new NodeBuilder()
+    private Node buildEncNode(MessageEncoder.Result result, String mediaType) {
+        var builder = new NodeBuilder()
                 .description("enc")
                 .attribute("v", ENC_VERSION)
-                .attribute("type", result.type())
-                .content(result.ciphertext())
-                .build();
+                .attribute("type", result.type());
+
+        if (mediaType != null) {
+            builder.attribute("mediatype", mediaType);
+        }
+
+        return builder.content(result.ciphertext()).build();
     }
 
     /**
@@ -547,17 +525,35 @@ public final class MessageSenderService {
      * Gets the message type string for the node.
      */
     private String getMessageType(MessageContainer message) {
-        // Determine message type based on content
-        var content = message.content();
-        return switch (content) {
-            case com.github.auties00.cobalt.model.message.standard.TextMessage ignored -> "text";
-            case com.github.auties00.cobalt.model.message.standard.ImageMessage ignored -> "media";
-            case com.github.auties00.cobalt.model.message.standard.VideoOrGifMessage ignored -> "media";
-            case com.github.auties00.cobalt.model.message.standard.AudioMessage ignored -> "media";
-            case com.github.auties00.cobalt.model.message.standard.DocumentMessage ignored -> "media";
-            case com.github.auties00.cobalt.model.message.standard.StickerMessage ignored -> "media";
+        return switch (message.content()) {
+            case ImageMessage _, VideoOrGifMessage _, AudioMessage _, DocumentMessage _, StickerMessage _, ContactMessage _, ContactsMessage _, LocationMessage _, LiveLocationMessage _ -> "media";
+            case ReactionMessage _ -> "reaction";
+            case PollCreationMessage _, PollUpdateMessage _ ->  "poll";
+            case ProtocolMessage _ -> "protocol";
+            case GroupInviteMessage _ ->  "invite";
+            case CallMessage _ -> "call_log";
             default -> "text";
         };
+    }
+
+    private String getMediaType(MessageContainer message) {
+        return switch (message.content()) {
+            case ImageMessage _ -> "image";
+            case VideoOrGifMessage _ -> "video";
+            case AudioMessage audioMessage -> audioMessage.voiceMessage() ? "ptt" : "audio";
+            case  DocumentMessage _ -> "document";
+            case StickerMessage _ -> "sticker";
+            case ContactMessage _ -> "contact";
+            case ContactsMessage _ -> "contacts";
+            case LocationMessage _ -> "location";
+            case LiveLocationMessage _ -> "livelocation";
+            case GroupInviteMessage _ -> "groups_v4_invite";
+            default -> null;
+        };
+    }
+
+    private String getAddressingMode(Jid jid) {
+        return jid.server().type() == JidServer.Type.LID ? "lid" : "pn";
     }
 
     /**
@@ -574,7 +570,7 @@ public final class MessageSenderService {
      * @param sendTime   the time when the original send was initiated
      */
     private void handleIndividualPhashMismatch(Node response, MessageInfo info, Map<String, ?> attributes,
-                                               Collection<? extends Jid> oldDevices, long sendTime) {
+                                               Set<? extends Jid> oldDevices, long sendTime) {
         var senderJid = store.jid()
                 .orElseThrow(() -> new IllegalStateException("No local JID available"));
 
@@ -594,12 +590,9 @@ public final class MessageSenderService {
         var jidsToQuery = List.of(recipientJid, senderJid.toUserJid());
         var newDevices = whatsapp.querySessions(jidsToQuery);
 
-        var oldDeviceStrings = oldDevices.stream()
-                .map(Jid::toString)
-                .collect(Collectors.toUnmodifiableSet());
         var missingDevices = newDevices.stream()
-                .filter(d -> !oldDeviceStrings.contains(d.toString()))
-                .toList();
+                .filter(user -> !oldDevices.contains(user))
+                .collect(Collectors.toUnmodifiableSet());
         if (missingDevices.isEmpty()) {
             return;
         }
@@ -607,7 +600,7 @@ public final class MessageSenderService {
         // Separate own devices
         var ownDevices = missingDevices.stream()
                 .filter(device -> device.user().equals(senderJid.user()) && device.device() != senderJid.device())
-                .toList();
+                .collect(Collectors.toUnmodifiableSet());
 
         // Resend to missing devices only (with device_fanout=false to indicate resend)
         sendToDevices(info, attributes, recipientJid, missingDevices, ownDevices, null, true);
@@ -622,24 +615,21 @@ public final class MessageSenderService {
      * @param localPhash the phash we calculated locally
      * @param oldDevices the device list used in the original send
      * @param sendTime   the time when the original send was initiated
-     * @return true if the send was successful (no errors), false if there was an error
      */
-    private boolean handleGroupMessageResponse(Node response, MessageInfo info, Map<String, ?> attributes, String localPhash, Collection<? extends Jid> oldDevices, long sendTime) {
+    private void handleGroupMessageResponse(Node response, MessageInfo info, Map<String, ?> attributes, String localPhash, Collection<? extends Jid> oldDevices, long sendTime) {
         if (response.hasAttribute("code", ERROR_STALE_ADDRESSING_MODE)) {
             try {
                 whatsapp.queryGroupOrCommunityMetadata(info.parentJid());
             } catch (Exception e) {
-                throw new IllegalStateException("Group addressing mode is stale (error 421). " +
-                                                "Group metadata has been refreshed. Please retry sending the message.");
+                throw new IllegalStateException("Group addressing mode is stale (error 421). Group metadata has been refreshed. Please retry sending the message.");
             }
+        } else {
+            response.getAttributeAsString("phash").ifPresent(serverPhash -> {
+                if (!serverPhash.equals(localPhash)) {
+                    handleGroupPhashMismatch(info, attributes, oldDevices, sendTime);
+                }
+            });
         }
-
-        var serverPhash = response.getAttributeAsString("phash").orElse(null);
-        if (serverPhash != null && !serverPhash.equals(localPhash)) {
-            handleGroupPhashMismatch(info, attributes, oldDevices, sendTime);
-        }
-
-        return true;
     }
 
     /**
@@ -671,32 +661,27 @@ public final class MessageSenderService {
             return;
         }
 
-        resendGroupMessageDirect(info, attributes, groupJid, missingDevices);
+        resendGroupMessageDirect(info, attributes, metadata, missingDevices);
     }
 
     /**
      * Resends a group message using direct fanout (individual encryption).
      * This is used for phash mismatch recovery.
      */
-    private void resendGroupMessageDirect(MessageInfo info, Map<String, ?> attributes, Jid groupJid, Collection<? extends Jid> devices) {
+    private void resendGroupMessageDirect(MessageInfo info, Map<String, ?> attributes, GroupOrCommunityMetadata metadata, Collection<? extends Jid> devices) {
         var participantNodes = new ArrayList<Node>();
 
         var hasPreKeyMessage = false;
         for (var device : devices) {
             var result = encoder.encode(device, info.message());
             hasPreKeyMessage |= result.isPreKeyMessage();
-            var encNode = buildEncNode(result);
+            var encNode = buildEncNode(result, getMediaType(info.message()));
             var toNode = new NodeBuilder()
                     .description("to")
                     .attribute("jid", device)
                     .content(encNode)
                     .build();
             participantNodes.add(toNode);
-        }
-
-        if (participantNodes.isEmpty()) {
-            System.err.println("No devices could be encrypted for group resend");
-            return;
         }
 
         // Build the resend stanza
@@ -709,12 +694,20 @@ public final class MessageSenderService {
         var messageBuilder = new NodeBuilder()
                 .description("message")
                 .attribute("id", messageId)
-                .attribute("to", groupJid)
+                .attribute("to", metadata.jid())
                 .attribute("type", getMessageType(info.message()))
+                .attribute("addressing_mode", metadata.isLidAddressingMode() ? "lid" : "pn")
                 .attribute("device_fanout", "false") // Indicate this is a resend
                 .content(participantsNode);
 
-        addAdditionalAttributes(messageBuilder, attributes);
+        // Add additional attributes
+        attributes.forEach((key, value) -> {
+            if(value == null) {
+                messageBuilder.attribute(key, "");
+            } else {
+                messageBuilder.attribute(key, value.toString());
+            }
+        });
 
         if (hasPreKeyMessage) {
             buildDeviceIdentityNode()
@@ -749,13 +742,50 @@ public final class MessageSenderService {
         }
     }
 
-    private static void addAdditionalAttributes(NodeBuilder nodeBuilder, Map<String, ?> attributes) {
-        attributes.forEach((key, value) -> {
-            if(value == null) {
-                nodeBuilder.attribute(key, "");
-            } else {
-                nodeBuilder.attribute(key, value.toString());
-            }
-        });
+    /**
+     * Resends a message to a specific device that failed to decrypt it.
+     * This is called when we receive a "retry" receipt indicating a device
+     * couldn't decrypt a message we sent.
+     *
+     * @param message    the original message that needs to be resent
+     * @param deviceJid  the specific device JID that needs the retry
+     */
+    public void resendToDevice(ChatMessageInfo message, Jid deviceJid) {
+        Objects.requireNonNull(message, "message cannot be null");
+        Objects.requireNonNull(deviceJid, "deviceJid cannot be null");
+
+        // Encrypt the message for the specific device
+        var encResult = encoder.encode(deviceJid, message.message());
+        var encNode = buildEncNode(encResult, getMediaType(message.message()));
+
+        var participantNode = new NodeBuilder()
+                .description("to")
+                .attribute("jid", deviceJid)
+                .content(encNode)
+                .build();
+
+        var participantsNode = new NodeBuilder()
+                .description("participants")
+                .content(participantNode)
+                .build();
+
+        // Build the retry message stanza
+        var messageBuilder = new NodeBuilder()
+                .description("message")
+                .attribute("id", message.id())
+                .attribute("to", message.chatJid())
+                .attribute("type", getMessageType(message.message()))
+                .attribute("addressing_mode", getAddressingMode(message.chatJid()))
+                .attribute("device_fanout", "false") // Indicate this is a resend
+                .content(participantsNode);
+
+        // Add device identity if this is a pre-key message
+        if (encResult.isPreKeyMessage()) {
+            buildDeviceIdentityNode()
+                    .ifPresent(messageBuilder::content);
+        }
+
+        // Send the retry
+        whatsapp.sendNode(messageBuilder);
     }
 }

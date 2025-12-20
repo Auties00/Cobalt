@@ -56,7 +56,10 @@ public final class GroupOrCommunityMetadata {
     @ProtobufProperty(index = 15, type = ProtobufType.MESSAGE)
     final SequencedSet<CommunityLinkedGroup> communityGroups;
 
-    GroupOrCommunityMetadata(Jid jid, String subject, Jid subjectAuthorJid, long subjectTimestampSeconds, long foundationTimestampSeconds, Jid founderJid, String description, String descriptionId, Map<Integer, ChatSettingPolicy> settings, SequencedSet<ChatParticipant> participants, long ephemeralExpirationSeconds, Jid parentCommunityJid, boolean isCommunity, SequencedSet<CommunityLinkedGroup> communityGroups) {
+    @ProtobufProperty(index = 16, type = ProtobufType.BOOL)
+    final boolean isLidAddressingMode;
+
+    GroupOrCommunityMetadata(Jid jid, String subject, Jid subjectAuthorJid, long subjectTimestampSeconds, long foundationTimestampSeconds, Jid founderJid, String description, String descriptionId, Map<Integer, ChatSettingPolicy> settings, SequencedSet<ChatParticipant> participants, long ephemeralExpirationSeconds, Jid parentCommunityJid, boolean isCommunity, SequencedSet<CommunityLinkedGroup> communityGroups, boolean isLidAddressingMode) {
         this.jid = Objects.requireNonNull(jid, "value cannot be null");
         this.subject = Objects.requireNonNull(subject, "subject cannot be null");
         this.subjectAuthorJid = subjectAuthorJid;
@@ -71,6 +74,7 @@ public final class GroupOrCommunityMetadata {
         this.parentCommunityJid = parentCommunityJid;
         this.isCommunity = isCommunity;
         this.communityGroups = Objects.requireNonNullElseGet(communityGroups, LinkedHashSet::new);
+        this.isLidAddressingMode = isLidAddressingMode;
     }
 
     public Jid jid() {
@@ -165,6 +169,10 @@ public final class GroupOrCommunityMetadata {
         return communityGroups.removeIf(group -> group.jid().equals(jid));
     }
 
+    public boolean isLidAddressingMode() {
+        return isLidAddressingMode;
+    }
+
     @Override
     public boolean equals(Object o) {
         return o instanceof GroupOrCommunityMetadata that
@@ -181,14 +189,15 @@ public final class GroupOrCommunityMetadata {
                 && Objects.equals(ephemeralExpirationSeconds, that.ephemeralExpirationSeconds)
                 && Objects.equals(parentCommunityJid, that.parentCommunityJid)
                 && isCommunity == that.isCommunity
-                && Objects.equals(communityGroups, that.communityGroups);
+                && Objects.equals(communityGroups, that.communityGroups)
+                && isLidAddressingMode == that.isLidAddressingMode;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(jid, subject, subjectAuthorJid, subjectTimestampSeconds, foundationTimestampSeconds,
                 founderJid, description, descriptionId, settings, participants,
-                ephemeralExpirationSeconds, parentCommunityJid, isCommunity, communityGroups);
+                ephemeralExpirationSeconds, parentCommunityJid, isCommunity, communityGroups, isLidAddressingMode);
     }
 
     @Override
@@ -207,6 +216,7 @@ public final class GroupOrCommunityMetadata {
                 "ephemeralExpiration=" + ephemeralExpirationSeconds + ", " +
                 "parentCommunityJid=" + parentCommunityJid + ", " +
                 "isCommunity=" + isCommunity + ", " +
-                "communityGroups=" + communityGroups + ']';
+                "communityGroups=" + communityGroups + ", " +
+                "isLidAddressingMode=" + isLidAddressingMode + ']';
     }
 }

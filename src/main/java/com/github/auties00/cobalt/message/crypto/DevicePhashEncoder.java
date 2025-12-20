@@ -2,7 +2,6 @@ package com.github.auties00.cobalt.message.crypto;
 
 import com.github.auties00.cobalt.model.jid.Jid;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -21,6 +20,7 @@ public final class DevicePhashEncoder {
     /**
      * Calculates the participant hash (phash) for a list of device JIDs.
      * The phash is used by the server to verify that the client has the correct device list.
+     * JIDs are sorted before hashing to ensure consistent results.
      *
      * @param deviceJids the list of device JIDs to hash
      * @return the phash string in format "2:base64(...)"
@@ -32,16 +32,22 @@ public final class DevicePhashEncoder {
                 return PHASH_PREFIX;
             }
 
+            // Sort JIDs to ensure consistent hash regardless of collection order
+            var sortedJids = deviceJids.stream()
+                    .map(Jid::toString)
+                    .sorted()
+                    .toList();
+
             var digest = MessageDigest.getInstance("SHA-256");
-            for(var deviceJid : deviceJids) {
-                digest.update(deviceJid.toString().getBytes(StandardCharsets.UTF_8));
+            for (var jidString : sortedJids) {
+                digest.update(jidString.getBytes(StandardCharsets.UTF_8));
             }
             var hash = digest.digest();
 
-            var base64 = Base64.getEncoder()
-                    .encode(ByteBuffer.wrap(hash,  0, 6));
+            var truncatedHash = Arrays.copyOf(hash, 6);
+            var base64 = Base64.getEncoder().encodeToString(truncatedHash);
             return PHASH_PREFIX + base64;
-        }catch (NoSuchAlgorithmException _) {
+        } catch (NoSuchAlgorithmException _) {
             throw new InternalError("No SHA-256 algorithm available");
         }
     }
