@@ -2,7 +2,6 @@ package com.github.auties00.cobalt.model.chat;
 
 import com.github.auties00.cobalt.model.contact.ContactStatus;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
-import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfoParent;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.jid.JidProvider;
@@ -405,7 +404,7 @@ public final class Chat implements MessageInfoParent {
             return List.of();
         }
 
-        return messages.streamMessages()
+        return messages.getMessageInfosAsStream()
                 .limit(unreadMessagesCount())
                 .toList();
     }
@@ -455,7 +454,7 @@ public final class Chat implements MessageInfoParent {
      */
     @Override
     public Optional<ChatMessageInfo> newestMessage() {
-        return messages.getLast();
+        return messages.getNewestMessageInfo();
     }
 
     /**
@@ -465,7 +464,7 @@ public final class Chat implements MessageInfoParent {
      */
     @Override
     public Optional<ChatMessageInfo> oldestMessage() {
-        return messages.getFirst();
+        return messages.getOldestMessageInfo();
     }
 
     /**
@@ -474,7 +473,7 @@ public final class Chat implements MessageInfoParent {
      * @return a non-null list of messages
      */
     public SequencedCollection<ChatMessageInfo> starredMessages() {
-        return messages.streamMessages()
+        return messages.getMessageInfosAsStream()
                 .filter(ChatMessageInfo::starred)
                 .toList();
     }
@@ -486,7 +485,7 @@ public final class Chat implements MessageInfoParent {
      */
     public void addMessage(ChatMessageInfo info) {
         Objects.requireNonNull(info, "info cannot be null");
-        messages.add(info);
+        messages.addMessageInfo(info);
         updateChatTimestamp(info);
     }
 
@@ -498,7 +497,7 @@ public final class Chat implements MessageInfoParent {
      */
     @Override
     public boolean removeMessage(String info) {
-        if(!messages.removeById(info)) {
+        if(!messages.removeMessageInfoById(info)) {
             return false;
         }
 
@@ -547,7 +546,7 @@ public final class Chat implements MessageInfoParent {
      * @return a non-null collection
      */
     public SequencedCollection<ChatMessageInfo> messages() {
-        return messages.toUnmodifiableSequencedView();
+        return messages.getMessageInfosAsSequencedCollection();
     }
 
     /**
@@ -557,7 +556,12 @@ public final class Chat implements MessageInfoParent {
      */
     @Override
     public Jid toJid() {
-        return jid();
+        var lid = this.lid;
+        if(lid != null) {
+            return lid;
+        } else {
+            return jid;
+        }
     }
 
     @Override
@@ -600,7 +604,7 @@ public final class Chat implements MessageInfoParent {
 
     @Override
     public Optional<ChatMessageInfo> getMessageById(String id) {
-        return messages.getById(id);
+        return messages.getMessageInfoById(id);
     }
 
     /**
@@ -628,7 +632,7 @@ public final class Chat implements MessageInfoParent {
     }
     
     static final class Messages extends AbstractCollection<HistorySyncMessage> {
-        private final ConcurrentLinkedHashMap<String, ChatMessageInfo> backing;
+        private final ConcurrentLinkedHashMap<String, HistorySyncMessage> backing;
 
         Messages() {
             this.backing = new ConcurrentLinkedHashMap<>();
@@ -636,49 +640,51 @@ public final class Chat implements MessageInfoParent {
 
         @Override
         public boolean add(HistorySyncMessage historySyncMessage) {
-            if(historySyncMessage == null) {
+            if(historySyncMessage == null || historySyncMessage.messageInfo() == null) {
                 return false;
             }else {
-                backing.put(historySyncMessage.messageInfo().id(), historySyncMessage.messageInfo());
+                backing.put(historySyncMessage.messageInfo().id(), historySyncMessage);
                 return true;
             }
         }
-        
-        public boolean add(ChatMessageInfo messageInfo) {
+
+        public boolean addMessageInfo(ChatMessageInfo messageInfo) {
             if(messageInfo == null) {
                 return false;
             }else {
-                backing.put(messageInfo.id(), messageInfo);
+                backing.put(messageInfo.id(), new HistorySyncMessage(messageInfo, -1));
                 return true;
             }
         }
 
-        public Optional<ChatMessageInfo> getById(String id) {
-            return Optional.ofNullable(backing.get(id));
+        public Optional<ChatMessageInfo> getMessageInfoById(String id) {
+            return Optional.ofNullable(backing.get(id))
+                    .map(HistorySyncMessage::messageInfo);
         }
         
-        public Optional<ChatMessageInfo> getFirst() {
+        public Optional<ChatMessageInfo> getOldestMessageInfo() {
             return Optional.ofNullable(backing.firstEntry())
-                    .map(Map.Entry::getValue);
+                    .map(entry -> entry.getValue().messageInfo());
         }
         
-        public Optional<ChatMessageInfo> getLast() {
+        public Optional<ChatMessageInfo> getNewestMessageInfo() {
             return Optional.ofNullable(backing.lastEntry())
-                    .map(Map.Entry::getValue);
+                    .map(entry -> entry.getValue().messageInfo());
         }
 
-        public boolean removeById(String id) {
+        public boolean removeMessageInfoById(String id) {
             return backing.remove(id) != null;
         }
         
-        public Stream<ChatMessageInfo> streamMessages() {
+        public Stream<ChatMessageInfo> getMessageInfosAsStream() {
             return backing.sequencedValues()
-                    .stream();
+                    .stream()
+                    .map(HistorySyncMessage::messageInfo);
         }
 
         @Override
         public Iterator<HistorySyncMessage> iterator() {
-            throw new UnsupportedOperationException();
+            return backing.sequencedValues().iterator();
         }
         
         @Override
@@ -686,96 +692,100 @@ public final class Chat implements MessageInfoParent {
             return backing.size();
         }
 
-        public SequencedCollection<ChatMessageInfo> toUnmodifiableSequencedView() {
-            return new UnmodifiableSequencedView();
+        public SequencedCollection<ChatMessageInfo> getMessageInfosAsSequencedCollection() {
+            return getMessageInfosAsSequencedCollection(backing.sequencedValues());
         }
-        
-        private class UnmodifiableSequencedView implements SequencedCollection<ChatMessageInfo> {
-            @Override
-            public SequencedCollection<ChatMessageInfo> reversed() {
-                return backing.sequencedValues().reversed();
-            }
 
-            @Override
-            public int size() {
-                return backing.size();
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return backing.isEmpty();
-            }
-
-            @Override
-            public boolean contains(Object o) {
-                return o instanceof ChatMessageInfo chatMessageInfo
-                       && backing.containsKey(chatMessageInfo.id());
-            }
-
-            @Override
-            public Iterator<ChatMessageInfo> iterator() {
-                return backing
-                        .sequencedValues()
-                        .iterator();
-            }
-
-            @Override
-            public Object[] toArray() {
-                return backing.sequencedValues()
-                        .toArray();
-            }
-
-            @Override
-            public <T> T[] toArray(T[] a) {
-                return backing.sequencedValues()
-                        .toArray(a);
-            }
-
-            @Override
-            public boolean add(ChatMessageInfo chatMessageInfo) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean remove(Object o) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean containsAll(Collection<?> collection) {
-                Objects.requireNonNull(collection);
-                for (var entry : collection) {
-                    if (!(entry instanceof MessageInfo messageInfo)) {
-                        return false;
-                    }
-
-                    if (!backing.containsKey(messageInfo.id())) {
-                        return false;
-                    }
+        private SequencedCollection<ChatMessageInfo> getMessageInfosAsSequencedCollection(SequencedCollection<HistorySyncMessage> data) {
+            return new SequencedCollection<>() {
+                @Override
+                public SequencedCollection<ChatMessageInfo> reversed() {
+                    return getMessageInfosAsSequencedCollection(data.reversed());
                 }
-                return true;
-            }
 
+                @Override
+                public int size() {
+                    return data.size();
+                }
 
-            @Override
-            public boolean addAll(Collection<? extends ChatMessageInfo> c) {
-                throw new UnsupportedOperationException();
-            }
+                @Override
+                public boolean isEmpty() {
+                    return data.isEmpty();
+                }
 
-            @Override
-            public boolean removeAll(Collection<?> c) {
-                throw new UnsupportedOperationException();
-            }
+                @Override
+                public boolean contains(Object o) {
+                    return o instanceof ChatMessageInfo chatMessageInfo
+                            && backing.containsKey(chatMessageInfo.id());
+                }
 
-            @Override
-            public boolean retainAll(Collection<?> c) {
-                throw new UnsupportedOperationException();
-            }
+                @Override
+                public Iterator<ChatMessageInfo> iterator() {
+                    var iterator = data.iterator();
+                    return new Iterator<>() {
+                        @Override
+                        public boolean hasNext() {
+                            return iterator.hasNext();
+                        }
 
-            @Override
-            public void clear() {
-                throw new UnsupportedOperationException();
-            }
+                        @Override
+                        public ChatMessageInfo next() {
+                            var result = iterator.next();
+                            return result != null ? result.messageInfo() : null;
+                        }
+                    };
+                }
+
+                @Override
+                public Object[] toArray() {
+                    return data.toArray();
+                }
+
+                @Override
+                public <T> T[] toArray(T[] a) {
+                    return data.toArray(a);
+                }
+
+                @Override
+                public boolean add(ChatMessageInfo chatMessageInfo) {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public boolean remove(Object o) {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public boolean containsAll(Collection<?> c) {
+                    for(var entry : c) {
+                        if(!contains(entry)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+
+                @Override
+                public boolean addAll(Collection<? extends ChatMessageInfo> c) {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public boolean removeAll(Collection<?> c) {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public boolean retainAll(Collection<?> c) {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void clear() {
+                    throw new UnsupportedOperationException();
+                }
+            };
         }
     }
 }

@@ -203,7 +203,7 @@ public abstract sealed class SocketSession {
         synchronized (read.lock) {
             try {
                 read.lock.wait(DEFAULT_READ_TIMEOUT);
-            }catch (InterruptedException exception) {
+            } catch (InterruptedException exception) {
                 throw new RuntimeException("Interrupted while waiting for read", exception);
             }
         }
@@ -691,7 +691,6 @@ public abstract sealed class SocketSession {
                 if (key.isReadable()) {
                     var ok = processRead(channel, ctx, key);
                     if (!ok) {
-                        unregister(channel);
                         return;
                     }
                 }
@@ -701,8 +700,8 @@ public abstract sealed class SocketSession {
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
                     }
                 }
-            }catch (IOException exception) {
-                unregister(channel);
+            }catch (IOException _) {
+
             }
         }
 

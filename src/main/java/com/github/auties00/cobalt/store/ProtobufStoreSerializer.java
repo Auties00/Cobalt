@@ -162,7 +162,6 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
                 ChatSpec.encode(chat, ProtobufOutputStream.toStream(stream));
             }
             Files.move(tempFile, outputFile, StandardCopyOption.REPLACE_EXISTING);
-
         } catch (Throwable throwable) {
             handleSerializeError(outputFile, throwable);
         }
@@ -332,6 +331,7 @@ final class ProtobufStoreSerializer implements WhatsappStoreSerializer {
         try {
             task.join();
         } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException("Cannot finish deserializing store", exception);
         }
     }

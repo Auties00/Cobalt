@@ -52,9 +52,9 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
     private final Set<HistorySync.Type> historySyncTypes;
     private CompletableFuture<Void> historySyncTask;
 
-    public MessageStreamNodeHandler(WhatsAppClient whatsapp, LidMigrationService lidMigrationService) {
+    public MessageStreamNodeHandler(WhatsAppClient whatsapp, MessageReceiverService messageReceiverService, LidMigrationService lidMigrationService) {
         super(whatsapp, "message");
-        this.messageReceiverService = new MessageReceiverService(whatsapp);
+        this.messageReceiverService = messageReceiverService;
         this.lidMigrationService = lidMigrationService;
         this.historyCache = new HashSet<>();
         this.historySyncTypes = new HashSet<>();
@@ -468,6 +468,7 @@ public final class MessageStreamNodeHandler extends SocketStream.Handler {
         for (var listener : whatsapp.store().listeners()) {
             Thread.startVirtualThread(() -> listener.onChats(whatsapp, chats));
         }
+        lidMigrationService.triggerMigration();
     }
 
     private void handleChatsSync(HistorySync history, boolean recent) {

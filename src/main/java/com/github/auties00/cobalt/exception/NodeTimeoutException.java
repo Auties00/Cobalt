@@ -2,6 +2,8 @@ package com.github.auties00.cobalt.exception;
 
 import com.github.auties00.cobalt.node.Node;
 
+import java.util.Objects;
+
 /**
  * A runtime exception thrown when a WhatsApp protocol node request does not receive a response
  * within the expected timeout period.
@@ -31,7 +33,9 @@ public class NodeTimeoutException extends RuntimeException {
      *             must not be {@code null}
      */
     public NodeTimeoutException(Node node) {
+        Objects.requireNonNull(node, "node cannot be null");
         this.node = node;
+        super(node.toString());
     }
 
     /**

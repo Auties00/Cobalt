@@ -213,7 +213,12 @@ public final class Contact implements JidProvider {
 
     @Override
     public Jid toJid() {
-        return jid();
+        var lid = this.lid;
+        if(lid != null) {
+            return lid;
+        } else {
+            return jid;
+        }
     }
 
     public boolean hasName(String name) {

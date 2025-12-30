@@ -4,10 +4,10 @@ import com.github.auties00.cobalt.client.WhatsAppClient;
 import com.github.auties00.cobalt.client.WhatsAppClientDisconnectReason;
 import com.github.auties00.cobalt.client.WhatsAppClientVerificationHandler;
 import com.github.auties00.cobalt.exception.ADVValidationException;
-import com.github.auties00.cobalt.exception.HmacValidationException;
 import com.github.auties00.cobalt.exception.SessionClosedException;
 import com.github.auties00.cobalt.model.auth.DeviceIdentitySpec;
 import com.github.auties00.cobalt.model.auth.SignedDeviceIdentity;
+import com.github.auties00.cobalt.model.auth.SignedDeviceIdentityBuilder;
 import com.github.auties00.cobalt.model.auth.SignedDeviceIdentitySpec;
 import com.github.auties00.cobalt.model.auth.UserAgent.PlatformType;
 import com.github.auties00.cobalt.model.contact.ContactBuilder;
@@ -18,7 +18,7 @@ import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.node.NodeBuilder;
 import com.github.auties00.cobalt.socket.SocketPhonePairing;
 import com.github.auties00.cobalt.socket.SocketStream;
-import com.github.auties00.cobalt.util.ADVValidator;
+import com.github.auties00.cobalt.device.adv.DeviceADVValidator;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.libsignal.key.SignalIdentityKeyPair;
 
@@ -197,32 +197,31 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
     private void handlePairSuccess(Node node, Node container) {
         saveCompanion(container);
 
-        var account = parseAccount(container);
-        if(account.isEmpty()) {
+        var signedDeviceIdentity = parseSignedDeviceIdentity(container);
+        if(signedDeviceIdentity.isEmpty()) {
             return;
         }
+        whatsapp.store()
+                .setCompanionIdentity(signedDeviceIdentity.get());
 
-        whatsapp.store().setCompanionIdentity(account.get());
-        var identityPublicKey = whatsapp.store().identityKeyPair().publicKey().toEncodedPoint();
-        if (!ADVValidator.verifyAccountSignatureForPairing(account.get(), identityPublicKey)) {
-            whatsapp.handleFailure(AUTH, new HmacValidationException("message_header"));
-            return;
-        }
-        var identityPrivateKey = whatsapp.store().identityKeyPair().privateKey().toEncodedPoint();
-        var result = ADVValidator.createSignedIdentityForPairing(account.get(), identityPublicKey, identityPrivateKey);
-        whatsapp.store().setCompanionIdentity(result);
         var platform = getWebPlatform(node);
         var device = whatsapp.store()
                 .device()
                 .withPlatform(platform);
         whatsapp.store()
                 .setDevice(device);
-        var keyIndex = DeviceIdentitySpec.decode(result.details()).keyIndex();
-        var outgoingDeviceIdentity = SignedDeviceIdentitySpec.encode(new SignedDeviceIdentity(result.details(), null, result.accountSignature(), result.deviceSignature()));
+
+        var deviceIdentity = DeviceIdentitySpec.decode(signedDeviceIdentity.get().details());
+        var signedDeviceIdentityWithoutAccountSignatureKey = new SignedDeviceIdentityBuilder()
+                .details(signedDeviceIdentity.get().details())
+                .accountSignature(signedDeviceIdentity.get().accountSignature())
+                .deviceSignature(signedDeviceIdentity.get().deviceSignature())
+                .build();
+        var encodedSignedDeviceIdentityWithoutAccountSignatureKey = SignedDeviceIdentitySpec.encode(signedDeviceIdentityWithoutAccountSignatureKey);
         var deviceIdentityNode = new NodeBuilder()
                 .description("device-identity")
-                .attribute("key-index", keyIndex)
-                .content(outgoingDeviceIdentity)
+                .attribute("key-index", deviceIdentity.keyIndex())
+                .content(encodedSignedDeviceIdentityWithoutAccountSignatureKey)
                 .build();
         var devicePairRequest = new NodeBuilder()
                 .description("pair-device-sign")
@@ -231,16 +230,17 @@ public final class IqStreamNodeHandler extends SocketStream.Handler {
         sendConfirmNode(node, devicePairRequest);
     }
 
-    private Optional<SignedDeviceIdentity> parseAccount(Node container) {
-        var jid = whatsapp.store()
-                .jid()
-                .orElseThrow(() -> new InternalError("Jid was not set"));
-        var companionKeyPair = whatsapp.store()
-                .companionKeyPair()
-                .orElseThrow(() -> new InternalError("Missing companion key pair"));
+    private Optional<SignedDeviceIdentity> parseSignedDeviceIdentity(Node container) {
         try {
-            var result = ADVValidator.extractAndValidateDeviceIdentity(jid, companionKeyPair, container);
-            return Optional.of(result);
+            var jid = whatsapp.store()
+                    .jid()
+                    .orElseThrow(() -> new IllegalStateException("Jid was not set"));
+            var companionKeyPair = whatsapp.store()
+                    .companionKeyPair()
+                    .orElseThrow(() -> new IllegalStateException("Missing companion key pair"));
+            var identityKeyPair = whatsapp.store().identityKeyPair();
+            var signedDeviceIdentity = DeviceADVValidator.extractAndValidateLocalSignedDeviceIdentity(jid, companionKeyPair, identityKeyPair, container);
+            return Optional.of(signedDeviceIdentity);
         } catch (ADVValidationException exception) {
             whatsapp.handleFailure(AUTH, exception);
             return Optional.empty();

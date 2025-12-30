@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.message.crypto;
+package com.github.auties00.cobalt.message.signal;
 
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
@@ -6,30 +6,28 @@ import com.github.auties00.cobalt.model.message.model.MessageContainerSpec;
 import com.github.auties00.cobalt.model.message.server.SenderKeyDistributionMessage;
 import com.github.auties00.cobalt.model.message.server.SenderKeyDistributionMessageBuilder;
 import com.github.auties00.libsignal.SignalProtocolAddress;
-import com.github.auties00.libsignal.SignalProtocolStore;
 import com.github.auties00.libsignal.SignalSessionCipher;
 import com.github.auties00.libsignal.groups.SignalGroupCipher;
 import com.github.auties00.libsignal.groups.SignalSenderKeyName;
 import com.github.auties00.libsignal.protocol.SignalPreKeyMessage;
+import it.auties.protobuf.stream.ProtobufOutputStream;
 
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.github.auties00.cobalt.util.SignalProtocolConstants.*;
+import static com.github.auties00.cobalt.message.signal.SignalMessageConstants.*;
 
 /**
  * Encoder for WhatsApp messages using Signal Protocol encryption.
  * This is the counterpart to MessageDecoder for outgoing messages.
  */
-public final class MessageEncoder {
+public final class SignalMessageEncoder {
     private final SignalSessionCipher sessionCipher;
     private final SignalGroupCipher groupCipher;
-    private final SignalProtocolStore store;
 
-    public MessageEncoder(SignalProtocolStore store) {
-        this.store = Objects.requireNonNull(store, "store cannot be null");
-        this.sessionCipher = new SignalSessionCipher(store);
-        this.groupCipher = new SignalGroupCipher(store);
+    public SignalMessageEncoder(SignalSessionCipher sessionCipher, SignalGroupCipher groupCipher) {
+        this.sessionCipher = sessionCipher;
+        this.groupCipher = groupCipher;
     }
 
     /**
@@ -153,37 +151,6 @@ public final class MessageEncoder {
         return encode(recipientAddress, container);
     }
 
-    /**
-     * Checks if a Signal session exists for the given address.
-     *
-     * @param address the Signal protocol address to check
-     * @return true if a session exists
-     */
-    public boolean hasSession(SignalProtocolAddress address) {
-        return store.findSessionByAddress(address).isPresent();
-    }
-
-    /**
-     * Checks if a Signal session exists for the given JID.
-     *
-     * @param jid the JID to check
-     * @return true if a session exists
-     */
-    public boolean hasSession(Jid jid) {
-        return hasSession(jid.toSignalAddress());
-    }
-
-    /**
-     * Checks if a sender key exists for the given group and sender.
-     *
-     * @param groupJid     the JID of the group
-     * @param senderDevice the JID of the sender's device
-     * @return true if a sender key exists
-     */
-    public boolean hasSenderKey(Jid groupJid, Jid senderDevice) {
-        var senderKeyName = new SignalSenderKeyName(groupJid.toString(), senderDevice.toSignalAddress());
-        return store.findSenderKeyByName(senderKeyName).isPresent();
-    }
 
     /**
      * Encodes a message container to protobuf and adds WhatsApp-specific padding.
@@ -193,20 +160,22 @@ public final class MessageEncoder {
      * @return the padded plaintext bytes
      */
     private byte[] encodeAndPad(MessageContainer message) {
-        var encoded = MessageContainerSpec.encode(message);
+        // Calculate encoded length
+        var encodedLength = MessageContainerSpec.sizeOf(message);
 
         // Calculate padding: align to block size, minimum 1 byte for padding length
-        var paddingLength = BLOCK_SIZE - (encoded.length % BLOCK_SIZE);
+        var paddingLength = BLOCK_SIZE - (encodedLength % BLOCK_SIZE);
 
         // Create result with padding
-        var result = new byte[encoded.length + paddingLength];
-        System.arraycopy(encoded, 0, result, 0, encoded.length);
+        var result = new byte[encodedLength + paddingLength];
+        MessageContainerSpec.encode(message, ProtobufOutputStream.toBytes(result, 0));
 
         // Fill padding bytes with the padding length value (PKCS7-style)
-        Arrays.fill(result, encoded.length, result.length, (byte) paddingLength);
+        Arrays.fill(result, encodedLength, result.length, (byte) paddingLength);
 
         return result;
     }
+
     /**
      * Represents the result of message encryption.
      * Contains the encrypted ciphertext, the encryption type, and optionally the sender key bytes for group messages.

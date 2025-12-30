@@ -6,11 +6,6 @@ package com.github.auties00.cobalt.migration;
  */
 public enum LidThreadMigrationStatus {
     /**
-     * Waiting for AB (A/B testing) property to enable migration
-     */
-    WAITING_PROP,
-
-    /**
      * Waiting for primary device to send PN-to-LID mappings
      */
     WAITING_MAPPINGS,

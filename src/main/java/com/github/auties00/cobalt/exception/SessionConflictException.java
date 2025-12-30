@@ -17,7 +17,6 @@ package com.github.auties00.cobalt.exception;
  * actively used by another client instance.
  *
  * @see SessionBadMacException
- * @see HmacValidationException
  */
 public class SessionConflictException extends RuntimeException {
     /**

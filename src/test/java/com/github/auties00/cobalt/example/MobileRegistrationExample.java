@@ -21,7 +21,14 @@ void main() {
 
 // You can get a value from https://daisysms.com, do not spam registrations, or you'll get banned
 private long promptPhoneNumber() {
-    return Long.parseUnsignedLong(IO.readln("Enter the phone value: "));
+    while (true) {
+        try {
+            var input = IO.readln("Enter the phone number: ");
+            return Long.parseUnsignedLong(input);
+        } catch(NumberFormatException _) {
+            IO.println("Invalid phone number!");
+        }
+    }
 }
 
 private boolean promptBusiness() {

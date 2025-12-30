@@ -1,47 +1,39 @@
-package com.github.auties00.cobalt.message.crypto;
+package com.github.auties00.cobalt.message.signal;
 
 import com.github.auties00.cobalt.model.message.model.ChatMessageKey;
 import com.github.auties00.cobalt.model.message.model.MessageContainer;
 import com.github.auties00.cobalt.model.message.model.MessageContainerSpec;
-import com.github.auties00.libsignal.SignalProtocolStore;
 import com.github.auties00.libsignal.SignalSessionCipher;
 import com.github.auties00.libsignal.groups.SignalGroupCipher;
 import com.github.auties00.libsignal.groups.SignalSenderKeyName;
 import com.github.auties00.libsignal.protocol.SignalMessage;
 import com.github.auties00.libsignal.protocol.SignalPreKeyMessage;
-import com.github.auties00.libsignal.protocol.SignalSenderKeyDistributionMessage;
 import it.auties.protobuf.stream.ProtobufInputStream;
 
-import static com.github.auties00.cobalt.util.SignalProtocolConstants.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+import static com.github.auties00.cobalt.message.signal.SignalMessageConstants.*;
 
 /**
  * Decoder for WhatsApp messages using Signal Protocol encryption.
  * This is the counterpart to MessageEncoder for incoming messages.
  */
-public final class MessageDecoder {
+public final class SignalMessageDecoder {
     private final SignalSessionCipher sessionCipher;
     private final SignalGroupCipher groupCipher;
 
-    public MessageDecoder(SignalProtocolStore store) {
-        this.groupCipher = new SignalGroupCipher(store);
-        this.sessionCipher = new SignalSessionCipher(store);
+    public SignalMessageDecoder(SignalSessionCipher sessionCipher, SignalGroupCipher groupCipher) {
+        this.sessionCipher = sessionCipher;
+        this.groupCipher = groupCipher;
     }
 
+
     // TODO: Can everything here be streamed? I think it's possible but very hard
-    public MessageContainer decode(ChatMessageKey messageKey, String type, byte[] encodedMessage) {
+    public MessageContainer decode(ChatMessageKey messageKey, String type, byte[] encodedMessage) throws NoSuchAlgorithmException, InvalidKeyException {
         if(MSMSG.equals(type)) {
-            // MSMSG (Multi-Sender Message) is used for bot messages with special encryption.
-            // Decryption requires:
-            // 1. Parsing MessageSecretMessage protobuf (version, encIv, encPayload)
-            // 2. Finding the target message by ID from bot metadata
-            // 3. Getting messageSecret from the target message
-            // 4. HKDF key derivation: HKDF("Bot Message", messageSecret) -> derivedKey
-            // 5. Second HKDF: HKDF(externalId + senderJid + recipientJid, derivedKey) -> finalKey
-            // 6. AES-GCM decrypt with finalKey, encIv, encPayload, AAD = externalId + "\0" + recipientJid
-            throw new UnsupportedOperationException(
-                    "MSMSG (bot message) decryption is not yet implemented. " +
-                    "This message type requires special key derivation from a referenced target message."
-            );
+            // TODO: Implement MSMSG
+            return MessageContainer.empty();
         } else {
             var result = switch (type) {
                 case MSG -> {
@@ -72,9 +64,5 @@ public final class MessageDecoder {
             return MessageContainerSpec.decode(ProtobufInputStream.fromBytes(result, 0, messageLength))
                     .unbox();
         }
-    }
-
-    public void process(SignalSenderKeyName groupName, SignalSenderKeyDistributionMessage signalDistributionMessage) {
-        groupCipher.process(groupName, signalDistributionMessage);
     }
 }

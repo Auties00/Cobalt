@@ -1,6 +1,5 @@
 package com.github.auties00.cobalt.media;
 
-import com.github.auties00.cobalt.exception.HmacValidationException;
 import com.github.auties00.cobalt.exception.MediaDownloadException;
 import com.github.auties00.cobalt.exception.MediaException;
 import com.github.auties00.cobalt.model.media.MediaProvider;
@@ -228,7 +227,7 @@ final class MediaDownloadInputStream extends MediaInputStream {
 
                                 var actualCiphertextMac = mac.doFinal();
                                 if (!Arrays.equals(macBuffer, 0, MAC_LENGTH, actualCiphertextMac, 0, MAC_LENGTH)) {
-                                    throw new HmacValidationException("media_decryption");
+                                    throw new MediaDownloadException("Mac doesn't match the expected value");
                                 }
                             }
 

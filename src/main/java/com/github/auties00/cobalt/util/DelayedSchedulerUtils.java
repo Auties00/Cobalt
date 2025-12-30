@@ -4,8 +4,8 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public final class DelayedScheduler {
-    private DelayedScheduler() {
+public final class DelayedSchedulerUtils {
+    private DelayedSchedulerUtils() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
 

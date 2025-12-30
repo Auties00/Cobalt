@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.message.crypto;
+package com.github.auties00.cobalt.message.rcat;
 
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.util.SecureBytes;
@@ -14,12 +14,12 @@ import java.util.*;
  * Content binding prevents replay attacks by cryptographically binding a message
  * to its intended recipient using HKDF-derived tokens.
  */
-public final class MessageContentBindingEncoder {
+public final class MessageRcatEncoder {
     private static final String RCAT_INFO_SUFFIX = "Rcat";
     private static final int MESSAGE_SECRET_LENGTH = 32;
     private static final int DERIVED_NONCE_LENGTH = 32;
 
-    private MessageContentBindingEncoder() {
+    private MessageRcatEncoder() {
         throw new UnsupportedOperationException("Utility class");
     }
 

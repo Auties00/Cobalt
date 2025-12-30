@@ -1,4 +1,4 @@
-package com.github.auties00.cobalt.message.crypto;
+package com.github.auties00.cobalt.device.hash;
 
 import com.github.auties00.cobalt.model.jid.Jid;
 
@@ -28,22 +28,12 @@ public final class DevicePhashEncoder {
     public static String calculatePhash(Collection<? extends Jid> deviceJids) {
         Objects.requireNonNull(deviceJids, "deviceJids cannot be null");
         try {
-            if (deviceJids.isEmpty()) {
-                return PHASH_PREFIX;
-            }
-
-            // Sort JIDs to ensure consistent hash regardless of collection order
-            var sortedJids = deviceJids.stream()
-                    .map(Jid::toString)
-                    .sorted()
-                    .toList();
-
             var digest = MessageDigest.getInstance("SHA-256");
-            for (var jidString : sortedJids) {
-                digest.update(jidString.getBytes(StandardCharsets.UTF_8));
-            }
+            deviceJids.stream()
+                    .map(Jid::toString)
+                    .sorted()  // Sort JIDs to ensure consistent hash regardless of collection order
+                    .forEachOrdered(entry -> digest.update(entry.getBytes(StandardCharsets.UTF_8)));
             var hash = digest.digest();
-
             var truncatedHash = Arrays.copyOf(hash, 6);
             var base64 = Base64.getEncoder().encodeToString(truncatedHash);
             return PHASH_PREFIX + base64;

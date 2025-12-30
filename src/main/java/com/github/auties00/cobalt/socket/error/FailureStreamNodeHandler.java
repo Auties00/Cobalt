@@ -12,10 +12,10 @@ public final class FailureStreamNodeHandler extends SocketStream.Handler {
 
     @Override
     public void handle(Node node) {
-        var reason = Math.toIntExact(node.getRequiredAttributeAsLong("reason"));
+        var reason = node.getRequiredAttributeAsLong("reason");
         switch (reason) {
-            case 503, 403 -> whatsapp.disconnect(WhatsAppClientDisconnectReason.BANNED);
-            case 401, 405 -> whatsapp.disconnect(WhatsAppClientDisconnectReason.LOGGED_OUT);
+            case 503L, 403L -> whatsapp.disconnect(WhatsAppClientDisconnectReason.BANNED);
+            case 401L, 405L -> whatsapp.disconnect(WhatsAppClientDisconnectReason.LOGGED_OUT);
             default -> whatsapp.disconnect(WhatsAppClientDisconnectReason.RECONNECTING);
         }
     }

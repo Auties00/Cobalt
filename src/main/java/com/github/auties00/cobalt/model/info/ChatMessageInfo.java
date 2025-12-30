@@ -6,8 +6,6 @@ import com.github.auties00.cobalt.model.contact.Contact;
 import com.github.auties00.cobalt.model.jid.Jid;
 import com.github.auties00.cobalt.model.media.MediaData;
 import com.github.auties00.cobalt.model.message.model.*;
-import com.github.auties00.cobalt.model.message.model.*;
-import com.github.auties00.cobalt.model.message.model.*;
 import com.github.auties00.cobalt.model.message.standard.LiveLocationMessage;
 import com.github.auties00.cobalt.model.message.standard.ReactionMessage;
 import com.github.auties00.cobalt.model.poll.PollAdditionalMetadata;

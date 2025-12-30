@@ -2,6 +2,7 @@ package com.github.auties00.cobalt.util;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.concurrent.ThreadLocalRandom;
 
 public final class SecureBytes {
     private static final SecureRandom RANDOM;
@@ -113,5 +114,11 @@ public final class SecureBytes {
 
     public static int nextInt(int bound) {
         return RANDOM.nextInt(bound);
+    }
+
+    public static String randomSid() {
+        return Clock.nowSeconds()
+               + "-" + ThreadLocalRandom.current().nextLong(1_000_000_000, 9_999_999_999L)
+               + "-" + ThreadLocalRandom.current().nextInt(0, 1000);
     }
 }

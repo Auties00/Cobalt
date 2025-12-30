@@ -41,7 +41,8 @@ public final class SocketRequest {
                             throw new NodeTimeoutException(body);
                         }
                     } catch (InterruptedException exception) {
-                        throw new InternalError(exception);
+                        Thread.currentThread().interrupt();
+                        throw new NodeTimeoutException(body);
                     }
                 }
             }

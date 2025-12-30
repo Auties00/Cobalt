@@ -1010,7 +1010,8 @@ public final class WhatsAppStore implements SignalProtocolStore {
         this.lidToPhoneMappings = new ConcurrentHashMap<>();
         this.phoneToLidMappings = new ConcurrentHashMap<>();
         for (var contact : contacts.values()) {
-            contact.lid().ifPresent(entry -> registerLidMapping(contact.jid(), entry));
+            contact.lid()
+                    .ifPresent(entry -> registerLidMapping(contact.jid(), entry));
         }
         this.registrationId = Objects.requireNonNullElseGet(registrationId, () -> SecureBytes.nextInt(16380) + 1);
         this.noiseKeyPair = Objects.requireNonNullElseGet(noiseKeyPair, SignalIdentityKeyPair::random);
@@ -1124,30 +1125,26 @@ public final class WhatsAppStore implements SignalProtocolStore {
             case null -> Optional.empty();
             case Chat _, Newsletter _, Jid _, JidServer _-> {
                 var targetJid = jid.toJid();
-
-                // Try direct lookup first
-                var direct = contacts.get(targetJid);
-                if (direct != null) {
-                    yield Optional.of(direct);
-                }
-
-                // Try alternate addressing mode
-                var normalizedJid = targetJid.withoutData();
-                if (normalizedJid.isLid()) {
-                    // LID provided, try to find by phone number
-                    var phoneJid = lidToPhoneMappings.get(normalizedJid);
-                    if (phoneJid != null) {
-                        yield Optional.ofNullable(contacts.get(phoneJid));
+                if(targetJid.hasUserServer()) {
+                    var jidContact = contacts.get(targetJid);
+                    if(jidContact != null) {
+                        yield Optional.of(jidContact);
+                    } else {
+                        yield findLidByPhone(targetJid)
+                                .map(contacts::get);
                     }
-                } else if (normalizedJid.isPhone()) {
-                    // Phone provided, try to find by LID
-                    var lidJid = phoneToLidMappings.get(normalizedJid);
-                    if (lidJid != null) {
-                        yield Optional.ofNullable(contacts.get(lidJid));
+                } else if(targetJid.hasLidServer()) {
+                    var lidContact = contacts.get(targetJid);
+                    if(lidContact != null) {
+                        yield Optional.of(lidContact);
+                    } else {
+                        yield findPhoneByLid(targetJid)
+                                .map(contacts::get);
                     }
+                } else {
+                    var contact = contacts.get(targetJid);
+                    yield Optional.ofNullable(contact);
                 }
-
-                yield Optional.empty();
             }
         };
     }
@@ -1175,6 +1172,7 @@ public final class WhatsAppStore implements SignalProtocolStore {
         Objects.requireNonNull(jid, "jid cannot be null");
         var newContact = new ContactBuilder()
                 .jid(jid)
+                .lid(phoneToLidMappings.get(jid))
                 .build();
         return addContact(newContact);
     }
@@ -1201,9 +1199,31 @@ public final class WhatsAppStore implements SignalProtocolStore {
      * @return Optional containing the removed contact if it existed, empty otherwise
      */
     public Optional<Contact> removeContact(JidProvider contactJid) {
-        return contactJid == null
-                ? Optional.empty()
-                : Optional.ofNullable(contacts.remove(contactJid.toJid()));
+        if(contactJid == null) {
+            return Optional.empty();
+        } else {
+            var targetJid = jid.toJid();
+            if(targetJid.hasUserServer()) {
+                var jidContact = contacts.remove(targetJid);
+                if(jidContact != null) {
+                    return Optional.of(jidContact);
+                } else {
+                    return findLidByPhone(targetJid)
+                            .map(contacts::remove);
+                }
+            } else if(targetJid.hasLidServer()) {
+                var lidContact = contacts.remove(targetJid);
+                if(lidContact != null) {
+                    return Optional.of(lidContact);
+                } else {
+                    return findPhoneByLid(targetJid)
+                            .map(contacts::remove);
+                }
+            } else {
+                var chat = contacts.remove(targetJid);
+                return Optional.ofNullable(chat);
+            }
+        }
     }
 
     // =====================================================
@@ -1246,26 +1266,16 @@ public final class WhatsAppStore implements SignalProtocolStore {
      * @return Optional containing the LID if found
      */
     public Optional<Jid> findLidByPhone(Jid phoneJid) {
-        return phoneJid == null ? Optional.empty() : Optional.ofNullable(phoneToLidMappings.get(phoneJid.withoutData()));
-    }
-
-    /**
-     * Gets the alternate JID (phone↔LID) for a given JID.
-     *
-     * @param jid the JID to get the alternate for
-     * @return Optional containing the alternate JID if available
-     */
-    public Optional<Jid> getAlternateJid(JidProvider jid) {
-        if (jid == null) {
+        if (phoneJid == null) {
             return Optional.empty();
         } else {
-            var normalized = jid.toJid().withoutData();
-            if (normalized.isLid()) {
-                return findPhoneByLid(normalized);
-            } else if (normalized.isPhone()) {
-                return findLidByPhone(normalized);
+            var localJid = jid;
+            if(localJid != null && Objects.equals(phoneJid.user(), localJid.user())) {
+                return Optional.ofNullable(lid)
+                        .map(lid -> lid.withDevice(phoneJid.device()));
             } else {
-                return Optional.empty();
+                var result = phoneToLidMappings.get(phoneJid.withoutData());
+                return Optional.ofNullable(result);
             }
         }
     }
@@ -1285,17 +1295,27 @@ public final class WhatsAppStore implements SignalProtocolStore {
             case null -> Optional.empty();
             case Chat chat -> Optional.of(chat);
             case Contact _, Newsletter _, Jid _, JidServer _-> {
-                var targetjid = jid.toJid();
-
-                // Direct lookup
-                var chat = chats.get(targetjid);
-                if (chat != null) {
-                    yield Optional.of(chat);
+                var targetJid = jid.toJid();
+                if(targetJid.hasUserServer()) {
+                    var jidChat = chats.get(targetJid);
+                    if(jidChat != null) {
+                        yield Optional.of(jidChat);
+                    } else {
+                        yield findLidByPhone(targetJid)
+                                .map(chats::get);
+                    }
+                } else if(targetJid.hasLidServer()) {
+                    var lidChat = chats.get(targetJid);
+                    if(lidChat != null) {
+                        yield Optional.of(lidChat);
+                    } else {
+                        yield findPhoneByLid(targetJid)
+                                .map(chats::get);
+                    }
+                } else {
+                    var chat = chats.get(targetJid);
+                    yield Optional.ofNullable(chat);
                 }
-
-                // Try alternate JID (PN↔LID)
-                yield getAlternateJid(jid)
-                        .map(chats::get);
             }
         };
     }
@@ -1405,9 +1425,31 @@ public final class WhatsAppStore implements SignalProtocolStore {
      * @return Optional containing the removed chat if it existed, empty otherwise
      */
     public Optional<Chat> removeChat(JidProvider chatJid) {
-        return chatJid == null
-                ? Optional.empty()
-                : Optional.ofNullable(chats.remove(chatJid.toJid()));
+        if(chatJid == null) {
+            return Optional.empty();
+        } else {
+            var targetJid = jid.toJid();
+            if(targetJid.hasUserServer()) {
+                var jidChat = chats.remove(targetJid);
+                if(jidChat != null) {
+                    return Optional.of(jidChat);
+                } else {
+                    return findLidByPhone(targetJid)
+                            .map(chats::remove);
+                }
+            } else if(targetJid.hasLidServer()) {
+                var lidChat = chats.remove(targetJid);
+                if(lidChat != null) {
+                    return Optional.of(lidChat);
+                } else {
+                    return findPhoneByLid(targetJid)
+                            .map(chats::remove);
+                }
+            } else {
+                var chat = chats.remove(targetJid);
+                return Optional.ofNullable(chat);
+            }
+        }
     }
 
     public ChatMessageInfo addStatus(ChatMessageInfo messageInfo) {
@@ -3154,5 +3196,28 @@ public final class WhatsAppStore implements SignalProtocolStore {
     public void removeDevices(Jid userJid) {
         Objects.requireNonNull(userJid, "userJid cannot be null");
         deviceLists.remove(userJid);
+    }
+
+    public boolean hasJid(JidProvider entry) {
+        if(entry == null) {
+            return false;
+        } else {
+            var localJid = jid;
+            var localLid = lid;
+            var remoteJid = entry.toJid();
+            return remoteJid.equals(localJid) || remoteJid.equals(localLid);
+        }
+    }
+
+    public boolean hasUserJid(JidProvider entry) {
+        if(entry == null) {
+            return false;
+        } else {
+            var localJid = jid;
+            var localLid = lid;
+            var remoteJid = entry.toJid();
+            return (localJid != null && remoteJid.hasUser(localJid.user()))
+                    || (localLid != null && remoteJid.hasUser(localLid.user()));
+        }
     }
 }

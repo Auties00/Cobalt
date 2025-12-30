@@ -7,11 +7,9 @@ package com.github.auties00.cobalt.exception;
  * in a way that requires the session to be terminated (e.g., split thread
  * mismatch, obsolete mappings from primary device).
  */
-public sealed abstract class LidMigrationException extends RuntimeException
-        permits LidMigrationException.NoLidAvailable,
-        LidMigrationException.SplitThreadMismatch,
-        LidMigrationException.PrimaryMappingsObsolete,
-        LidMigrationException.FailedToParseMappings {
+public sealed abstract class LidMigrationException
+        extends RuntimeException
+        permits LidMigrationException.SplitThreadMismatch, LidMigrationException.PrimaryMappingsObsolete, LidMigrationException.FailedToParseMappings {
 
     protected LidMigrationException(String message) {
         super("LID migration failed: " + message);
@@ -19,15 +17,6 @@ public sealed abstract class LidMigrationException extends RuntimeException
 
     protected LidMigrationException(String message, Throwable reason) {
         super("LID migration failed: " + message, reason);
-    }
-
-    /**
-     * No LID available for a chat that requires one.
-     */
-    public static final class NoLidAvailable extends LidMigrationException {
-        public NoLidAvailable() {
-            super("No LID available for a chat that requires one");
-        }
     }
 
     /**

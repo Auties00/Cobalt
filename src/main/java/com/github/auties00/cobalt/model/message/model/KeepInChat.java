@@ -36,28 +36,28 @@ public final class KeepInChat {
     final long serverTimestampMilliseconds;
 
     KeepInChat(Type keepType, long serverTimestampSeconds, ChatMessageKey key, Jid deviceJid, long clientTimestampInMilliseconds, long serverTimestampMilliseconds) {
-        this.keepType = Objects.requireNonNull(keepType, "keepType cannot be null");
+        this.keepType = keepType;
         this.serverTimestampSeconds = serverTimestampSeconds;
-        this.key = Objects.requireNonNull(key, "key cannot be null");
-        this.deviceJid = Objects.requireNonNull(deviceJid, "deviceJid cannot be null");
+        this.key = key;
+        this.deviceJid = deviceJid;
         this.clientTimestampInMilliseconds = clientTimestampInMilliseconds;
         this.serverTimestampMilliseconds = serverTimestampMilliseconds;
     }
 
-    public Type keepType() {
-        return keepType;
+    public Optional<Type> keepType() {
+        return Optional.ofNullable(keepType);
     }
 
     public long serverTimestampSeconds() {
         return serverTimestampSeconds;
     }
 
-    public ChatMessageKey key() {
-        return key;
+    public Optional<ChatMessageKey> key() {
+        return Optional.ofNullable(key);
     }
 
-    public Jid deviceJid() {
-        return deviceJid;
+    public Optional<Jid> deviceJid() {
+        return Optional.ofNullable(deviceJid);
     }
 
     public long clientTimestampInMilliseconds() {
@@ -69,7 +69,13 @@ public final class KeepInChat {
     }
 
     public Optional<ZonedDateTime> serverTimestamp() {
-        return Clock.parseSeconds(serverTimestampSeconds);
+        if(serverTimestampMilliseconds > 0) {
+            return Clock.parseMilliseconds(serverTimestampMilliseconds);
+        } else if(serverTimestampSeconds > 0) {
+            return Clock.parseSeconds(serverTimestampSeconds);
+        } else {
+            return Optional.empty();
+        }
     }
 
     public Optional<ZonedDateTime> clientTimestamp() {

@@ -11,11 +11,7 @@ package com.github.auties00.cobalt.exception;
  *   <li>The server sends a "bad-mac" error node in response to invalid message authentication</li>
  * </ul>
  * <p>
- * This exception differs from {@link HmacValidationException} in that it specifically relates to
- * stream-level cryptographic failures rather than data payload integrity issues. When thrown,
- * it typically results in session termination and requires re-authentication.
  *
- * @see HmacValidationException
  * @see SessionConflictException
  */
 public class SessionBadMacException extends RuntimeException {

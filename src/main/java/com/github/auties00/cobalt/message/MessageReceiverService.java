@@ -1,7 +1,8 @@
 package com.github.auties00.cobalt.message;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
-import com.github.auties00.cobalt.message.crypto.MessageDecoder;
+import com.github.auties00.cobalt.device.DeviceService;
+import com.github.auties00.cobalt.message.signal.SignalMessageDecoder;
 import com.github.auties00.cobalt.model.business.BusinessVerifiedNameCertificateSpec;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.info.*;
@@ -18,6 +19,8 @@ import com.github.auties00.cobalt.model.poll.PollUpdateEncryptedOptionsSpec;
 import com.github.auties00.cobalt.node.Node;
 import com.github.auties00.cobalt.util.Clock;
 import com.github.auties00.libsignal.SignalProtocolAddress;
+import com.github.auties00.libsignal.SignalSessionCipher;
+import com.github.auties00.libsignal.groups.SignalGroupCipher;
 import com.github.auties00.libsignal.groups.SignalSenderKeyName;
 import com.github.auties00.libsignal.protocol.SignalSenderKeyDistributionMessage;
 
@@ -36,11 +39,13 @@ import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Locat
 
 public final class MessageReceiverService {
     private final WhatsAppClient whatsapp;
-    private final MessageDecoder messageDecoder;
+    private final SignalMessageDecoder signalMessageDecoder;
+    private final DeviceService deviceService;
 
-    public MessageReceiverService(WhatsAppClient whatsapp) {
+    public MessageReceiverService(WhatsAppClient whatsapp, DeviceService deviceService, SignalSessionCipher sessionCipher, SignalGroupCipher groupCipher) {
         this.whatsapp = whatsapp;
-        this.messageDecoder = new MessageDecoder(whatsapp.store());
+        this.signalMessageDecoder = new SignalMessageDecoder(sessionCipher, groupCipher);
+        this.deviceService = deviceService;
     }
     
     public SequencedCollection<? extends MessageInfo> readMessages(Node node) {
@@ -204,15 +209,12 @@ public final class MessageReceiverService {
     }
 
     private Stream<ChatMessageInfo> decodeChatMessage(Node infoNode, Node messageNode, String businessName) {
+        var localJid = whatsapp.store()
+                .jid()
+                .orElseThrow(() -> new IllegalStateException("Local jid is not available"));
+
         ChatMessageKey chatMessageKey = null;
         try {
-            var selfJid = whatsapp.store()
-                    .jid()
-                    .orElse(null);
-            if (selfJid == null) {
-                return Stream.empty();
-            }
-
             var pushName = infoNode.getAttributeAsString("notify", null);
             var timestamp = infoNode.getAttributeAsLong("t", 0);
             var id = infoNode.getRequiredAttributeAsString("id");
@@ -228,7 +230,7 @@ public final class MessageReceiverService {
                         .orElse(from);
                 keyBuilder.chatJid(recipient);
                 keyBuilder.senderJid(from);
-                var fromMe = isFromMe(from, selfJid);
+                var fromMe = Objects.equals(from.withoutData(), localJid.withoutData());
                 keyBuilder.fromMe(fromMe);
                 messageBuilder.senderJid(from);
             }else if(from.hasServer(JidServer.bot())) {
@@ -241,7 +243,7 @@ public final class MessageReceiverService {
                         .orElse(chatJid);
                 keyBuilder.chatJid(chatJid);
                 keyBuilder.senderJid(senderJid);
-                keyBuilder.fromMe(Objects.equals(senderJid.withoutData(), selfJid.withoutData()));
+                keyBuilder.fromMe(Objects.equals(senderJid.withoutData(), localJid.withoutData()));
             } else if(from.hasServer(JidServer.groupOrCommunity()) || from.hasServer(JidServer.broadcast()) || from.hasServer(JidServer.newsletter())) {
                 var participant = infoNode
                         .getAttributeAsJid("participant_pn")
@@ -249,7 +251,7 @@ public final class MessageReceiverService {
                         .orElseThrow(() -> new NoSuchElementException("Missing sender"));
                 keyBuilder.chatJid(from);
                 keyBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
-                var fromMe = isFromMe(participant, selfJid);
+                var fromMe = Objects.equals(participant.withoutData(), localJid.withoutData());
                 keyBuilder.fromMe(fromMe);
                 messageBuilder.senderJid(Objects.requireNonNull(participant, "Missing participant in group message"));
             }else {
@@ -259,7 +261,7 @@ public final class MessageReceiverService {
 
             var senderJid = chatMessageKey.senderJid()
                     .orElseThrow(() -> new InternalError("Missing sender"));
-            if (selfJid.equals(senderJid)) {
+            if (localJid.equals(senderJid)) {
                 return Stream.empty();
             }
 
@@ -293,16 +295,6 @@ public final class MessageReceiverService {
         }
     }
 
-    private boolean isFromMe(Jid participant, Jid selfJid) {
-        if(Objects.equals(participant.withoutData(), selfJid.withoutData())) {
-            return true;
-        } else {
-            return whatsapp.store().getAlternateJid(participant.withoutData())
-                    .map(alt -> Objects.equals(alt, selfJid.withoutData()))
-                    .orElse(false);
-        }
-    }
-
     private MessageContainer decodeChatMessageContainer(ChatMessageKey messageKey, Node messageNode) {
         if (messageNode == null) {
             return MessageContainer.empty();
@@ -315,7 +307,7 @@ public final class MessageReceiverService {
         }
 
         try {
-            return messageDecoder.decode(messageKey, type, encodedMessage.get());
+            return signalMessageDecoder.decode(messageKey, type, encodedMessage.get());
         }catch (Throwable throwable) {
             whatsapp.handleFailure(MESSAGE, throwable);
             return MessageContainer.empty();
@@ -325,7 +317,7 @@ public final class MessageReceiverService {
     private void handleSenderKeyDistributionMessage(SenderKeyDistributionMessage keyDistributionMessage, SignalProtocolAddress address) {
         var groupName = new SignalSenderKeyName(keyDistributionMessage.groupJid().toString(), address);
         var signalDistributionMessage = SignalSenderKeyDistributionMessage.ofSerialized(keyDistributionMessage.data());
-        messageDecoder.process(groupName, signalDistributionMessage);
+        deviceService.processDistributionMessage(groupName, signalDistributionMessage);
     }
 
     public void attributeChatMessage(ChatMessageInfo info) {
@@ -439,7 +431,7 @@ public final class MessageReceiverService {
     }
 
     private void attributeSender(ChatMessageInfo info, Jid senderJid) {
-        if (!senderJid.isPhone() && !senderJid.isLid()) {
+        if (!senderJid.hasUserServer() && !senderJid.hasLidServer()) {
             return;
         }
 

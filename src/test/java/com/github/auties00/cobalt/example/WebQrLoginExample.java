@@ -13,7 +13,10 @@ void main() {
             .addWebAppPrimaryFeaturesListener((_, features) -> System.out.printf("Received features: %s%n", features))
             .addNewMessageListener((_, message) -> System.out.println(message))
             .addContactsListener((_, contacts) -> System.out.printf("Contacts: %s%n", contacts.size()))
-            .addChatsListener((_, chats) -> System.out.printf("Chats: %s%n", chats.size()))
+            .addChatsListener((api, chats) -> {
+                System.out.printf("Chats: %s%n", chats.size());
+                api.sendMessage(api.store().lid().get().withDevice(0), "Hello World");
+            })
             .addNewslettersListener((_, newsletters) -> System.out.printf("Newsletters: %s%n", newsletters.size()))
             .addNodeReceivedListener((_, incoming) -> System.out.printf("Received node %s%n", incoming))
             .addNodeSentListener((_, outgoing) -> System.out.printf("Sent node %s%n", outgoing))

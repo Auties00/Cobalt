@@ -1,6 +1,7 @@
 package com.github.auties00.cobalt.socket.message;
 
 import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.device.DeviceService;
 import com.github.auties00.cobalt.model.info.ChatMessageInfo;
 import com.github.auties00.cobalt.model.info.MessageInfo;
 import com.github.auties00.cobalt.model.info.NewsletterMessageInfo;
@@ -16,13 +17,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.*;
+import static com.github.auties00.cobalt.client.WhatsAppClientErrorHandler.Location.MESSAGE;
 
 public final class MessageReceiptStreamNodeHandler extends SocketStream.Handler {
+    private final DeviceService deviceService;
     private final Set<String> retries;
 
-    public MessageReceiptStreamNodeHandler(WhatsAppClient whatsapp) {
+    public MessageReceiptStreamNodeHandler(WhatsAppClient whatsapp, DeviceService deviceService) {
         super(whatsapp, "receipt");
+        this.deviceService = deviceService;
         this.retries = ConcurrentHashMap.newKeySet();
     }
 
@@ -131,7 +134,7 @@ public final class MessageReceiptStreamNodeHandler extends SocketStream.Handler 
             case ChatMessageInfo chatMessage -> Thread.startVirtualThread(() -> {
                 try {
                     // Query fresh session for the retry device
-                    var deviceJids = whatsapp.querySessions(List.of(retryDeviceJid.toUserJid()));
+                    var deviceJids = deviceService.queryDevices(List.of(retryDeviceJid.toUserJid()));
                     if (deviceJids.isEmpty()) {
                         return;
                     }

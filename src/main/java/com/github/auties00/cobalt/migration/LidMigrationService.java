@@ -5,7 +5,6 @@ import com.github.auties00.cobalt.client.WhatsAppClientErrorHandler;
 import com.github.auties00.cobalt.exception.LidMigrationException;
 import com.github.auties00.cobalt.model.chat.Chat;
 import com.github.auties00.cobalt.model.jid.Jid;
-import com.github.auties00.cobalt.model.message.model.Message;
 import com.github.auties00.cobalt.model.sync.HistorySync;
 import com.github.auties00.cobalt.model.sync.LIDMigrationMapping;
 import com.github.auties00.cobalt.model.sync.LIDMigrationMappingSyncPayload;
@@ -75,19 +74,9 @@ public final class LidMigrationService {
      */
     public LidMigrationService(WhatsAppClient whatsapp) {
         this.whatsapp = Objects.requireNonNull(whatsapp, "whatsapp cannot be null");
-        // TODO: Set this to WAITING_PROP when we implement A/B prop handling
         this.lidMigrationStatus = new AtomicReference<>(LidThreadMigrationStatus.WAITING_MAPPINGS);
         this.primaryAssignedLidMappings = new ConcurrentHashMap<>();
         this.primaryLatestLidMappings = new ConcurrentHashMap<>();
-    }
-
-    /**
-     * If the LID migration service was waiting for the A/B property to be enabled,
-     * calling this methods moves the state machine from WAITING_PROP to WAITING_MAPPINGS.
-     */
-    // TODO: This method will be called when we implement A/B prop handling
-    public void enableMigration() {
-        lidMigrationStatus.compareAndSet(LidThreadMigrationStatus.WAITING_PROP, LidThreadMigrationStatus.WAITING_MAPPINGS);
     }
 
     public void handleProtocolMessage(LIDMigrationMappingSyncPayload lidMigrationMapping) {
@@ -107,7 +96,7 @@ public final class LidMigrationService {
 
         // If ready, do the migration
         if (lidMigrationStatus.compareAndSet(LidThreadMigrationStatus.WAITING_MAPPINGS, LidThreadMigrationStatus.READY)) {
-            migrate();
+            triggerMigration();
         }
     }
 
@@ -215,7 +204,7 @@ public final class LidMigrationService {
 
         // If ready, do the migration
         if (lidMigrationStatus.compareAndSet(LidThreadMigrationStatus.WAITING_MAPPINGS, LidThreadMigrationStatus.READY)) {
-            migrate();
+            triggerMigration();
         }
     }
 
@@ -268,7 +257,7 @@ public final class LidMigrationService {
                 }
             });
             if (newState == LidThreadMigrationStatus.READY) {
-                migrate();
+                triggerMigration();
             }
         }
     }
@@ -277,7 +266,12 @@ public final class LidMigrationService {
      * Migrates all 1-to-1 chats from phone number addressing to LID addressing.
      * Uses proper resolution logic to handle conflicts and edge cases.
      */
-    private void migrate() {
+    public void triggerMigration() {
+        // Check if we have the chats
+        if(!whatsapp.store().syncedChats()) {
+            return;
+        }
+
         // Change state machine to in progress
         if (!lidMigrationStatus.compareAndSet(LidThreadMigrationStatus.READY, LidThreadMigrationStatus.IN_PROGRESS)) {
             return;
@@ -286,7 +280,7 @@ public final class LidMigrationService {
         // Build a set of existing LID chats for split detection
         var existingLidChats = new HashSet<Jid>();
         for (var chat : whatsapp.store().chats()) {
-            if (chat.jid().isLid()) {
+            if (chat.jid().hasLidServer()) {
                 existingLidChats.add(chat.jid().withoutData());
             }
         }
@@ -296,7 +290,7 @@ public final class LidMigrationService {
             var chatJid = chat.jid();
 
             // Only process user chats (not groups, broadcasts, etc.)
-            if (!chatJid.isPhone() && !chatJid.isLid()) {
+            if (!chatJid.hasUserServer() && !chatJid.hasLidServer()) {
                 continue;
             }
 
@@ -307,11 +301,7 @@ public final class LidMigrationService {
             switch (resolution) {
                 case LidMigrationResolution.Migrate(var threadLid) -> chat.setLid(threadLid);
 
-                case LidMigrationResolution.Delete delete -> {
-                    // For now, we just skip deletion as it's a destructive operation
-                    // In a full implementation, we would delete the chat and its messages
-                    // whatsapp.store().removeChat(chatJid);
-                }
+                case LidMigrationResolution.Delete _ -> whatsapp.store().removeChat(chatJid);
 
                 case LidMigrationResolution.Error(var exception) -> {
                     // Critical error - trigger logout
@@ -341,13 +331,15 @@ public final class LidMigrationService {
         var chatJid = chat.jid();
 
         // Already a LID chat - keep as is
-        if (chatJid.isLid()) {
+        if (chatJid.hasLidServer()) {
             return new LidMigrationResolution.Migrate(chatJid);
         }
 
         // Get the various LID sources
         var primaryProvidedLid = getPrimaryProvidedLid(chatJid);
-        var localLid = whatsapp.store().findLidByPhone(chatJid).orElse(null);
+        var localLid = whatsapp.store()
+                .findLidByPhone(chatJid)
+                .orElse(null);
         var chatTimestamp = chat.timestampSeconds();
 
         // Check if a chat already exists with the target LID
@@ -357,14 +349,10 @@ public final class LidMigrationService {
         // Case 1: No primary LID provided
         if (primaryProvidedLid == null) {
             if (localLid == null) {
-                // No LID available - check if chat can be safely deleted
-                if(chat.messages().stream().noneMatch(message -> message.message().category() != Message.Category.SERVER)) {
-                    // When there are no messages in the chat, it can be deleted safely
-                    return new LidMigrationResolution.Delete();
-                } else {
-                    // Cannot delete chat with messages - critical error requiring logout
-                    return new LidMigrationResolution.Error(new LidMigrationException.NoLidAvailable());
-                }
+                // The WhatsApp Web client checks if a chat can be deleted in the WAWebLid1X1ThreadAccountMigrations module
+                // The logic is kind of complicated, but it either deletes the chats or throws an error
+                // I see no reason to port it, so we just delete the chat for simplicity
+                return new LidMigrationResolution.Delete();
             } else {
                 // Has local LID but primary didn't provide - check for split thread
                 if (lidChatExists) {
@@ -390,7 +378,6 @@ public final class LidMigrationService {
 
 
     public void reset() {
-        // TODO: Set this to WAITING_PROP when we implement A/B prop handling
         lidMigrationStatus.set(LidThreadMigrationStatus.WAITING_MAPPINGS);
         chatDbMigrationTimestamp = 0;
         primaryAssignedLidMappings.clear();
