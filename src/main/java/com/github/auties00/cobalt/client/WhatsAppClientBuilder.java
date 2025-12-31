@@ -589,6 +589,17 @@ public sealed class WhatsAppClientBuilder {
             }
 
             /**
+             * Sets the display name for the WhatsApp account
+             *
+             * @param name the name to set, can be null
+             * @return the same instance for chaining
+             */
+            public Web name(String name) {
+                store.setName(name);
+                return this;
+            }
+
+            /**
              * Sets how much chat history WhatsApp should send when the QR is first scanned
              * By default, one year
              *
