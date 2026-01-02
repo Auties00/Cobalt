@@ -509,17 +509,6 @@ public sealed class WhatsAppClientBuilder {
             }
 
             /**
-             * Sets the display name for the companion device, visible in the "Linked Devices" tab
-             *
-             * @param name the name to set, can be null
-             * @return the same instance for chaining
-             */
-            @Override
-            public Mobile name(String name) {
-                return (Mobile) super.name(name);
-            }
-
-            /**
              * Sets a proxy for the connection
              *
              * @param proxy the proxy to use, can be null to use no proxy

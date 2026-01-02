@@ -486,6 +486,14 @@ public final class WhatsAppClient {
         return this;
     }
 
+    /**
+     * Run this session asynchronous
+     */
+    public WhatsAppClient async() {
+        Thread.startVirtualThread(this::waitForDisconnection);
+        return this;
+    }
+
     //</editor-fold>
 
     //<editor-fold desc="Error handling">
