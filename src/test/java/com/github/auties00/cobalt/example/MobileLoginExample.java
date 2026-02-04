@@ -14,7 +14,10 @@ void main() {
             .orElseThrow()
             .addNodeReceivedListener((_, incoming) -> System.out.printf("Received node %s%n", incoming))
             .addNodeSentListener((_, outgoing )-> System.out.printf("Sent node %s%n", outgoing))
-            .addLoggedInListener(_ -> System.out.println("Logged in"))
+            .addLoggedInListener(client -> {
+                System.out.println("Logged in");
+                client.changePresence(true);
+            })
             .connect() // If you get error 403 o 503 the account is banned
             .waitForDisconnection();
 }
