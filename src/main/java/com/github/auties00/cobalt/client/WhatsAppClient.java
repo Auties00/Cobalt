@@ -880,6 +880,10 @@ public final class WhatsAppClient {
      * @param newAbout the non-null new status
      */
     public void changeAbout(String newAbout) {
+        if (newAbout.trim().split("\\s+").length > 50) {
+            throw new IllegalArgumentException("About cannot be longer than 50 words");
+        }
+
         var statusNode = new NodeBuilder()
                 .description("status")
                 .content(newAbout.getBytes(StandardCharsets.UTF_8))
