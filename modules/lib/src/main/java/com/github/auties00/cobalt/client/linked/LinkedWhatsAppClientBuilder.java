@@ -661,8 +661,8 @@ public sealed class LinkedWhatsAppClientBuilder {
              * {@inheritDoc}
              */
             @Override
-            public Mobile name(String name) {
-                return (Mobile) super.name(name);
+            public Web name(String name) {
+                return (Web) super.name(name);
             }
 
             /**
