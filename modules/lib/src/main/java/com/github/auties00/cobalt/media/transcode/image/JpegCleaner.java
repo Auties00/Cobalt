@@ -41,7 +41,7 @@ public final class JpegCleaner {
     /**
      * Length in bytes of the synthetic JFIF APP0 header emitted before any retained segment.
      */
-    private static final int JFIF_HEADER_LENGTH = 18;
+    private static final int JFIF_HEADER_LENGTH = 20;
 
     /**
      * Number of bytes a marker takes on the wire.
@@ -233,7 +233,13 @@ public final class JpegCleaner {
             throw new WhatsAppMediaException.Processing("SOI marker not at the start of the file");
         }
         var currentMarker = -1;
-        while (input.hasRemaining()) {
+        // Keep looping while a marker has already been decoded, even after the input buffer is drained.
+        // The SOS branch discovers the following marker (typically the trailing EOI) while scanning the
+        // entropy-coded stream and hands it back via currentMarker + continue. When EOI sits at the very
+        // end of the stream with no trailing bytes, input.hasRemaining() is already false at that point,
+        // so a plain hasRemaining() guard would exit before emitting the EOI and clean() would wrongly
+        // fail with "No EOI tag found".
+        while (currentMarker >= 0 || input.hasRemaining()) {
             if (currentMarker < 0) {
                 var prefix = readUnsigned8(input);
                 if (prefix != MARKER_PREFIX) {
@@ -277,16 +283,18 @@ public final class JpegCleaner {
                     input.position(segmentBodyStart + length - LENGTH_FIELD_SIZE);
                 }
                 case MARKER_APP13, MARKER_COM -> {
-                    if (!exifSeen && !jfifSeen) {
-                        throw new WhatsAppMediaException.Processing("Missing magic bytes marker");
-                    }
+                    // Tolerate encoder output carrying neither a JFIF (APP0) nor EXIF (APP1) marker:
+                    // the bundled FFmpeg mjpeg encoder emits a bare JPEG (SOI + tables + scan) with no APP0,
+                    // and clean() rebuilds a canonical JFIF prefix from JfifProps defaults below regardless,
+                    // so an absent magic marker is not an error.
                     var length = readUnsigned16(input);
                     input.position(input.position() + length - LENGTH_FIELD_SIZE);
                 }
                 case MARKER_SOS -> {
-                    if (!exifSeen && !jfifSeen) {
-                        throw new WhatsAppMediaException.Processing("Missing magic bytes marker");
-                    }
+                    // Tolerate encoder output carrying neither a JFIF (APP0) nor EXIF (APP1) marker:
+                    // the bundled FFmpeg mjpeg encoder emits a bare JPEG (SOI + tables + scan) with no APP0,
+                    // and clean() rebuilds a canonical JFIF prefix from JfifProps defaults below regardless,
+                    // so an absent magic marker is not an error.
                     var sosHeaderLength = readUnsigned16(input);
                     var sosHeaderBodyStart = input.position();
                     var sosCompressedStart = sosHeaderBodyStart + sosHeaderLength - LENGTH_FIELD_SIZE;
@@ -313,9 +321,10 @@ public final class JpegCleaner {
                     continue;
                 }
                 case MARKER_EOI -> {
-                    if (!exifSeen && !jfifSeen) {
-                        throw new WhatsAppMediaException.Processing("Missing magic bytes marker");
-                    }
+                    // Tolerate encoder output carrying neither a JFIF (APP0) nor EXIF (APP1) marker:
+                    // the bundled FFmpeg mjpeg encoder emits a bare JPEG (SOI + tables + scan) with no APP0,
+                    // and clean() rebuilds a canonical JFIF prefix from JfifProps defaults below regardless,
+                    // so an absent magic marker is not an error.
                     output.write(MARKER_PREFIX);
                     output.write(MARKER_EOI);
                     eoiSeen = true;
@@ -325,9 +334,10 @@ public final class JpegCleaner {
                             || currentMarker == MARKER_DQT
                             || currentMarker == MARKER_DHT
                             || currentMarker == MARKER_DRI) {
-                        if (!exifSeen && !jfifSeen) {
-                            throw new WhatsAppMediaException.Processing("Missing magic bytes marker");
-                        }
+                        // Tolerate encoder output carrying neither a JFIF (APP0) nor EXIF (APP1) marker:
+                        // the bundled FFmpeg mjpeg encoder emits a bare JPEG with no APP0, and clean() rebuilds
+                        // a canonical JFIF prefix from JfifProps defaults below regardless, so an absent magic
+                        // marker is not an error.
                         var length = readUnsigned16(input);
                         var segmentStart = input.position() - LENGTH_FIELD_SIZE - MARKER_SIZE;
                         var totalBytes = MARKER_SIZE + length;
@@ -360,10 +370,15 @@ public final class JpegCleaner {
             throw new WhatsAppMediaException.Processing("No EOI tag found");
         }
         var jfifPrefix = buildJfifPrefix(props);
+        // output.toByteArray() is overridden to return the backing array directly (no defensive copy), so
+        // its length is the buffer CAPACITY, not the number of bytes written. Use output.size() for the
+        // real content length, otherwise the uninitialised tail of the buffer is appended as trailing
+        // zero bytes after the EOI marker, corrupting the JPEG.
         var body = output.toByteArray();
-        var result = new byte[jfifPrefix.length + body.length];
+        var bodyLength = output.size();
+        var result = new byte[jfifPrefix.length + bodyLength];
         System.arraycopy(jfifPrefix, 0, result, 0, jfifPrefix.length);
-        System.arraycopy(body, 0, result, jfifPrefix.length, body.length);
+        System.arraycopy(body, 0, result, jfifPrefix.length, bodyLength);
         if (Log.DEBUG) LOGGER.log(Level.DEBUG, "jpeg cleaned: outputBytes={0}", result.length);
         return result;
     }
@@ -442,6 +457,12 @@ public final class JpegCleaner {
         buf.put((byte) props.densityUnits);
         buf.putShort((short) props.xDensity);
         buf.putShort((short) props.yDensity);
+        // A JFIF APP0 with declared length 16 must also carry the Xthumbnail and Ythumbnail count bytes
+        // (both 0 when no embedded thumbnail). Omitting them left the segment 2 bytes short of its own
+        // declared length, so a decoder consumed the following marker's "FF DB" (DQT) as APP0 payload
+        // and then failed with "Quantization table 0x00 was not defined".
+        buf.put((byte) 0);
+        buf.put((byte) 0);
         return prefix;
     }
 

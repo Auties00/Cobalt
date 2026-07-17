@@ -184,7 +184,7 @@ public final class ImagePipeline {
                 : QSCALE_STANDARD;
         if (Log.DEBUG) LOGGER.log(Level.DEBUG, "image transcode start: quality={0}", quality);
         try (var arena = Arena.ofShared();
-             var decoded = decodeFirstFrame(arena, source)) {
+             var decoded = decodeFirstFrame(arena, source, provider)) {
             var orientation = readOrientation(decoded.stream);
             var srcW = AVFrame.width(decoded.frame);
             var srcH = AVFrame.height(decoded.frame);
@@ -297,8 +297,14 @@ public final class ImagePipeline {
                 Ffmpeg.avfilter_inout_free(inputsPp);
                 Ffmpeg.avfilter_inout_free(outputsPp);
             }
+            // Use AV_BUFFERSRC_FLAG_KEEP_REF so buffersrc does NOT take ownership of / unref the frame.
+            // The decoded source frame is fed through this filter graph twice - once for the main scaled
+            // JPEG and once for the micro-thumbnail - so consuming it on the first pass would reset it to
+            // a 0x0 empty frame and the thumbnail pass would then fail building the buffer source with
+            // "video_size 0x0" (avfilter_graph_create_filter -> Invalid argument).
             FFmpegError.check("av_buffersrc_add_frame_flags",
-                    Ffmpeg.av_buffersrc_add_frame_flags(srcCtx, decoded.frame, 0));
+                    Ffmpeg.av_buffersrc_add_frame_flags(srcCtx, decoded.frame,
+                            Ffmpeg.AV_BUFFERSRC_FLAG_KEEP_REF()));
             var outFrame = allocFrame();
             var got = Ffmpeg.av_buffersink_get_frame(sinkCtx, outFrame);
             if (got < 0) {
@@ -493,19 +499,28 @@ public final class ImagePipeline {
      *         {@code 270}
      */
     private static int readOrientation(MemorySegment stream) {
+        // Native null pointers returned across the FFI boundary come back as fresh zero-address
+        // MemorySegment instances that are NOT reference-equal to the MemorySegment.NULL singleton, so
+        // they must be tested with address() == 0. Using the reference comparison lets a null result
+        // slip through and a later struct-field read dereferences a near-null address (e.g.
+        // AVDictionaryEntry.value at offset 8 -> address 0x8), crashing the JVM. This bites images with
+        // no "rotate" metadata tag, where av_dict_get legitimately returns a null entry.
+        if (stream == null || stream.address() == 0) {
+            return 0;
+        }
         var metadata = AVStream.metadata(stream);
-        if (metadata == null || metadata == MemorySegment.NULL) {
+        if (metadata == null || metadata.address() == 0) {
             return 0;
         }
         try (var arena = Arena.ofConfined()) {
             var entry = Ffmpeg.av_dict_get(metadata, arena.allocateFrom("rotate"),
                     MemorySegment.NULL, 0);
-            if (entry == null || entry == MemorySegment.NULL) {
+            if (entry == null || entry.address() == 0) {
                 return 0;
             }
             var entryTyped = entry.reinterpret(AVDictionaryEntry.layout().byteSize());
             var valuePtr = AVDictionaryEntry.value(entryTyped);
-            if (valuePtr == null || valuePtr == MemorySegment.NULL) {
+            if (valuePtr == null || valuePtr.address() == 0) {
                 return 0;
             }
             var value = valuePtr.reinterpret(Long.MAX_VALUE).getString(0L);
@@ -539,7 +554,7 @@ public final class ImagePipeline {
      * @return the decoded source bundle holding the open contexts and the first decoded frame
      * @throws WhatsAppMediaException.Processing if the source cannot be probed, opened, or decoded
      */
-    private static DecodedSource decodeFirstFrame(Arena arena, SeekableByteChannel channel)
+    private static DecodedSource decodeFirstFrame(Arena arena, SeekableByteChannel channel, MediaProvider provider)
             throws WhatsAppMediaException.Processing {
         var bridge = new AvioReadBuffer(arena, channel);
         var formatCtx = MemorySegment.NULL;
@@ -552,8 +567,25 @@ public final class ImagePipeline {
             AVFormatContext.pb(formatCtx, bridge.ioContext());
             var formatPp = arena.allocate(ValueLayout.ADDRESS);
             formatPp.set(ValueLayout.ADDRESS, 0L, formatCtx);
+            // avformat_open_input takes ownership of the context pointed to by formatPp: on failure it frees
+            // it internally and sets the output pointer to NULL itself (documented in avformat.h). Our own
+            // formatCtx reference must therefore be treated as invalid the instant the call is made; keeping
+            // the pre-call value around and reusing it in the catch block's freeOnFailure cleanup is a
+            // use-after-free that crashes the JVM (EXCEPTION_ACCESS_VIOLATION reading a near-NULL address,
+            // since the freed memory is reused/zeroed and a small struct-offset field is then dereferenced).
+            // Null it out now so a failure here safely skips the avformat_close_input call in freeOnFailure.
+            formatCtx = MemorySegment.NULL;
+            // avformat_open_input's built-in probing scores every registered demuxer purely from the bytes
+            // our read callback hands back; for some single-frame image bitstreams (observed with plain
+            // JFIF/EXIF JPEG files read through a custom AVIOContext with no filename) that content-only
+            // scoring can fail to clear the confidence threshold and the call fails with "Invalid data
+            // found when processing input" even though the bytes are a perfectly well-formed image. Giving
+            // avformat_open_input a synthetic filename whose extension matches the known mimetype (already
+            // set on the provider by the caller before transcoding starts) lets FFmpeg combine that hint
+            // with its content probing, which resolves the ambiguity.
+            var filenameHint = arena.allocateFrom(probeFilenameHint(provider));
             FFmpegError.check("avformat_open_input",
-                    Ffmpeg.avformat_open_input(formatPp, MemorySegment.NULL,
+                    Ffmpeg.avformat_open_input(formatPp, filenameHint,
                             MemorySegment.NULL, MemorySegment.NULL));
             formatCtx = formatPp.get(ValueLayout.ADDRESS, 0L)
                     .reinterpret(AVFormatContext.layout().byteSize());
@@ -622,6 +654,39 @@ public final class ImagePipeline {
     /**
      * Picks the first video stream out of the demuxed format context.
      *
+    /**
+     * Derives a synthetic filename whose extension matches the provider's known mimetype, for use as
+     * the {@code url} hint passed to {@code avformat_open_input}.
+     *
+     * <p>Content-only probing through a custom {@code AVIOContext} can fail to positively identify a
+     * perfectly well-formed single-frame image bitstream (observed with plain JFIF/EXIF JPEG input),
+     * failing {@code avformat_open_input} with {@code AVERROR_INVALIDDATA}. FFmpeg's demuxer probe
+     * scoring takes the target filename's extension into account alongside the content sniff, so
+     * handing it a name with the right extension resolves that ambiguity without forcing a specific
+     * demuxer and without needing the caller to pass real path information down through the pipeline.
+     *
+     * @param provider the upload target; consulted for a mimetype when it is an {@link ImageMessage}
+     * @return a short synthetic filename such as {@code "media.jpg"}; falls back to {@code "media.jpg"}
+     *         when no mimetype is known or it does not map to a recognised image extension
+     */
+    private static String probeFilenameHint(MediaProvider provider) {
+        var mimetype = provider instanceof ImageMessage image
+                ? image.mimetype().orElse(null)
+                : null;
+        var extension = switch (mimetype == null ? "" : mimetype.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "image/jpeg", "image/jpg" -> "jpg";
+            case "image/png" -> "png";
+            case "image/gif" -> "gif";
+            case "image/webp" -> "webp";
+            case "image/bmp" -> "bmp";
+            case "image/tiff" -> "tiff";
+            case "image/heic" -> "heic";
+            case "image/heif" -> "heif";
+            default -> "jpg";
+        };
+        return "media." + extension;
+    }
+    /**
      * @param formatCtx the open demuxer pointer
      * @return the stream index, or {@code -1} if no video stream is present
      */
