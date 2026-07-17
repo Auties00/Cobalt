@@ -103,6 +103,20 @@ public final class AvioReadBuffer implements AutoCloseable {
      * example programs allocate.
      */
     public static final int DEFAULT_BUFFER_SIZE = 4096;
+    /**
+     * Holds the number of extra bytes allocated after the logical end of the AVIO read buffer.
+     *
+     * @implNote This mirrors {@code AV_INPUT_BUFFER_PADDING_SIZE} from {@code libavcodec/avcodec.h}
+     * (stable at 64 bytes across current FFmpeg releases). FFmpeg's own custom-IO examples allocate
+     * their buffer as {@code buffer_size + AV_INPUT_BUFFER_PADDING_SIZE} for exactly this reason:
+     * several optimised bitstream/probe readers consume input in fixed-width (32/64-bit, or wider
+     * SIMD) chunks and may read past the logical end of the buffer. Without this padding such a
+     * bounded over-read can walk off the end of the {@code av_malloc}'d region into an unmapped page
+     * and crash the process with SIGSEGV/EXCEPTION_ACCESS_VIOLATION. The padding bytes are never
+     * reported to {@code avio_alloc_context}, so libavformat's own bookkeeping still sees exactly
+     * {@code bufferSize} usable bytes.
+     */
+    private static final int AV_INPUT_BUFFER_PADDING_SIZE = 64;
 
     /**
      * Holds the source channel that the read and seek upcalls delegate to.
@@ -156,8 +170,16 @@ public final class AvioReadBuffer implements AutoCloseable {
      */
     public AvioReadBuffer(Arena arena, SeekableByteChannel channel, int bufferSize) {
         this.channel = channel;
+        // libavformat's internal bitstream/probe parsers are allowed to over-read a fixed-size
+        // buffer by up to AV_INPUT_BUFFER_PADDING_SIZE bytes (FFmpeg's own custom-IO examples and
+        // avcodec.h document this: some optimised readers consume 32/64 bits at a time and may read
+        // past the logical end of the buffer). Without this padding those over-reads walk off the end
+        // of the av_malloc'd region into unmapped memory and crash the JVM with SIGSEGV/ACCESS_VIOLATION.
+        // The extra bytes are never reported to avio_alloc_context, so libavformat's own bookkeeping
+        // still sees exactly bufferSize usable bytes; the padding only exists so a bounded native
+        // over-read lands on allocated (if garbage) memory instead of an unmapped page.
         this.avioBuffer = FFmpegError.requireNonNull("av_malloc(AVIO read buffer)",
-                Ffmpeg.av_malloc(bufferSize)).reinterpret(bufferSize);
+                Ffmpeg.av_malloc(bufferSize + AV_INPUT_BUFFER_PADDING_SIZE)).reinterpret(bufferSize + AV_INPUT_BUFFER_PADDING_SIZE);
         MethodHandle readHandle;
         MethodHandle seekHandle;
         try {
