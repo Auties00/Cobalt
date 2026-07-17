@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/peer-edit-revoke",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"sentMsgId\":\"true_83116928594056@lid_3EB05DCA6B1540171A5AE3\",\"flow\":\"send+edit+revoke\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/group-invite-link",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"inviteCode\":\"L8K38pub1Oi0AeqBjiL7nN\",\"inviteUrl\":\"https://chat.whatsapp.com/L8K38pub1Oi0AeqBjiL7nN\",\"msgId\":\"\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

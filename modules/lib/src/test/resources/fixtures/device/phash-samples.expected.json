@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "business",
+  "topic": "device/phash-samples",
+  "expression": "String(window.__phash)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"single-primary\":{\"devices\":[\"19254863482@s.whatsapp.net\"],\"phashV1\":\"1:aZ6nF+Q8\",\"phashV2\":\"2:dC1k497C\"},\"two-companions\":{\"devices\":[\"19254863482:1@s.whatsapp.net\",\"19254863482:2@s.whatsapp.net\"],\"phashV1\":\"1:1tXEXaHY\",\"phashV2\":\"2:DKBXvXTo\"},\"mixed-pn-lid\":{\"devices\":[\"19254863482@s.whatsapp.net\",\"83116928594056:1@lid\"],\"phashV1\":\"1:m/qBYg7P\",\"phashV2\":\"2:+RiBGpaj\"},\"peer-and-self\":{\"devices\":[\"393495089819:1@s.whatsapp.net\",\"19254863482:1@s.whatsapp.net\"],\"phashV1\":\"1:CadboAPq\",\"phashV2\":\"2:cFE68a8w\"}}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

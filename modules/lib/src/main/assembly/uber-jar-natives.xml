@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Per-classifier uber JAR assembly. A self-contained fat JAR that bundles
+  every runtime dependency (the stock `jar-with-dependencies` behaviour) AND
+  the platform's combined native library, so a consumer needs neither the
+  transitive Maven closure nor the runtime GitHub download of the binary.
+
+  The native library is packed under
+  `modules/lib/natives/bin/${natives.classifier}/`
+  inside the JAR, the exact repo-relative path the loader's classpath probe
+  (NativeLibLoader.extractFromClasspath, which uses the manifest path
+  verbatim) looks it up at, so the bundled binary is found at the same
+  coordinate it would otherwise be downloaded from.
+
+  The JAR is named
+  `cobalt-${project.version}-uber-${natives.classifier}.jar`.
+
+  Activated indirectly via the `uber-jar-<classifier>` profiles in
+  modules/lib/pom.xml, each of which sets `${natives.classifier}`.
+-->
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0 http://maven.apache.org/xsd/assembly-2.2.0.xsd">
+    <id>uber-${natives.classifier}</id>
+    <formats>
+        <format>jar</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <!--
+        Replicates the stock `jar-with-dependencies` descriptorRef: unpack the
+        project artifact and its full runtime dependency closure into the JAR
+        root, merged into one flat classpath.
+    -->
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>/</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <unpack>true</unpack>
+            <scope>runtime</scope>
+        </dependencySet>
+    </dependencySets>
+
+    <!--
+        Single fileset, single file. build-natives.sh links every native
+        dependency into one combined library per classifier under
+        `natives/bin/<classifier>/`. A missing file is silently skipped, so a
+        partial cut (e.g. only the native for the host platform) still produces
+        a usable JAR; the loader falls back to its runtime download when the
+        bundled binary is absent.
+    -->
+    <fileSets>
+        <fileSet>
+            <directory>${project.basedir}/natives/bin/${natives.classifier}</directory>
+            <outputDirectory>modules/lib/natives/bin/${natives.classifier}</outputDirectory>
+            <includes>
+                <include>*.so</include>
+                <include>*.so.*</include>
+                <include>*.dylib</include>
+                <include>*.dll</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>

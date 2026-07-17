@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/crypto/associated-data",
+  "expression": "String(globalThis.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "ERROR: Error: Match: No case succesfully matched. Make exhaustive or add a wildcard case using '_'. Argument: set",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

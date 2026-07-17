@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "whatsapp": {
+      "type": "http",
+      "url": "http://localhost:8787/mcp"
+    },
+    "debugger": {
+      "type": "http",
+      "url": "http://127.0.0.1:29190/debugger-mcp/streamable-http"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+package com.github.auties00.cobalt.wire.wam.type;
+
+import com.github.auties00.cobalt.meta.annotation.WhatsAppWebModule;
+
+import com.github.auties00.cobalt.wam.annotation.WamEnum;
+import com.github.auties00.cobalt.wam.annotation.WamEnumConstant;
+
+@WhatsAppWebModule(moduleName = "WAWebWamEnumLandingSurface")
+@WamEnum
+public enum LandingSurface {
+    @WamEnumConstant(0) THREAD,
+    @WamEnumConstant(1) FOLDER,
+    @WamEnumConstant(2) CHAT_INFO
+}

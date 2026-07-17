@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/group-small-text",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"recipient\":\"120363409745354608@g.us\",\"chatId\":\"120363409745354608@g.us\",\"body\":\"Cobalt test — small group\",\"msgId\":\"\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

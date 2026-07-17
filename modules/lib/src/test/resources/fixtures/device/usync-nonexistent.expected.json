@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "business",
+  "topic": "device/usync-nonexistent",
+  "expression": "String(window.__usyncNone)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"error\":{},\"refresh\":{},\"list\":[{\"devices\":{\"deviceList\":[],\"keyIndex\":null},\"id\":\"15555550100@c.us\"}]}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/interactive-message/encode",
+  "expression": "JSON.stringify(globalThis.__captures2['handler/interactive-message/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"agmId\":\"agm-1\",\"modeEnumKeys\":[],\"encoded\":\"CIDiz6oG6gQJCAESBWFnbS0x\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

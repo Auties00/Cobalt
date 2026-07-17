@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/crypto/cipher-text",
+  "expression": "String(globalThis.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"syncKey\":\"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=\",\"iv\":\"EREREREREREREREREREREQ==\",\"plaintext\":\"MzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMw==\",\"ciphertext\":\"ERERERERERERERERERERETng61sQX9Eg2PrKGzjemY8PRAwk9SsRLnc0m0CFLxQJsyPF/WbcZ8XB8cmTmM+MxmsmdIX0zjlig9HPXsTde8fN7GMCVNE2IytaBX7Mihun\",\"ctLen\":96}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

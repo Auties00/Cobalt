@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/lid-contact/encode",
+  "expression": "JSON.stringify(globalThis.__captures3['handler/lid-contact/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"encoded\":\"CIDiz6oG6gMcCgxNYXJpYSBHYXJjaWESBU1hcmlhGgVtYXJpYQ==\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

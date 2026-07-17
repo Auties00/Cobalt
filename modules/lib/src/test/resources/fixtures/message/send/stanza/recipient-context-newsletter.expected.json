@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/stanza/recipient-context-newsletter",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"recipient\":\"120363402045452944@newsletter\",\"widServer\":\"newsletter\",\"widIsLid\":false,\"widIsUser\":false,\"widIsGroup\":false,\"chatFound\":true,\"accountLid\":null,\"lidOriginType\":null,\"groupMetadata\":null}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

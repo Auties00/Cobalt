@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/share-own-pn/encode",
+  "expression": "JSON.stringify(globalThis.__captures3['handler/share-own-pn/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"encoded\":\"CIDiz6oG\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/stanza/recipient-context-self-lid",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"recipient\":\"258252122116273@lid\",\"widServer\":\"lid\",\"widIsLid\":true,\"widIsUser\":true,\"widIsGroup\":false,\"chatFound\":true,\"accountLid\":\"258252122116273@lid\",\"lidOriginType\":\"general\",\"groupMetadata\":null}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

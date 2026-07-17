@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "business",
+  "topic": "migration/is-regular-user",
+  "expression": "JSON.stringify((() => {\n  const WidFactory = require('WAWebWidFactory');\n  const labels = ['regular_pn', 'regular_lid', 'bot', 'announcements', 'group', 'newsletter', 'broadcast'];\n  const inputs = ['393495089819@c.us', '258252122116273@lid', '867051314767696@bot', '0@c.us', '120363012345678901@g.us', '120363023456789012@newsletter', '19254863482@broadcast'];\n  const out = [];\n  for (let i = 0; i < inputs.length; i++) {\n    try {\n      const w = WidFactory.createWid(inputs[i]);\n      out.push({label: labels[i], jid: String(w), isRegularUser: w.isRegularUser()});\n    } catch (e) {\n      out.push({label: labels[i], input: inputs[i], error: String(e && e.message || e)});\n    }\n  }\n  return out;\n})())",
+  "result": {
+    "resultType": "string",
+    "value": "[{\"label\":\"regular_pn\",\"jid\":\"393495089819@c.us\",\"isRegularUser\":true},{\"label\":\"regular_lid\",\"jid\":\"258252122116273@lid\",\"isRegularUser\":true},{\"label\":\"bot\",\"jid\":\"867051314767696@bot\",\"isRegularUser\":false},{\"label\":\"announcements\",\"jid\":\"0@c.us\",\"isRegularUser\":false},{\"label\":\"group\",\"jid\":\"120363012345678901@g.us\",\"isRegularUser\":false},{\"label\":\"newsletter\",\"jid\":\"120363023456789012@newsletter\",\"isRegularUser\":false},{\"label\":\"broadcast\",\"jid\":\"19254863482@broadcast\",\"isRegularUser\":false}]",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

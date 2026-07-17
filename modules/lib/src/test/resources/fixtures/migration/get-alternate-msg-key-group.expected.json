@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "migration/get-alternate-msg-key-group",
+  "expression": "JSON.stringify((() => {\n  const Utils = require('WAWebLidMigrationUtils');\n  const MsgKey = require('WAWebMsgKey');\n  const WidFactory = require('WAWebWidFactory');\n  const me = require('WAWebUserPrefsMeUser');\n  const w = s => WidFactory.createWid(s);\n  const myPn = String(me.getMaybeMePnUser());\n  const myLid = String(me.getMaybeMeLidUser());\n  const cases = [\n    {\n      label: 'group_with_me_pn_participant',\n      input: { fromMe: true, remote: w('120363012345678901@g.us'), id: 'G1', participant: w(myPn) }\n    },\n    {\n      label: 'group_with_me_lid_participant',\n      input: { fromMe: true, remote: w('120363012345678901@g.us'), id: 'G2', participant: w(myLid) }\n    },\n    {\n      label: 'group_with_unmapped_participant',\n      input: { fromMe: false, remote: w('120363012345678901@g.us'), id: 'G3', participant: w('12025550100@c.us') }\n    },\n    {\n      label: 'group_with_null_participant',\n      input: { fromMe: true, remote: w('120363012345678901@g.us'), id: 'G4', participant: null }\n    }\n  ];\n  return cases.map(c => {\n    try {\n      const k = new MsgKey(c.input);\n      const alt = Utils.getAlternateMsgKey(k);\n      return {\n        label: c.label,\n        inParticipant: c.input.participant ? String(c.input.participant) : null,\n        outRemote: alt ? String(alt.remote) : null,\n        outParticipant: alt && alt.participant ? String(alt.participant) : null,\n        outId: alt ? alt.id : null,\n        outFromMe: alt ? alt.fromMe : null\n      };\n    } catch (e) {\n      return { label: c.label, error: String(e && e.message || e) };\n    }\n  });\n})())",
+  "result": {
+    "resultType": "string",
+    "value": "[{\"label\":\"group_with_me_pn_participant\",\"inParticipant\":\"393495089819@c.us\",\"outRemote\":\"120363012345678901@g.us\",\"outParticipant\":\"258252122116273@lid\",\"outId\":\"G1\",\"outFromMe\":true},{\"label\":\"group_with_me_lid_participant\",\"inParticipant\":\"258252122116273@lid\",\"outRemote\":\"120363012345678901@g.us\",\"outParticipant\":\"393495089819@c.us\",\"outId\":\"G2\",\"outFromMe\":true},{\"label\":\"group_with_unmapped_participant\",\"inParticipant\":\"12025550100@c.us\",\"outRemote\":null,\"outParticipant\":null,\"outId\":null,\"outFromMe\":null},{\"label\":\"group_with_null_participant\",\"inParticipant\":null,\"outRemote\":null,\"outParticipant\":null,\"outId\":null,\"outFromMe\":null}]",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

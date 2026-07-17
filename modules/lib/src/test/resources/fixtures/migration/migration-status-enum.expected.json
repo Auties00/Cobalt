@@ -1,0 +1,13 @@
+{
+  "schema": "v1-static",
+  "topic": "migration/migration-status-enum",
+  "source": "WAWebLid1X1ThreadAccountMigrations.flow",
+  "note": "WA Web exposes the enum as `$InternalEnum({...})`. The runtime object is empty (TS-only); the numeric assignments are baked into consumers and are captured here from the module source.",
+  "values": {
+    "WAITING_PROP": 1,
+    "WAITING_MAPPINGS": 2,
+    "READY": 3,
+    "IN_PROGRESS": 4,
+    "COMPLETE": 5
+  }
+}

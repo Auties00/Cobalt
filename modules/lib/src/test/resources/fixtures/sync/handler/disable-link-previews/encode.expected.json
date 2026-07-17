@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/disable-link-previews/encode",
+  "expression": "JSON.stringify(globalThis.__captures2['handler/disable-link-previews/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"disabled\":true,\"encoded\":\"CIDiz6oGqgMCCAE=\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

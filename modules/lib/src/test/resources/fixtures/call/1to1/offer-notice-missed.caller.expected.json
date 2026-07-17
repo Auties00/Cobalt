@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "business",
+  "topic": "call/1to1/offer-notice-missed.caller",
+  "expression": "String(JSON.stringify({ result: window.__r || null, noticeSeen: false }))",
+  "result": {
+    "resultType": "string",
+    "value": "{\"result\":\"ended\",\"noticeSeen\":false}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/bot-text",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"recipient\":\"13135550002@s.whatsapp.net\",\"chatId\":\"13135550002@c.us\",\"body\":\"What is 1+1?\",\"msgId\":\"\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

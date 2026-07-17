@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Per-classifier natives bundle assembly. Packs the single combined
+  native library under
+  `${project.basedir}/natives/bin/${natives.classifier}/`
+  into
+  `modules/lib/natives/bin/${natives.classifier}/`
+  inside a JAR named
+  `cobalt-${project.version}-natives-${natives.classifier}.jar`.
+
+  The JAR-internal path matches the manifest's repo-relative path
+  exactly so the loader's classpath probe (which uses the manifest
+  path verbatim) finds the binary in the bundled JAR at the same
+  coordinate it would download it from.
+
+  Activated indirectly via the `natives` profile in
+  modules/lib/pom.xml.
+-->
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0 http://maven.apache.org/xsd/assembly-2.2.0.xsd">
+    <id>natives-${natives.classifier}</id>
+    <formats>
+        <format>jar</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <fileSets>
+        <!--
+            Single fileset, single file. build-natives.sh links every
+            native dependency into one `libcobalt-native` per classifier
+            under `natives/bin/<classifier>/`. A missing
+            file is silently skipped, so a partial cut (e.g. only Linux)
+            still produces a usable JAR for that classifier.
+        -->
+        <fileSet>
+            <directory>${project.basedir}/natives/bin/${natives.classifier}</directory>
+            <outputDirectory>modules/lib/natives/bin/${natives.classifier}</outputDirectory>
+            <includes>
+                <include>*.so</include>
+                <include>*.so.*</include>
+                <include>*.dylib</include>
+                <include>*.dll</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>

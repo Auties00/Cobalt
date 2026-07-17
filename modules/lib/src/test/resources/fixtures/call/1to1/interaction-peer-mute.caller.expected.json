@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "business",
+  "topic": "call/1to1/interaction-peer-mute.business",
+  "expression": "String(JSON.stringify({ result: window.__r || null, auto: window.__autoState || null }))",
+  "result": {
+    "resultType": "string",
+    "value": "{\"result\":\"ended\",\"auto\":null}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

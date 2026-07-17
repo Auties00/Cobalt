@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/stanza/recipient-context-small-group",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"recipient\":\"120363409745354608@g.us\",\"widServer\":\"g.us\",\"widIsLid\":false,\"widIsUser\":false,\"widIsGroup\":true,\"chatFound\":true,\"accountLid\":null,\"lidOriginType\":null,\"groupMetadata\":{\"announce\":false,\"groupType\":\"DEFAULT\",\"isParentGroup\":false,\"defaultSubgroup\":false,\"size\":2,\"participantCount\":2}}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

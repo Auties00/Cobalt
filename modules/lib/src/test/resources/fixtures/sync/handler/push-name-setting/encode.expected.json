@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/push-name-setting/encode",
+  "expression": "JSON.stringify(globalThis.__captures2['handler/push-name-setting/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"name\":\"Maria\",\"encoded\":\"CIDiz6oGOgcKBU1hcmlh\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

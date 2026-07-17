@@ -1,0 +1,11 @@
+{
+  "version": "0.1.0",
+  "commitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "binaries": {
+    "opus/linux-x86_64": {
+      "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "size": 100,
+      "path": "modules/lib/dependencies/libopus/bin/linux-x86_64/libopus.so"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/newsletter-text",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"newsletterId\":\"120363402045452944@newsletter\",\"result\":\"OK\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

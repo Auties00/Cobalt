@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "device/prekey-single",
+  "expression": "String(window.__preKeySingle)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"missedPrekeyCount\":1,\"depletedPrekeyCount\":1}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

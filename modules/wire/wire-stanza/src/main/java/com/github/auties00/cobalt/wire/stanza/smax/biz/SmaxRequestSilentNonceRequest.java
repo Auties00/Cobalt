@@ -1,0 +1,123 @@
+package com.github.auties00.cobalt.wire.stanza.smax.biz;
+
+import com.github.auties00.cobalt.meta.annotation.WhatsAppWebExport;
+import com.github.auties00.cobalt.meta.annotation.WhatsAppWebModule;
+import com.github.auties00.cobalt.meta.model.WhatsAppAdaptation;
+import com.github.auties00.cobalt.wire.core.jid.Jid;
+import com.github.auties00.cobalt.wire.core.jid.JidServer;
+import com.github.auties00.cobalt.stanza.model.StanzaBuilder;
+import com.github.auties00.cobalt.wire.stanza.smax.SmaxStanza;
+
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * The outbound stanza that asks the relay for a silent CTWA biz
+ * access-token nonce.
+ *
+ * <p>The click-to-WhatsApp biz-token-nonce flow polls the relay during ad-account flows that need
+ * to call into the Meta token-exchange surface. The request carries no payload of its own; the
+ * optional {@code from} attribute is the only knob and is normally left {@code null}.
+ */
+@WhatsAppWebModule(moduleName = "WASmaxOutBizAccessTokenRequestSilentNonceRequest")
+@WhatsAppWebModule(moduleName = "WASmaxOutBizAccessTokenHackBaseIQGetRequestMixin")
+@WhatsAppWebModule(moduleName = "WASmaxOutBizAccessTokenBaseIQGetRequestMixin")
+public final class SmaxRequestSilentNonceRequest implements SmaxStanza.Request {
+    /**
+     * The optional user JID echoed onto the outbound IQ's
+     * {@code from} attribute; {@code null} omits the attribute.
+     */
+    private final Jid fromUserJid;
+
+    /**
+     * Constructs a request with no {@code from} echo.
+     *
+     * <p>This is the default form for the standard silent-nonce fetch, which carries no arguments.
+     */
+    public SmaxRequestSilentNonceRequest() {
+        this(null);
+    }
+
+    /**
+     * Constructs a request optionally echoing the supplied user JID
+     * onto the {@code from} attribute.
+     *
+     * <p>Reserved for multi-device callers that need the outbound IQ to look like it originated
+     * from a specific linked user JID; standard CTWA callers pass {@code null}.
+     *
+     * @param fromUserJid the optional user JID; may be {@code null}
+     */
+    public SmaxRequestSilentNonceRequest(Jid fromUserJid) {
+        this.fromUserJid = fromUserJid;
+    }
+
+    /**
+     * Returns the optional {@code from} echo.
+     *
+     * <p>Returns {@link Optional#empty()} when the request was built without a {@code from} echo
+     * (the standard silent-nonce fetch case).
+     *
+     * @return an {@link Optional} carrying the user JID
+     */
+    public Optional<Jid> fromUserJid() {
+        return Optional.ofNullable(fromUserJid);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implNote
+     * This implementation stamps {@code xmlns="fb:thrift_iq"}, {@code type="get"},
+     * {@code to="s.whatsapp.net"} and the optional {@code from} echo. The IQ {@code id} is assigned
+     * by the dispatcher.
+     */
+    @Override
+    @WhatsAppWebExport(moduleName = "WASmaxOutBizAccessTokenRequestSilentNonceRequest",
+            exports = "makeRequestSilentNonceRequest", adaptation = WhatsAppAdaptation.DIRECT)
+    @WhatsAppWebExport(moduleName = "WASmaxOutBizAccessTokenHackBaseIQGetRequestMixin",
+            exports = "mergeHackBaseIQGetRequestMixin", adaptation = WhatsAppAdaptation.ADAPTED)
+    @WhatsAppWebExport(moduleName = "WASmaxOutBizAccessTokenBaseIQGetRequestMixin",
+            exports = "mergeBaseIQGetRequestMixin", adaptation = WhatsAppAdaptation.ADAPTED)
+    public StanzaBuilder toStanza() {
+        var builder = new StanzaBuilder()
+                .description("iq")
+                .attribute("xmlns", "fb:thrift_iq")
+                .attribute("to", JidServer.user())
+                .attribute("type", "get");
+        if (fromUserJid != null) {
+            builder.attribute("from", fromUserJid);
+        }
+        return builder;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+        var that = (SmaxRequestSilentNonceRequest) obj;
+        return Objects.equals(this.fromUserJid, that.fromUserJid);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(fromUserJid);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return "SmaxRequestSilentNonceRequest[fromUserJid=" + fromUserJid + ']';
+    }
+}

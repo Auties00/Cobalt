@@ -1,0 +1,937 @@
+{
+  "totalChecked": 1,
+  "capturedCount": 1,
+  "captured": [
+    {
+      "targetId": "8433EE67FA2F6D86E559FDE95D8078B3",
+      "title": "WAWebVoipWebWasmWorkerBundle",
+      "stats": {
+        "total": 51,
+        "byPhase": {
+          "rtc-dc": 51
+        },
+        "byName": {
+          "send": 51
+        }
+      },
+      "trace": [
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$bytes": "AAMBRCESpEK9L3FXcteHTpMEDk1AAAC2CQ8B9Ayg9Dn6jvg6w/LUzQQApzoO9BlVZeq2/IDDKoyL/L17tuQF+3+uRpk8lG55ppPFEbfiewf6ij0XMOgpeSiF2By0QFUf5TJE0tAeBFZnxUmrCkQNr8Di96abqaKH3mrqK7t5NPga6OKwghZqr9La1fuwjzHp5vQaBCOXSceTZqjtDxNh0tnIxu9waWr7KZ3v5AIRuWGcvJz5ciZPxl/55oWv6SMWjEIiZRJ0qxBehgf4J2gAAEAkAGAKBhjpkf7zCAoIEAEYsqv2jgwKCBACGJ3y3eYCCggIARiimMyUCAoKCAEQARixsoXVDwoKCAEQAhi414/hBAoICAIYlJqX4gUKCggCEAEYwaqujQgKCggCEAIYn+O9mA0AFgAIAAEshBiC3XsACAAU1HvN4qud/6xTFgzZJS0ASGH0yaQ=",
+              "$len": 344
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 151.5600000023842
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$bytes": "AAMBRCESpEK9L3FXcteHTpMEDkVAAAC2CQ8B9Ayg9Dn6jvg6w/LUzQQApzoO9BlVZeq2/IDDKoyL/L17tuQF+3+uRpk8lG55ppPFEbfiewf6ij0XMOgpeSiF2By0QFUf5TJE0tAeBFZnxUmrCkQNr8Di96abqaKH3mrqK7t5NPga6OKwghZqr9La1fuwjzHp5vQaBCOXSceTZqjtDxNh0tnIxu9waWr7KZ3v5AIRuWGcvJz5ciZPxl/55oWv6SMWjEIiZRJ0qxBehgf4J2gAAEAkAGAKBhjpkf7zCAoIEAEYsqv2jgwKCBACGJ3y3eYCCggIARiimMyUCAoKCAEQARixsoXVDwoKCAEQAhi414/hBAoICAIYlJqX4gUKCggCEAEYwaqujQgKCggCEAIYn+O9mA0AFgAIAAEshBiC3XsACAAUwI/51MF69lH0gtjGX17odrRTcz0=",
+              "$len": 344
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 151.76000000536442
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDk4=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 207.8800000101328
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDk8=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 3927.9950000047684
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlA=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 4590.984999999404
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlE=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 5248.535000011325
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlI=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 8963.52500000596
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlM=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 9620.020000010729
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlQ=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 10281.010000005364
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlU=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 13979.835000008345
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlY=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 14644.915000006557
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlc=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 15301.995000004768
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlg=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 18999.704999998212
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlk=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 19655.079999998212
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlo=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 20318.60000000894
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDls=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 24040.540000006557
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDlw=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 24663.07500000298
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDl0=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 25322.655000001192
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDl4=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 29081.795000001788
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDl8=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 29690.765000000596
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmA=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 30352.015000000596
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmE=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 34098.359999999404
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmI=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 34705.99500000477
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmM=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 35365.390000000596
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmQ=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 39147.10000000894
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmU=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 39749.984999999404
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmY=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 40409.45499999821
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmc=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 44167.55500000715
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmg=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 44771.590000003576
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmk=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 45433.88000001013
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmo=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 49199.07000000775
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDms=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 49804.54500000179
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDmw=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 50467.085000008345
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDm0=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 54219.689999997616
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDm4=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 54823.62000000477
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDm8=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 55487.77500000596
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDnA=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 59234.78000000119
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDnE=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 59846.98000000417
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDnI=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 60510.00500001013
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDnM=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 64235.215000003576
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDnQ=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 64862.20499999821
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDnU=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 65526.21999999881
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDnY=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 69238.48000000417
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDnc=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 69896.67499999702
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDng=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 70574.38500000536
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDnk=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 74271.66500000656
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDno=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 74929.82500000298
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDns=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 75586.82000000775
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDnw=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 79301.41500000656
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDn0=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 79940.7650000006
+        },
+        {
+          "phase": "rtc-dc",
+          "name": "send",
+          "args": [
+            {
+              "$typed": "Uint8Array",
+              "$bytes": "CAEAACESpEK9L3FXcteHTpMEDn4=",
+              "$len": 20
+            },
+            {
+              "label": "pre-negotiated",
+              "id": 0,
+              "state": "open"
+            }
+          ],
+          "thrown": null,
+          "t": 80616.85500000417
+        }
+      ]
+    }
+  ]
+}

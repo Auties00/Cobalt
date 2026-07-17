@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/label-reordering/encode",
+  "expression": "JSON.stringify(globalThis.__captures5['handler/label-reordering/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"encoded\":\"CIDiz6oG+gIGCAEIAggD\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

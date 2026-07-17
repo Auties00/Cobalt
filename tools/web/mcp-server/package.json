@@ -1,0 +1,33 @@
+{
+  "name": "web-mcp-server-new",
+  "version": "3.0.0",
+  "description": "Graph-first MCP RAG server for JavaScript module bundles with revision snapshots",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "start": "node dist/index.js",
+    "proto:gen": "node scripts/proto-gen.mjs"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.28.5",
+    "@babel/traverse": "^7.28.5",
+    "@babel/types": "^7.28.5",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@orama/orama": "^3.1.5",
+    "@types/cross-spawn": "^6.0.6",
+    "cross-spawn": "^7.0.6",
+    "dotenv": "^17.3.1",
+    "@bufbuild/protobuf": "^2.11.0",
+    "libphonenumber-js": "^1.12.41",
+    "playwright": "^1.57.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.28.0",
+    "@types/node": "^22.15.0",
+    "ts-proto": "^2.4.0",
+    "typescript": "^5.7.3",
+    "wabt": "^1.0.39"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/star-message/encode",
+  "expression": "JSON.stringify(globalThis.__captures2['handler/star-message/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"starred\":true,\"encoded\":\"CIDiz6oGEgIIAQ==\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

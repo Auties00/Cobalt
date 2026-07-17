@@ -1,0 +1,518 @@
+{
+  "capturedAt": "2026-05-05T01:16:02.502Z",
+  "peerJid": "83116928594056@lid",
+  "relayListUpdates": [
+    {
+      "auth_tokens": [
+        "CQN90UgvFOomSjMuvJDbv+fiDgMsPHXelzVOAkFZJribj4NHJ/YpAyS7bEdbeFCRt4bNU/TjbeSWG4qC9YK6dyBvRiREIQ=="
+      ],
+      "enable_edgeray_dtls_active_mode": false,
+      "event_type": 156,
+      "num_relays": 3,
+      "relay_key": "OaYUzhTkLZ/WnyM8cLXqCQ==",
+      "relay_tokens": [
+        "CQ8B9Cy7M71WOtKEo/eZi7f+S8jg6aMe0nLXFDIYTpF8GiRmxwchspQwHbdx/8unmJRjfW0zMnbJE1kL1A7GNtU197lZnh28o/wcvcuv+5v1v6ghLsmc0PwdXGTKB3+Ot49nz7ruvetpvWA0BWqaXEuH9GZ7HcpkYcqysCYpCR84Gcwsg7A9Q3UFAmzuRDgHOAy3SEL3rjvEe+pprlWM6+ngc6gQtcoquM0/KaQRD7VWbLElaDs=",
+        "CQ8B9D0LhrDIEmD9rCmVwXiF721EiasTQ2cn6ZsNE5nGCLj8ZDYwFIXUpr2kn6iEIZB6g/caezCoDVlKWXSavK7qesQH0Eu/KpmTuk4hSgWs5FVZoVVm3uSZDUtM4NzUS9T2kkr1c6ozeuI56pIS9yon20OrokdbnvvdlKdaUQW2EqsmqeL++MZz9Cb6ThbPOC3CT3i4xSp4CA8b+MK0heHgsGZOiWtpUL43PY2JGAfTNkdxcm8=",
+        "CQ8B9M63Z5Zp7pL0vdG75KduK2bKLQZ4FdQXRJuvus0f81O5DpZGd88IFzSWRO7qbdsW1r9lgyV849GWH9AcwJQUxHCLG6kD479vh3P4qS0c7F6H97ulegNi5nHHPQ0GKyVQdqGMpDn1SaQHqyPsstuTXe44KYiCKl7HJCYrvJIEia8UpDxXWToLNOvQBah+3aUrq85UQMOtE3r3/TvvrbY9O7jh4ry3MZNw12RdjdhOMJCO3Dk="
+      ],
+      "relays": [
+        {
+          "addresses": [
+            {
+              "ipv4": "31.13.86.63",
+              "ipv6": "2a03:2880:f208:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mxp1-1.wt.whatsapp.com",
+          "relay_id": 0,
+          "relay_name": "mxp1c01",
+          "token_id": 1
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.231.133",
+              "ipv6": "2a03:2880:f269:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-fco2-1.wt.whatsapp.com",
+          "relay_id": 1,
+          "relay_name": "fco2c01",
+          "token_id": 0
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.196.133",
+              "ipv6": "2a03:2880:f242:1db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mrs2-2.wt.whatsapp.com",
+          "relay_id": 2,
+          "relay_name": "mrs2c02",
+          "token_id": 2
+        }
+      ]
+    },
+    {
+      "auth_tokens": [
+        "CQO+fxxQrraovwYSQBgJlfckKpNlobsS/ZpeVabPUC2j8bxGq6n4P3K1/ygR8tyPb4m4T9wQnD6YoSqcsde/vbC1GeF0GQ=="
+      ],
+      "enable_edgeray_dtls_active_mode": false,
+      "event_type": 156,
+      "num_relays": 3,
+      "relay_key": "0wp5gELDKN9cy1EfKwJvMg==",
+      "relay_tokens": [
+        "CQ8B9EYvehZn1IdMo1uL0l1Mqql2lA2gikA09wVieA44Jp+Y8NckvMf4nkzv41PSI+2fxLNUWIiRwwXOZ53QQvVwdtLJYFVDA8dFY9AFmsDlehx+u7uks9jH5NUoN/Q9GS5QuLieabcNArBAYpygJMtCWE3hY4bxHIGiZ1Kh7hB3WoOlFrf/t3BX5in/SFX41JluIMNPAmOUXqmO2E9pq8uLtGxz3RbKXx//wvYMbS1cY/97kW8=",
+        "CQ8B9JvEIYZJr4YVYmWMxrHho4+HgwjcI3YGPX7oB3IQ/ZOx8ttBofV19qTtjESahh9KoUOg7WSElThvqNzXRk2jnu35nGd09x9LFVy05DnyOs3eRUxMPtdmIgOl1IBKAS/gkpfvGKxrRpQGThEPO5K1prYCo5gNy8SKOJOUxwwwK7GrHviCqWIaJH+ihUq07fg79HGG1o/gYSSthA1+7ZKLwOb9UwReb/8DzDCSddjkP7GGIlA=",
+        "CQ8B9MjcQ+y+hG2eHev8jjq2fdbvWsLnwTJqGWnQsDi89lkPWgRzrsdPTL+j0rpW7R6AremOvjvJ/cahhcIUil2pvMfY4s8Fw/+s/b/uKqTVlzFRJ07sC+Pivh1P2fmNubYdQi+EBNyuXebKu72WYnuNXsU02UdX0kZkWdPONBsnWHKchOq9GGWo06RRk7yGy9VyWhYXg7ljG+GuiS185NlXC1E4feIcH7olq4oPu/2fpyI6EOg="
+      ],
+      "relays": [
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.203.133",
+              "ipv6": "2a03:2880:f26d:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mxp2-1.wt.whatsapp.com",
+          "relay_id": 0,
+          "relay_name": "mxp2c01",
+          "token_id": 2
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.231.133",
+              "ipv6": "2a03:2880:f269:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-fco2-1.wt.whatsapp.com",
+          "relay_id": 1,
+          "relay_name": "fco2c01",
+          "token_id": 1
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "57.144.69.57",
+              "ipv6": "2a03:2880:f31b:139:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mrs2-1.wt.whatsapp.com",
+          "relay_id": 2,
+          "relay_name": "mrs2c01",
+          "token_id": 0
+        }
+      ]
+    },
+    {
+      "auth_tokens": [
+        "CQNNISBTTbLdkNnihPm2veyPG7Yap/ahXmgR9b99wPoDL9l/6yHGqcsy+pQD1tSVuynLK42ODon1WszjogImrrI8LdxITg=="
+      ],
+      "enable_edgeray_dtls_active_mode": false,
+      "event_type": 156,
+      "num_relays": 3,
+      "relay_key": "DqujlAGg/WAofpS5/tLIbg==",
+      "relay_tokens": [
+        "CQ8B9Dw+NI2tMdL3rfYgZKvTgHpPmB6LDbrLMLOdtBi6NSQxGR6iQVcK9EjtElrrM1mP9oHOZp3MjTJ3lh3B6lkd1GeZxHl/iz1W2KRisPatL1k0u7zDkkoTprD7cCye6CNpC7jOlsUOrE/AI2rllvf/k3qKwLXahOLySZakilJr76/XUn30zN96f8H7nnnjqJRFzjlqK7DRnAJpUprL6L2/9pELZTRbYtVjTf20KNZw0+Wg5nc=",
+        "CQ8B9FdzBYC26osfehCGB6T8EctQmNFSb9LJdx7Wbm02FG5AhZxwoC4up7cSscrTT7Or8AmS7OzCifd6UFhApiaw9vMuh6I8NbHOe27v6ICQXMOVC53ZEP6YqQ3we77yZDkzenOSlPm4u000rFEHV0jLfXIMobD75WISPFP7e4hFol28m1UxQzXmzeSbtK1w/pHp/I8A9dlOpak53jrJb3z4GXo0O0PHWgx2gfLVyhDTIz62q78=",
+        "CQ8B9JO7IK3SgKMT6vKCY6pliU4O1JyYh5VBK12wyRZlGreC6/TdPY6FWsUrib7DSKG4qflBj0TG2+9ufNrCX3r3Uhq2YyYvmvEthZHwKIjyuq7hX17rJO6Q0R1C0scYL9HU9JvO7dmP0p3Eq/05YeNvd6Spe3Z8wsWRah+Jaq4Kxwudr6UeHDv2ZVoTJ6m3W+xNy6UWj4RbCYIHLKTMlQaesV1cH6leZmw8mkpozM/YtHlvRoM="
+      ],
+      "relays": [
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.203.133",
+              "ipv6": "2a03:2880:f26d:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mxp2-1.wt.whatsapp.com",
+          "relay_id": 0,
+          "relay_name": "mxp2c01",
+          "token_id": 0
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.231.133",
+              "ipv6": "2a03:2880:f269:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-fco2-1.wt.whatsapp.com",
+          "relay_id": 1,
+          "relay_name": "fco2c01",
+          "token_id": 2
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.196.133",
+              "ipv6": "2a03:2880:f242:1db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mrs2-2.wt.whatsapp.com",
+          "relay_id": 2,
+          "relay_name": "mrs2c02",
+          "token_id": 1
+        }
+      ]
+    },
+    {
+      "auth_tokens": [
+        "CQOp07q0kdi6LBWYCp/P4QLPaeB8dCaN3074zo8JsVJc2ACeKNAO4LV1XpI0UJ/WQ8IxcdFbGcYkKx/UMQsWXdZkFkHjnA=="
+      ],
+      "enable_edgeray_dtls_active_mode": false,
+      "event_type": 156,
+      "num_relays": 3,
+      "relay_key": "9lS4n0/IkXM44osuDjiFQg==",
+      "relay_tokens": [
+        "CQ8B9BEDX6FfSCs/0WipyyAbiUF7Dv/HzRBOkpA05f1OGSNyLaDms4Rztk8VEfUFEDr4PkZZf+n3RX3mUtegXSDh5Ekzhv49X5P03IuYbfkvANpQonoJiz8rWcqUH34uYe+0KVNrUsEY8bG8tGq8tYemgAKCjqjIRbvitl7df9n8JBNZUvC1bogQEwwhk1mnsHGfWnJ1UO+zKuktD6PNSyEvPT0OsAKJ68A3NfQJMn48QzH2rRo=",
+        "CQ8B9DYPmq/g9LndHc18kD82Rzkwf8VFcPKA2dUsWMwzxCS3Rp7ZUVDRGiM0zwh6lIywTyTJ/CXHsDemsWfHCC8iXoRkLqNlahaSzuWgf4QhEdZsqL3NZDxZsqalOAY2aJsA2jVQiA1Exp6LgscIEQb5PE2t108OI4z/KG3hYBKgxigeMs9+4LSwBE6Jw1SITLr7xnU/c/jDARyNPN0p3Vj5IkcDWxwZ1y8plAoEVNvNfOPmoRY=",
+        "CQ8B9Etm2yxulkgMqX8SA3351IXDIIssQbpq1/FvfnhUvNFtIFKudvoyVWfuJ94URXVCXAhfj3GJAz89Y9k3QJNSYe5cROQT8Z2HPPJHP5D0/3R4Zg4SUl8B+q/o9FrGRP/sk+iLg8R12BPjnlqPZTDeJuKsMSDpvL9yPg9+aD+sNgMKZCDt/1gpofNGVBMHmbiK2f0YFQrcF0+00DOX2MEeuPhJMGOhAVs6as8og6IXBs8OvNY="
+      ],
+      "relays": [
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.203.133",
+              "ipv6": "2a03:2880:f26d:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mxp2-1.wt.whatsapp.com",
+          "relay_id": 0,
+          "relay_name": "mxp2c01",
+          "token_id": 0
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.231.133",
+              "ipv6": "2a03:2880:f269:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-fco2-1.wt.whatsapp.com",
+          "relay_id": 1,
+          "relay_name": "fco2c01",
+          "token_id": 1
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "57.144.121.57",
+              "ipv6": "2a03:2880:f33c:139:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mrs2-3.wt.whatsapp.com",
+          "relay_id": 2,
+          "relay_name": "mrs2c03",
+          "token_id": 2
+        }
+      ]
+    },
+    {
+      "auth_tokens": [
+        "CQNsOfrPscTUD9Z5PosvgQXPlhhI3H4XHmRBAJa/Y7gGCeVWLJfLB7tGNyMYnlU7g5+cpiNhpTWZ10t7usS+/targNCPrQ=="
+      ],
+      "enable_edgeray_dtls_active_mode": false,
+      "event_type": 156,
+      "num_relays": 3,
+      "relay_key": "Sb/0AcqA4XnFmPXOUFl62A==",
+      "relay_tokens": [
+        "CQ8B9A6wJ67+3MtonYvwnM2URgi8ucc4kB6pQ75xx2dGhedlE7OSZscvFW3tph+SLWmOJPgPMqE2DfXZJWuVfEC4sijwxC9LugHfSjIYTCs7g+/MfFTi0vpfehU9CJ3qublJN0qcaaPN0h44kaP2FAOsRiQ3AO+zK5w8UkRr5YMJX4O9ce77ztfoJIqNWKXbCaPv3lzVysOJ0gAqdtm7ZfS0MpcSJe4cFGb3jXFL8XH4XSdT0EI=",
+        "CQ8B9DVF89zhd0X7PxDj+9pheGQ9NX08IlTp4y1gXvs+Ppf6TdaquyX/8ZtOD4f8T4FqmUVU2PT9osLAJJZlonLn9fkU/X7MLxpcZhgFKp0EhAxcEcTYOJPmtrxjMpsDdKNoRHw0wlg0aZxu0usscHXDc84XKc2wSXwaTO0rPfaIVPiV4nlQVTVoBHTfvu5e5s7mlPONsL3D/EXI8QAWJNuXRar9N0C5mlaVqZc6BQy4XtoXGcs=",
+        "CQ8B9IJyi92F+62tIMzlK7kwUZFyTNFNo3tyTizIJ62Bs1CWnFPDuMxzdthBNkLWVTMj8XNNXR1NiqVXQjc5kbXs9ZDI5FTgYXUmuflzNHU5xZYEUwSoNsXD04oqXik0TxhNGVgFBkrrDiOYFFPwUd8T6WbvVM2t/kKCxPBEL4jFJgdTCIcWCnxqB249c1BWQRykKngHTK8WHJ+MxTtUJcOwQSrypBsVV8MMnRm0bGKhmsaL6eM="
+      ],
+      "relays": [
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.203.133",
+              "ipv6": "2a03:2880:f26d:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mxp2-1.wt.whatsapp.com",
+          "relay_id": 0,
+          "relay_name": "mxp2c01",
+          "token_id": 0
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.231.133",
+              "ipv6": "2a03:2880:f269:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-fco2-1.wt.whatsapp.com",
+          "relay_id": 1,
+          "relay_name": "fco2c01",
+          "token_id": 2
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "57.144.69.57",
+              "ipv6": "2a03:2880:f31b:139:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mrs2-1.wt.whatsapp.com",
+          "relay_id": 2,
+          "relay_name": "mrs2c01",
+          "token_id": 1
+        }
+      ]
+    },
+    {
+      "auth_tokens": [
+        "CQMZCX4EkPrRtHAgCOG5iDru1uqXYXnyRtrGe1qfuElbc/RumO/QTWwT5mpaL3KnwaDPtN8EsCKChd2c9WFcs8yiQYYd3A=="
+      ],
+      "enable_edgeray_dtls_active_mode": false,
+      "event_type": 156,
+      "num_relays": 3,
+      "relay_key": "w/vSP6yPfmnNt2szr5SrPA==",
+      "relay_tokens": [
+        "CQ8B9BOmTOPx6LjpnZ7F2zTvfLOnxiT0Z6MASNLZzOGJJTI3BzqHn2WvHXk5khFnRkXkuJtR43rY60abiLy2Q75w1cvFEfD8eyI+P2zvWEOpFz3REXYbgVkmz9dmXy0wyfpvKJ7WK/WcvEXlkTQMq1bUOPIunQRRBKbwunGsG5lE9GwN3/q2E5cE4qNMsgaM6yIKVa/MEJJe7CnQXhwXz38hTeMXPULXnlGzF7eJHzsFp+eg8T8=",
+        "CQ8B9FWGsPuo2gaS2Hs7RA0Lx8QQn007ZZJgxmVJKy3RfxO2g7b2LiLu/ijm+rSA/9fyk2HNi+4knjasGAQyxEGgh7hk44xc3Vpm/mvp7eDhEem/LAC4GnGAfWrdCdg8HXQMRB+29B259622MJD8O4EMTIzqQhUuatQUtM8RYDgQFowNj4bbDvGRYKNjiZLz36cyOvjjcIy99O2aEmeQ7oqobkvs1oJaGcB9LjAaJFYXpkHZaHc=",
+        "CQ8B9McYPQ0zmu5aLoVpn74IB1i+edg5uT1eYm/4VPeFBqkA0gzamj5wj1DwI4wIeEGpm65/x/qS8HgMSaUYT02KGDXZfU0xmppoiJG4YyUb9LZ5QcTlqHFxptnsuX7JFEZLiZiKhZwtopATXJ3plRRXmNLtVWKFY1lcZpDxSrqCMKkL2qBeu1AXX97avWCaLvoBBj4ARV8O6ELudCOW5dibYcjpItjXhpyvAl2SZ1lnbXu+z0w="
+      ],
+      "relays": [
+        {
+          "addresses": [
+            {
+              "ipv4": "31.13.86.63",
+              "ipv6": "2a03:2880:f208:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mxp1-1.wt.whatsapp.com",
+          "relay_id": 0,
+          "relay_name": "mxp1c01",
+          "token_id": 0
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.231.133",
+              "ipv6": "2a03:2880:f269:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-fco2-1.wt.whatsapp.com",
+          "relay_id": 1,
+          "relay_name": "fco2c01",
+          "token_id": 2
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.196.133",
+              "ipv6": "2a03:2880:f242:1db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mrs2-2.wt.whatsapp.com",
+          "relay_id": 2,
+          "relay_name": "mrs2c02",
+          "token_id": 1
+        }
+      ]
+    },
+    {
+      "auth_tokens": [
+        "CQPdJUwD3+gBx4IVDGI1r1bPPXeEHe3zp9EVU1TJcl/ap10llbU8ewm7cU/Z6Pp6S2Gyl17210CrHnG/t/+iXaHz283mmQ=="
+      ],
+      "enable_edgeray_dtls_active_mode": false,
+      "event_type": 156,
+      "num_relays": 3,
+      "relay_key": "ZEHv/I2EJDZPHAIQ9lBLCQ==",
+      "relay_tokens": [
+        "CQ8B9O+lT17/CNVGMq+jbR9cIPCDMp0nse/Z+8apSROyYjNO+ALsmqzW7TWGScehQEquhYSbGUdgFxCoCWtz6P2uD9SC6AZlgQi/6FkPluiD8A4mKZgnt1VEr+L28Y1c3K0GqWgmA9dUHwcqSjQyXQ4MPkCO5zUKEJyk6Szt11iK2xZiJP0Hsc9IYoIdzF9L6utchqtE/9vgXzs4ZG02pzrbT1Qo+GF1Dj7w3ktctTP+Fi+NUkg=",
+        "CQ8B9PJgVSYI98NrEq66lQU0PH1mFJ60mq+lXxMrzoQb4hEvwsUM4S8+eUkSQrNDfM3GINlnoRhqPQ3m0vC/fNyHEuekEcrWt6fFeuUAD6PnBe3Upc04yXecu02E4MycxrUAEtYN5Ad0EVPtrFhGLu0Fv2F0f/Sjd2/EWtAP/a+uFHT6UzSFgrXJYi9yYkZfx4yw67FOG/Ozqs+K3PmERYBIpJcaDjItYyd+lcN7m87k9BL7K7w=",
+        "CQ8B9PVPoO3NQGGJrQ3JSki5QMuYdhwFHGFqEBQH8lTMRoX/OIurwA7hBGxpK26GulEZvM2BKRZhJig1o9ZzBUgTPTnoZwfjy26eKxsz7ES82JW/d7dASFSUocqbGOI6X+7hszmiL7gxEM6RODhA0GjCtjaxQQox3cYC9GVfFjLk+91VxJTkEyj48wux6Bt3qA+Ik68tAq18fhemSz0c9aMBwOXJIiHtuZUfMPQ+enU2+tLKtPc="
+      ],
+      "relays": [
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.203.133",
+              "ipv6": "2a03:2880:f26d:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mxp2-1.wt.whatsapp.com",
+          "relay_id": 0,
+          "relay_name": "mxp2c01",
+          "token_id": 2
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.231.133",
+              "ipv6": "2a03:2880:f269:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-fco2-1.wt.whatsapp.com",
+          "relay_id": 1,
+          "relay_name": "fco2c01",
+          "token_id": 0
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.196.133",
+              "ipv6": "2a03:2880:f242:1db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mrs2-2.wt.whatsapp.com",
+          "relay_id": 2,
+          "relay_name": "mrs2c02",
+          "token_id": 1
+        }
+      ]
+    },
+    {
+      "auth_tokens": [
+        "CQMIoxw0Q/IwBYatmTKoyExwDWWP8tVS5bgIChdWOt2CcPSzLzHIVEy/G8ayboab3zwL1f7HfSvGYCgPfLLQuuv5GZkpDw=="
+      ],
+      "enable_edgeray_dtls_active_mode": false,
+      "event_type": 156,
+      "num_relays": 3,
+      "relay_key": "zDotFhSrw70H8cdxsSNCiQ==",
+      "relay_tokens": [
+        "CQ8B9Ayg9Dn6jvg6w/LUzQQApzoO9BlVZeq2/IDDKoyL/L17tuQF+3+uRpk8lG55ppPFEbfiewf6ij0XMOgpeSiF2By0QFUf5TJE0tAeBFZnxUmrCkQNr8Di96abqaKH3mrqK7t5NPga6OKwghZqr9La1fuwjzHp5vQaBCOXSceTZqjtDxNh0tnIxu9waWr7KZ3v5AIRuWGcvJz5ciZPxl/55oWv6SMWjEIiZRJ0qxBehgf4J2g=",
+        "CQ8B9BaIdaMOtGUGvaJQRhxX8zmNJc3broNVmAvryR/UH4f/ipmV07zyVRV/RaHkuCQfTftI/jhvxQHvwdGsSesszc5idGfIKnysdr/mzc+pDMWYwkeLJzu/HJepCPeLKwGruXkousvZiTtzYI3+wnAZBxLoE+YDS6J1Du+aUtmjr985p8Q5Id/r2kfylLv8RL7NtcneD4iLNaEchCTS8kUS/R0NqCH3xjRCCtO+SZTVMrOHwNQ=",
+        "CQ8B9OMtyDj1f2BU8WQThAttEej2mC98nqpj4iJbZgkLXvrOMBRXNlkEzwI00fo0wQYP2EUHgbcPvBLMNdGuGRuecy6WnFarWB6svJqKhaOgKaCaXyfMtCghJmkCRXgXcSq8XLqjlvXsCQszhIkYNHhKn6QuB3vR0lSMiCSs+KXHcFzkiEzf2bfanD80KX5IeH/IH7ydmvlIOuODBQNT/rkpWqCRNOkfLdDyKxrQ/vxxcljhqfQ="
+      ],
+      "relays": [
+        {
+          "addresses": [
+            {
+              "ipv4": "31.13.86.63",
+              "ipv6": "2a03:2880:f208:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mxp1-1.wt.whatsapp.com",
+          "relay_id": 0,
+          "relay_name": "mxp1c01",
+          "token_id": 1
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "157.240.231.133",
+              "ipv6": "2a03:2880:f269:db:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-fco2-1.wt.whatsapp.com",
+          "relay_id": 1,
+          "relay_name": "fco2c01",
+          "token_id": 2
+        },
+        {
+          "addresses": [
+            {
+              "ipv4": "57.144.121.57",
+              "ipv6": "2a03:2880:f33c:139:face:b00c:0:6749",
+              "port": 3478,
+              "port_v6": 3478,
+              "protocol": 0
+            }
+          ],
+          "auth_token_id": 0,
+          "domain_name": "edgeray-mrs2-3.wt.whatsapp.com",
+          "relay_id": 2,
+          "relay_name": "mrs2c03",
+          "token_id": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/voip-relay-all-calls/encode",
+  "expression": "JSON.stringify(globalThis.__captures2['handler/voip-relay-all-calls/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"enabled\":true,\"encoded\":\"CIDiz6oGygICCAE=\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

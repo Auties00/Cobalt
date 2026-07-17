@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/contact/encode",
+  "expression": "JSON.stringify(globalThis.__captures6['handler/contact/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"encoded\":\"CIDiz6oGGjIKDE1hcmlhIEdhcmNpYRIFTWFyaWEaEjcwMDAwMDAwMDAwMDAwQGxpZCABMgVtYXJpYQ==\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "device/usync-bot",
+  "expression": "String(window.__usyncBot)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"error\":{},\"refresh\":{},\"list\":[]}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

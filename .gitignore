@@ -1,3 +1,42 @@
-/target/
-.test/
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+replay_pid*
+
+# Node.js / TypeScript
+node_modules/
+dist/
+package-lock.json
+*.tsbuildinfo
+
+# IDEs
 .idea/
+*.iml
+.settings/
+.project
+.classpath
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing
+.test/
+.temp/
+re/
+Playground.java
+
+# Validation run data (incremental-mode anchor, reports, captures)
+validation/
+
+# Logs
+*.log

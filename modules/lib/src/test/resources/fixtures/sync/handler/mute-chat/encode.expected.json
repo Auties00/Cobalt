@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/mute-chat/encode",
+  "expression": "JSON.stringify(globalThis.__captures['handler/mute-chat/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"muted\":true,\"muteEndMillis\":1700028800000,\"encoded\":\"CIDiz6oGIgkIARCAuPOMvTE=\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

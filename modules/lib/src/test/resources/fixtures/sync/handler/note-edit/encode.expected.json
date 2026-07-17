@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/note-edit/encode",
+  "expression": "JSON.stringify(globalThis.__captures6['handler/note-edit/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"encoded\":\"CIDiz6oGugMmCAESFDEyMzQ1QHMud2hhdHNhcHAubmV0GIDiz6oGIAAqBGJvZHk=\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

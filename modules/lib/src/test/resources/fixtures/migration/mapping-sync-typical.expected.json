@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "migration/mapping-sync-typical",
+  "expression": "JSON.stringify((() => {\n  const WidFactory = require('WAWebWidFactory');\n\n  function transform(payload) {\n    if (payload == null || payload.pnToLidMappings.length === 0) {\n      return { mappings: [], primaryMigrationTsSec: null };\n    }\n    const i = payload.pnToLidMappings.map(e => {\n      const pnUser = WidFactory.asUserWidOrThrow(WidFactory.createUserWidOrThrow(e.pn.toString()));\n      const assignedLid = WidFactory.asUserWidOrThrow(WidFactory.createWid(e.assignedLid.toString() + '@lid'));\n      const latestLid = (e?.latestLid) != null\n        ? WidFactory.asUserWidOrThrow(WidFactory.createWid(e.latestLid.toString() + '@lid'))\n        : null;\n      return { pnUser: String(pnUser), assignedLid: String(assignedLid), latestLid: latestLid ? String(latestLid) : null };\n    });\n    return { mappings: i, primaryMigrationTsSec: payload.chatDbMigrationTimestamp };\n  }\n\n  // Case: typical payload with two mappings — one with latestLid, one without — plus a chatDbMigrationTimestamp.\n  return transform({\n    pnToLidMappings: [\n      { pn: 393495089819, assignedLid: 258252122116273, latestLid: 999999999999999 },\n      { pn: 12025550100,  assignedLid: 555555555555555, latestLid: null }\n    ],\n    chatDbMigrationTimestamp: 1735680000\n  });\n})())",
+  "result": {
+    "resultType": "string",
+    "value": "{\"mappings\":[{\"pnUser\":\"393495089819@c.us\",\"assignedLid\":\"258252122116273@lid\",\"latestLid\":\"999999999999999@lid\"},{\"pnUser\":\"12025550100@c.us\",\"assignedLid\":\"555555555555555@lid\",\"latestLid\":null}],\"primaryMigrationTsSec\":1735680000}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

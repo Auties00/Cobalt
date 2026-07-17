@@ -1,0 +1,27 @@
+package com.github.auties00.cobalt.wire.wam.type;
+
+import com.github.auties00.cobalt.meta.annotation.WhatsAppWebModule;
+
+import com.github.auties00.cobalt.wam.annotation.WamEnum;
+import com.github.auties00.cobalt.wam.annotation.WamEnumConstant;
+
+@WhatsAppWebModule(moduleName = "WAWebWamEnumIncomingCallNotificationStateType")
+@WamEnum
+public enum IncomingCallNotificationStateType {
+    @WamEnumConstant(1) INCOMING_CALL_NOTIFICATION_STATE_INIT,
+    @WamEnumConstant(2) INCOMING_CALL_NOTIFICATION_STATE_SHOWATTEMPTED,
+    @WamEnumConstant(3) INCOMING_CALL_NOTIFICATION_STATE_SILENCED,
+    @WamEnumConstant(4) INCOMING_CALL_NOTIFICATION_STATE_DECLINED,
+    @WamEnumConstant(5) INCOMING_CALL_NOTIFICATION_STATE_ACCEPTED,
+    @WamEnumConstant(6) INCOMING_CALL_NOTIFICATION_STATE_TIMEOUT,
+    @WamEnumConstant(7) INCOMING_CALL_NOTIFICATION_STATE_DEVICEERROR,
+    @WamEnumConstant(8) INCOMING_CALL_NOTIFICATION_STATE_VOIPLAYOUT,
+    @WamEnumConstant(9) INCOMING_CALL_NOTIFICATION_STATE_LOBBYLAYOUT,
+    @WamEnumConstant(10) INCOMING_CALL_NOTIFICATION_STATE_APPWINDOWSHOWATTEMPTED,
+    @WamEnumConstant(11) INCOMING_CALL_NOTIFICATION_STATE_APPWINDOWSUCCESS,
+    @WamEnumConstant(12) INCOMING_CALL_NOTIFICATION_STATE_APPWINDOWFAIURE,
+    @WamEnumConstant(13) INCOMING_CALL_NOTIFICATION_STATE_TOASTSHOWATTEMPTED,
+    @WamEnumConstant(14) INCOMING_CALL_NOTIFICATION_STATE_TOASTSUCCESS,
+    @WamEnumConstant(15) INCOMING_CALL_NOTIFICATION_STATE_TOASTFAILURE,
+    @WamEnumConstant(16) INCOMING_CALL_NOTIFICATION_STATE_SETTINGSCLICKED
+}

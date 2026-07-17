@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/cag-text",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"recipient\":\"120363409463700665@g.us\",\"chatId\":\"120363409463700665@g.us\",\"body\":\"Cobalt CAG test — text\",\"msgId\":\"\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

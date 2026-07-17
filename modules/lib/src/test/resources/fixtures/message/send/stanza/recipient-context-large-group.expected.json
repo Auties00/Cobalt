@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/stanza/recipient-context-large-group",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"recipient\":\"120363023250764418@g.us\",\"widServer\":\"g.us\",\"widIsLid\":false,\"widIsUser\":false,\"widIsGroup\":true,\"chatFound\":true,\"accountLid\":null,\"lidOriginType\":null,\"groupMetadata\":{\"announce\":false,\"groupType\":\"DEFAULT\",\"isParentGroup\":false,\"defaultSubgroup\":false,\"size\":205,\"participantCount\":205}}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

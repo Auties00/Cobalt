@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/status-text",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"result\":\"OK\",\"msgId\":\"true_status@broadcast_3EB0E83EE31AE5A69651FC_258252122116273@lid\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

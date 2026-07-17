@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/lock-chat/encode",
+  "expression": "JSON.stringify(globalThis.__captures['handler/lock-chat/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"locked\":true,\"encoded\":\"CIDiz6oGkgMCCAE=\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

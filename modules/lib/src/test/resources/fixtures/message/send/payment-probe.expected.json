@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/payment-probe",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"deferred\":true,\"reason\":\"TypeError: Cannot read properties of undefined (reading 'isPaymentsEnabled')\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

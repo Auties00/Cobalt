@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/chat-assignment/encode",
+  "expression": "JSON.stringify(globalThis.__captures5['handler/chat-assignment/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"encoded\":\"CIDiz6oGmgIJCgdhZ2VudC05\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

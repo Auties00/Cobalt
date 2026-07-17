@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/group-large-text",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"recipient\":\"120363023250764418@g.us\",\"chatId\":\"120363023250764418@g.us\",\"body\":\"Cobalt test — large group\",\"msgId\":\"\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

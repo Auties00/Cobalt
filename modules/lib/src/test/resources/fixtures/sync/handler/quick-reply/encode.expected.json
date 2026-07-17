@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/quick-reply/encode",
+  "expression": "JSON.stringify(globalThis.__captures5['handler/quick-reply/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"encoded\":\"CIDiz6oGQhQKBi9oZWxsbxICSGkaAmsxIAEoAA==\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

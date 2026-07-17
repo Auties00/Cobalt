@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/stanza/recipient-context-meta-ai",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"recipient\":\"13135550002@s.whatsapp.net\",\"widServer\":\"c.us\",\"widIsLid\":false,\"widIsUser\":true,\"widIsGroup\":false,\"chatFound\":true,\"accountLid\":null,\"lidOriginType\":null,\"groupMetadata\":null}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

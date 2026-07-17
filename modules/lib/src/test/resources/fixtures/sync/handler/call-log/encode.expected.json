@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/call-log/encode",
+  "expression": "JSON.stringify(globalThis.__captures5['handler/call-log/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"encoded\":\"CIDiz6oG0gIA\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "business",
+  "topic": "device/self-chat-routing",
+  "expression": "String(window.__selfChat)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"pnInput\":\"19254863482@c.us\",\"chatId\":\"83116928594056@lid\",\"chatIsLid\":true,\"chatIsUser\":true,\"accountLid\":\"83116928594056@lid\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

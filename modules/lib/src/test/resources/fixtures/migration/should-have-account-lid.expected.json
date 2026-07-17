@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "business",
+  "topic": "migration/should-have-account-lid",
+  "expression": "JSON.stringify((() => {\n  const Utils = require('WAWebLidMigrationUtils');\n  const Gating = require('WAWebLid1X1MigrationGating');\n  const WidFactory = require('WAWebWidFactory');\n  const isMigrated = Gating.Lid1X1MigrationUtils.isLidMigrated();\n  const labels = ['regular_pn', 'regular_lid', 'bot', 'announcements', 'group', 'newsletter', 'broadcast'];\n  const inputs = ['393495089819@c.us', '258252122116273@lid', '867051314767696@bot', '0@c.us', '120363012345678901@g.us', '120363023456789012@newsletter', '19254863482@broadcast'];\n  const out = [];\n  for (let i = 0; i < inputs.length; i++) {\n    try {\n      const w = WidFactory.createWid(inputs[i]);\n      out.push({label: labels[i], jid: String(w), shouldHaveAccountLid: Utils.shouldHaveAccountLid(w)});\n    } catch (e) {\n      out.push({label: labels[i], input: inputs[i], error: String(e && e.message || e)});\n    }\n  }\n  return {isLidMigrated: isMigrated, cases: out};\n})())",
+  "result": {
+    "resultType": "string",
+    "value": "{\"isLidMigrated\":true,\"cases\":[{\"label\":\"regular_pn\",\"jid\":\"393495089819@c.us\",\"shouldHaveAccountLid\":true},{\"label\":\"regular_lid\",\"jid\":\"258252122116273@lid\",\"shouldHaveAccountLid\":true},{\"label\":\"bot\",\"jid\":\"867051314767696@bot\",\"shouldHaveAccountLid\":false},{\"label\":\"announcements\",\"jid\":\"0@c.us\",\"shouldHaveAccountLid\":false},{\"label\":\"group\",\"jid\":\"120363012345678901@g.us\",\"shouldHaveAccountLid\":false},{\"label\":\"newsletter\",\"jid\":\"120363023456789012@newsletter\",\"shouldHaveAccountLid\":false},{\"label\":\"broadcast\",\"jid\":\"19254863482@broadcast\",\"shouldHaveAccountLid\":false}]}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

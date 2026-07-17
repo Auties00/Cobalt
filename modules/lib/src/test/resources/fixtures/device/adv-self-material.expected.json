@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "device/adv-self-material",
+  "expression": "String(window.__advMaterial)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"mePn\":\"393495089819@c.us\",\"meLid\":\"258252122116273@lid\",\"meDev\":\"393495089819:75@c.us\",\"advEncodedIdentity\":{\"byteLength\":185,\"base64\":\"ChEInOSaQxC8r4jQBhgDIAAoABIgsYZgai71NR+JZBqn1cp0Lp7vsmpryF7WyXKSKHOiz2IaQIh0u9st2VvAePVqH1PXDFVRXiwJ3QdAdANfTTsSa724Kv1LCl6EVUT5n/c7PnkcGkbSIOg94przBehwXBZP1AMiQOD1y6kJaFHhHCgoisDtainviBlA57CQzRZcKsdAa29LpeSrkG4KKXxP7A90mAKwvYkX6Ef0VabQ4jaE8/7MwQg=\"}}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/crypto/mac",
+  "expression": "String(globalThis.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"syncKey\":\"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=\",\"associatedData\":\"Aaq7zN0=\",\"ciphertext\":\"VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=\",\"mac\":\"wCAy/RJqpvk5uM+uk0EBU3EHvBxa+AOE7/ErMmmSJks=\",\"macLen\":32}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

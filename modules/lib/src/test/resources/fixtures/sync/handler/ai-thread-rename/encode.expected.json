@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/ai-thread-rename/encode",
+  "expression": "JSON.stringify(globalThis.__captures4['handler/ai-thread-rename/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"encoded\":\"CIDiz6oG4gQA\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

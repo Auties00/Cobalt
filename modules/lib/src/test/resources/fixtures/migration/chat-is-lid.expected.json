@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "migration/chat-is-lid",
+  "expression": "JSON.stringify((() => {\n  const Utils = require('WAWebLidMigrationUtils');\n  const WidFactory = require('WAWebWidFactory');\n  const w = s => WidFactory.createWid(s);\n  // Synthesise the shape that WAWebLidMigrationUtils.chatIsLid accepts: {id, groupMetadata?}.\n  const cases = [\n    { label: 'chat_on_lid_server', chat: { id: w('258252122116273@lid') } },\n    { label: 'chat_on_pn_1on1', chat: { id: w('12025550100@c.us') } },\n    { label: 'group_no_metadata', chat: { id: w('120363012345678901@g.us') } },\n    { label: 'group_lid_mode', chat: { id: w('120363012345678901@g.us'), groupMetadata: { isLidAddressingMode: true } } },\n    { label: 'group_pn_mode', chat: { id: w('120363012345678901@g.us'), groupMetadata: { isLidAddressingMode: false } } }\n  ];\n  return cases.map(c => ({\n    label: c.label,\n    jid: String(c.chat.id),\n    chatIsLid: Utils.chatIsLid(c.chat)\n  }));\n})())",
+  "result": {
+    "resultType": "string",
+    "value": "[{\"label\":\"chat_on_lid_server\",\"jid\":\"258252122116273@lid\",\"chatIsLid\":true},{\"label\":\"chat_on_pn_1on1\",\"jid\":\"12025550100@c.us\",\"chatIsLid\":false},{\"label\":\"group_no_metadata\",\"jid\":\"120363012345678901@g.us\",\"chatIsLid\":false},{\"label\":\"group_lid_mode\",\"jid\":\"120363012345678901@g.us\",\"chatIsLid\":true},{\"label\":\"group_pn_mode\",\"jid\":\"120363012345678901@g.us\",\"chatIsLid\":false}]",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

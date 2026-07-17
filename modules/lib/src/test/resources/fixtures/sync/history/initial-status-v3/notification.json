@@ -1,0 +1,24 @@
+{
+  "syncType": 1,
+  "chunkOrder": 0,
+  "msgKey": "true_393495089819@c.us_AC9199D8AD4FBDA01B96B9213F0241D6_out",
+  "progress": 0,
+  "notification": {
+    "msgKey": "true_393495089819@c.us_AC9199D8AD4FBDA01B96B9213F0241D6_out",
+    "processed": 0,
+    "downloadOptions": {
+      "type": "md-msg-hist",
+      "downloadOrigin": 11
+    },
+    "isReupload": 0,
+    "historySyncStepStartedTs": 1778553097793,
+    "reuploadPending": false,
+    "historySyncPayloadSize": 0,
+    "initialHistBootstrapInlinePayload": {
+      "__bytes_b64": "eAHjYAQAABMACg=="
+    },
+    "progress": 0,
+    "syncType": 1,
+    "chunkOrder": 0
+  }
+}

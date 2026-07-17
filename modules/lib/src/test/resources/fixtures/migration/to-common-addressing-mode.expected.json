@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "migration/to-common-addressing-mode",
+  "expression": "JSON.stringify((() => {\n  const Utils = require('WAWebLidMigrationUtils');\n  const WidFactory = require('WAWebWidFactory');\n  const me = require('WAWebUserPrefsMeUser');\n  const w = s => WidFactory.createWid(s);\n  const myPn = String(me.getMaybeMePnUser());\n  const myLid = String(me.getMaybeMeLidUser());\n  const pairs = [\n    { label: 'pn_pn_same_server',  a: '12025550100@c.us',     b: '12025550101@c.us' },\n    { label: 'lid_lid_same_server', a: '258252122116273@lid', b: '999999999999999@lid' },\n    { label: 'me_pn_with_peer_lid', a: myPn,                  b: '258252122116273@lid' },\n    { label: 'me_lid_with_peer_pn', a: myLid,                 b: '12025550100@c.us' }\n  ];\n  return {\n    myPn: myPn,\n    myLid: myLid,\n    pairs: pairs.map(p => {\n      try {\n        const result = Utils.toCommonAddressingMode(w(p.a), w(p.b));\n        return { label: p.label, inA: p.a, inB: p.b, outA: String(result[0]), outB: String(result[1]) };\n      } catch (e) {\n        return { label: p.label, error: String(e && e.message || e) };\n      }\n    })\n  };\n})())",
+  "result": {
+    "resultType": "string",
+    "value": "{\"myPn\":\"393495089819@c.us\",\"myLid\":\"258252122116273@lid\",\"pairs\":[{\"label\":\"pn_pn_same_server\",\"inA\":\"12025550100@c.us\",\"inB\":\"12025550101@c.us\",\"outA\":\"12025550100@c.us\",\"outB\":\"12025550101@c.us\"},{\"label\":\"lid_lid_same_server\",\"inA\":\"258252122116273@lid\",\"inB\":\"999999999999999@lid\",\"outA\":\"258252122116273@lid\",\"outB\":\"999999999999999@lid\"},{\"label\":\"me_pn_with_peer_lid\",\"inA\":\"393495089819@c.us\",\"inB\":\"258252122116273@lid\",\"outA\":\"258252122116273@lid\",\"outB\":\"258252122116273@lid\"},{\"label\":\"me_lid_with_peer_pn\",\"inA\":\"258252122116273@lid\",\"inB\":\"12025550100@c.us\",\"outA\":\"393495089819@c.us\",\"outB\":\"12025550100@c.us\"}]}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

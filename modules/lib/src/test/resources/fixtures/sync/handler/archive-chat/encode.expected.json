@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/archive-chat/encode",
+  "expression": "JSON.stringify(globalThis.__captures['handler/archive-chat/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"archived\":true,\"encoded\":\"CIDiz6oGigECCAE=\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

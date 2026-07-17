@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/favorite-sticker/encode",
+  "expression": "JSON.stringify(globalThis.__captures4['handler/favorite-sticker/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"encoded\":\"CIDiz6oGigIcChhodHRwczovL2V4YW1wbGUvZmF2LndlYnBIAQ==\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

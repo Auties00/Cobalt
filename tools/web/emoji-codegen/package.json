@@ -1,0 +1,20 @@
+{
+  "name": "whatsapp-emoji-extractor",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Extracts the WhatsApp Web emoji catalog (set, order, categories, legacy map, skin-tone variants, per-locale search keywords) and generates the Java WhatsAppEmoji constants plus the binary lookup resources",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc && node dist/index.js"
+  },
+  "dependencies": {
+    "playwright": "^1.57.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

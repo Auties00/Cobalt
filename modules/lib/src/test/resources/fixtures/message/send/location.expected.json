@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/location",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"msgId\":\"true_83116928594056@lid_3EB02E029F06B15FCFC2E0\",\"ack\":0}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/locale-setting/encode",
+  "expression": "JSON.stringify(globalThis.__captures2['handler/locale-setting/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"locale\":\"en_US\",\"encoded\":\"CIDiz6oGggEHCgVlbl9VUw==\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

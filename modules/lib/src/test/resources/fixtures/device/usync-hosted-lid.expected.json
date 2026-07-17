@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "device/usync-hosted-lid",
+  "expression": "String(window.__usyncHostedLid)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"error\":{},\"refresh\":{},\"list\":[{\"devices\":{\"deviceList\":[{\"id\":0,\"keyIndex\":null}],\"keyIndex\":null},\"id\":\"44650513604847@lid\"}]}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

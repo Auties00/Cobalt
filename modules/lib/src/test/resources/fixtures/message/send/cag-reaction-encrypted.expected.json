@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/cag-reaction-encrypted",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"targetMsgId\":\"true_120363409463700665@g.us_3EB0D72DBC1C79334EDF4F_258252122116273@lid\",\"emoji\":\"🎯\",\"ack\":null}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

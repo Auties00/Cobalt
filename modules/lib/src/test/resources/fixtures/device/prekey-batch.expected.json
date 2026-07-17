@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "device/prekey-batch",
+  "expression": "String(window.__preKeyBatch)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"requested\":8,\"missedPrekeyCount\":8,\"depletedPrekeyCount\":0}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

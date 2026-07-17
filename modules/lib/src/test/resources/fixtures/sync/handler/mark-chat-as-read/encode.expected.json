@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/mark-chat-as-read/encode",
+  "expression": "JSON.stringify(globalThis.__captures['handler/mark-chat-as-read/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"read\":true,\"encoded\":\"CIDiz6oGogECCAE=\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

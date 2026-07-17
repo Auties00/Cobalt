@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/crypto/lt-hash",
+  "expression": "String(globalThis.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"empty\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"a\":\"ERERERERERERERERERERERERERERERERERERERERERE=\",\"b\":\"IiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI=\",\"c\":\"MzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM=\",\"afterAB\":\"hPFSDZGebPam7COYAexf9mJl4BsKhd44A4PYxD/V2bhtElj66YoITKT21Dm9p4ZZHKHCoKAyWuE9Q3rxo6AIaE8Uf5F7WhFhBB696omFT1p1MhhHypqAtF79O9t9ednvFg+5hIwNAt5sPEOE8EVDakfQlitCgQqVRhVjBEpqLLw=\",\"afterABC\":\"glBt7xhF86aZfrLzEEePH696WxbJWwl5uQCtA1qtTDRbROAZUXGDodEcOUoe17bXWM+4FQod4VyJUWsvX94jwAjFdL4Zh+9I9Ymcuj/1CLSZ9IJx+nGUw0l3RkoSEqkNOSMkgnWq2TfqNNXbwqmWfZUsFaggOfzJH/7rFxjQMK0=\",\"afterABminusA\":\"aPTcWSLQnwl3EomSmYZA+BGHQ1RIMjn3I+c/K8LXfNrosB+kOCR/dQLaqgXraIunu0iOskSWpXeEyFGVrxk6HNgJRZyEfx0OGks8r5mF3NQCmnXxdJHCzuyqkSznPnlGXHiNhFO2IkQ13u5vEjmNfhk6fobdORNSRswqXKj+4Mc=\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

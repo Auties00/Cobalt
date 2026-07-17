@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "device/usync-hosted-pn",
+  "expression": "String(window.__usyncHostedPn)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"error\":{},\"refresh\":{},\"list\":[{\"devices\":{\"deviceList\":[{\"id\":0,\"keyIndex\":null}],\"keyIndex\":null},\"id\":\"15086146312@c.us\"}]}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

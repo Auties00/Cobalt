@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/unarchive-chats-setting/encode",
+  "expression": "JSON.stringify(globalThis.__captures3['handler/unarchive-chats-setting/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"unarchiveChats\":true,\"encoded\":\"CIDiz6oGugECCAE=\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

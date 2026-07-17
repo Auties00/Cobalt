@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/send/peer-reaction",
+  "expression": "String(window.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"targetMsgId\":\"true_83116928594056@lid_3EB0120C741EA81377AD12\",\"emoji\":\"👍\",\"ack\":null}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

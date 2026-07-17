@@ -1,0 +1,12 @@
+{
+  "version": "0.1.0",
+  "commitSha": "c15e78ce2138e500d8bdd2d3b3b76486b3a9dcbc",
+  "binaries": {
+    "cobalt-native/linux-x86_64": { "sha256": "ab6b0ae2c9629ff1028532188bd8ff6c4cee5c14f1fe0e13e98388c8df4893d0", "size": 11111344, "path": "modules/lib/natives/bin/linux-x86_64/libcobalt-native.so" },
+    "cobalt-native/linux-aarch64": { "sha256": "8b72884b04cdd53aecce52dc8b0f89d60c45f3a717f0b28c9abf41151452e542", "size": 8412568, "path": "modules/lib/natives/bin/linux-aarch64/libcobalt-native.so" },
+    "cobalt-native/windows-x86_64": { "sha256": "6d53f21ae39d1a19c3f8e1d13c8905058906d6e2d2a4afa752a4b8f942111e4d", "size": 12502016, "path": "modules/lib/natives/bin/windows-x86_64/cobalt-native.dll" },
+    "cobalt-native/windows-aarch64": { "sha256": "74344811275e46dd1f2b7879b1488f0c826cfd43c53ae7effeaa602439c21bdc", "size": 8485376, "path": "modules/lib/natives/bin/windows-aarch64/cobalt-native.dll" },
+    "cobalt-native/darwin-x86_64": { "sha256": "ace5a59e5c5a6a9a0970328e5e977affdb1b4efdead40254f153fbe196491673", "size": 11322064, "path": "modules/lib/natives/bin/darwin-x86_64/libcobalt-native.dylib" },
+    "cobalt-native/darwin-aarch64": { "sha256": "788f9652ec639a7f0df608a7642135c8c480e95b57683c00632548d48d3b391a", "size": 8541816, "path": "modules/lib/natives/bin/darwin-aarch64/libcobalt-native.dylib" }
+  }
+}

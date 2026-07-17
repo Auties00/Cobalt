@@ -1,0 +1,68 @@
+package com.github.auties00.cobalt.wire.wam.type;
+
+import com.github.auties00.cobalt.meta.annotation.WhatsAppWebModule;
+
+import com.github.auties00.cobalt.wam.annotation.WamEnum;
+import com.github.auties00.cobalt.wam.annotation.WamEnumConstant;
+
+@WhatsAppWebModule(moduleName = "WAWebWamEnumMetaVerifiedUserActionSurface")
+@WamEnum
+public enum MetaVerifiedUserActionSurface {
+    @WamEnumConstant(1) META_VERIFIED_HOME,
+    @WamEnumConstant(2) MV_SUBSCRIPTION_NOTIFICATION,
+    @WamEnumConstant(3) BUSINESS_TOOLS,
+    @WamEnumConstant(4) SETTINGS,
+    @WamEnumConstant(5) LINKED_DEVICES,
+    @WamEnumConstant(6) CONTACT_SUPPORT,
+    @WamEnumConstant(7) VERIFIED_CHANNEL_INTRO,
+    @WamEnumConstant(8) BUSINESS_CARD_PREVIEW,
+    @WamEnumConstant(9) PRIVACY_INTERSTITIAL,
+    @WamEnumConstant(10) BUSINESS_PROFILE,
+    @WamEnumConstant(11) EDIT_PROFILE_PICTURE_CONFIRMATION,
+    @WamEnumConstant(12) PROFILE_PHOTO,
+    @WamEnumConstant(13) PROFILE_PICTURE_REJECTED_NOTIFICATION,
+    @WamEnumConstant(14) PROFILE_PICTURE_REJECTED_BANNER,
+    @WamEnumConstant(15) PROFILE_PICTURE_EDIT_LOCKED_DIALOG,
+    @WamEnumConstant(16) WEB_PAGE,
+    @WamEnumConstant(17) BUSINESS_INFO,
+    @WamEnumConstant(18) CHAT_PROFILE,
+    @WamEnumConstant(19) VERIFIED_ELIGIBLE_EDU_BOTTOMSHEET,
+    @WamEnumConstant(20) VERIFIED_EDU_BOTTOMSHEET_CUSTOMER,
+    @WamEnumConstant(21) BUSINESS_CARD,
+    @WamEnumConstant(22) UNVERIFIED_ELIGIBLE_EDU_BOTTOMSHEET,
+    @WamEnumConstant(23) UNVERIFIED_INELIGIBLE_EDU_BOTTOMSHEET,
+    @WamEnumConstant(24) UNVERIFIED_EDU_BOTTOMSHEET_CUSTOMER,
+    @WamEnumConstant(25) EDIT_CHANNEL_DIALOG,
+    @WamEnumConstant(26) SUPPORT_REQUEST_FAQ_SEARCH,
+    @WamEnumConstant(27) CHANNEL_LIST,
+    @WamEnumConstant(28) VERIFIED_INELIGIBLE_EDU_BOTTOMSHEET,
+    @WamEnumConstant(29) WEB_PAGE_EDU_SCREEN,
+    @WamEnumConstant(30) LINKED_DEVICES_EDU_SCREEN,
+    @WamEnumConstant(31) SHARE_BUSINESS,
+    @WamEnumConstant(32) CHANNEL_INFO,
+    @WamEnumConstant(33) PROTECTED_BUSINESS_ACCOUNTS_EMPTY_LIST,
+    @WamEnumConstant(34) BUSINESS_CONTACTS_LIST,
+    @WamEnumConstant(35) PROTECTED_BUSINESS_ACCOUNTS_LIST,
+    @WamEnumConstant(36) CUSTOM_LINK_WEB_PAGE_ACTIVE_EDU,
+    @WamEnumConstant(37) BUSINESS_SEARCH,
+    @WamEnumConstant(38) ACCOUNT_LINKING_WARNING,
+    @WamEnumConstant(39) CHAT,
+    @WamEnumConstant(40) WEB_NON_SUBSCRIBER_DIALOG,
+    @WamEnumConstant(41) WEB_ACTIVE_SUBSCRIBER_DIALOG,
+    @WamEnumConstant(42) QUICK_PROMOTION,
+    @WamEnumConstant(43) CALLS_TAB,
+    @WamEnumConstant(44) FMX_NOT_META_VERIFIED_BOTTOM_SHEET,
+    @WamEnumConstant(45) BUSINESS_BROADCAST_HOME,
+    @WamEnumConstant(46) USERNAME_SCREEN,
+    @WamEnumConstant(47) BUSINESS_BROADCAST_THREAD,
+    @WamEnumConstant(48) BUSINESS_BROADCAST_TRIAL_CONSENT_SCREEN,
+    @WamEnumConstant(49) BUSINESS_BROADCAST_TRIAL_SCREEN,
+    @WamEnumConstant(50) EDIT_BUSINESS_PROFILE,
+    @WamEnumConstant(51) ADVANCED_BUSINESS_TOOLS,
+    @WamEnumConstant(52) MESSAGE_CAPPING_INFO,
+    @WamEnumConstant(53) MV_NEW_MESSAGE_CAPPING_EDUCATION,
+    @WamEnumConstant(54) BUSINESS_BROADCAST_REVIEW_SCREEN,
+    @WamEnumConstant(55) BUSINESS_BROADCAST_CREDITS_INFO_BOTTOMSHEET,
+    @WamEnumConstant(56) MV_NEW_MESSAGE_CHAT_EDUCATION_SCREEN,
+    @WamEnumConstant(57) CONVERSATION_THREAD
+}

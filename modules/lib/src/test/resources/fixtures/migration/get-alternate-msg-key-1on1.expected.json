@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "migration/get-alternate-msg-key-1on1",
+  "expression": "JSON.stringify((() => {\n  const Utils = require('WAWebLidMigrationUtils');\n  const MsgKey = require('WAWebMsgKey');\n  const WidFactory = require('WAWebWidFactory');\n  const me = require('WAWebUserPrefsMeUser');\n  const w = s => WidFactory.createWid(s);\n  const myPn = String(me.getMaybeMePnUser());\n  const myLid = String(me.getMaybeMeLidUser());\n  const cases = [\n    {\n      label: 'me_pn_remote_to_lid',\n      input: { fromMe: true, remote: w(myPn), id: 'ABC', participant: null }\n    },\n    {\n      label: 'me_lid_remote_to_pn',\n      input: { fromMe: true, remote: w(myLid), id: 'XYZ', participant: null }\n    },\n    {\n      label: 'unmapped_peer_pn_remote',\n      input: { fromMe: false, remote: w('12025550100@c.us'), id: 'P1', participant: null }\n    }\n  ];\n  return cases.map(c => {\n    try {\n      const k = new MsgKey(c.input);\n      const alt = Utils.getAlternateMsgKey(k);\n      return {\n        label: c.label,\n        inRemote: String(c.input.remote),\n        outRemote: alt ? String(alt.remote) : null,\n        outId: alt ? alt.id : null,\n        outFromMe: alt ? alt.fromMe : null\n      };\n    } catch (e) {\n      return { label: c.label, error: String(e && e.message || e) };\n    }\n  });\n})())",
+  "result": {
+    "resultType": "string",
+    "value": "[{\"label\":\"me_pn_remote_to_lid\",\"inRemote\":\"393495089819@c.us\",\"outRemote\":\"258252122116273@lid\",\"outId\":\"ABC\",\"outFromMe\":true},{\"label\":\"me_lid_remote_to_pn\",\"inRemote\":\"258252122116273@lid\",\"outRemote\":\"393495089819@c.us\",\"outId\":\"XYZ\",\"outFromMe\":true},{\"label\":\"unmapped_peer_pn_remote\",\"inRemote\":\"12025550100@c.us\",\"outRemote\":null,\"outId\":null,\"outFromMe\":null}]",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

@@ -4,9 +4,19 @@
     <groupId>com.github.auties00</groupId>
     <artifactId>cobalt</artifactId>
     <version>0.1.0</version>
+    <packaging>pom</packaging>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Standalone fully-featured WhatsApp Web API for Java and Kotlin</description>
     <url>https://github.com/Auties00/Cobalt</url>
+
+    <modules>
+        <module>modules/wam-core</module>
+        <module>modules/source-meta</module>
+        <module>modules/wire</module>
+        <module>modules/telemetry-core</module>
+        <module>modules/stanza-core</module>
+        <module>modules/lib</module>
+    </modules>
 
     <developers>
         <developer>
@@ -48,7 +58,130 @@
         </repository>
     </repositories>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>25</java.version>
+        <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
+        <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
+        <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
+        <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
+        <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
+        <maven.staging.plugin.version>0.8.0</maven.staging.plugin.version>
+        <zxing.version>3.5.1</zxing.version>
+        <json.version>2.0.57</json.version>
+        <protoc.version>3.4.5</protoc.version>
+        <junit.version>5.10.0-M1</junit.version>
+        <libsignal.version>0.0.5</libsignal.version>
+        <curve25519.version>3.0.1</curve25519.version>
+        <linkpreview.version>2.3</linkpreview.version>
+        <vcard.version>0.12.1</vcard.version>
+        <qr.terminal.version>3.0</qr.terminal.version>
+        <libphonenumber.version>9.0.4</libphonenumber.version>
+        <maven.versions.version>2.15.0</maven.versions.version>
+        <sl4j.version>2.0.13</sl4j.version>
+        <apk.parser.version>2.6.10</apk.parser.version>
+        <collections.version>1.0.0</collections.version>
+        <javapoet.version>0.6.0</javapoet.version>
+        <jmh.version>1.37</jmh.version>
+        <selenium.version>4.27.0</selenium.version>
+        <bouncycastle.version>1.80</bouncycastle.version>
+        <pdfbox.version>3.0.5</pdfbox.version>
+        <h2.mvstore.version>2.3.232</h2.mvstore.version>
+        <vigil.version>1.0.0</vigil.version>
+        <warden.version>1.1.0</warden.version>
+        <srtp.version>1.0.0</srtp.version>
+        <sctp.version>1.0.0</sctp.version>
+    </properties>
+
     <profiles>
+        <!--
+            Javadoc reference linter. Opt-in, never bound to a normal build.
+            Runs the standard doclet with the doclint "reference" group only,
+            so it fails the build when a {@link}, {@linkplain}, {@value},
+            @see, @param, @throws, or @exception in any doc comment points at
+            a program element that does not resolve (wrong class, renamed
+            method, bad signature, stale parameter name). It does NOT enforce
+            presence of comments (the "missing" group, deliberately left off).
+
+            Uses source level 25 plus enable-preview (NOT the release flag,
+            which is incompatible with enable-preview) and pulls in the
+            incubator vector module so preview/incubator sources parse.
+            show=private so references inside private-member javadoc are
+            checked too. See the additionalOptions below for the exact flags.
+
+            The target module MUST compile for the result to be accurate.
+            javadoc resolves intra-module references through the live source
+            roots, which only include the generated Builder sources after the
+            annotation processor has run during compile. Running
+            javadoc-no-fork without a successful compile reports false
+            "reference not found" for classes that genuinely exist, so always
+            run compile in the same invocation and fix any compile break first.
+
+            Usage:
+                whole project
+                    mvn -Pjavadoc-check -fae compile javadoc:javadoc-no-fork -DskipTests
+                    (-fae reports every module; a module that depends on a
+                     failed module is skipped, so fix upstream modules first.)
+
+                one module in isolation (not blocked by other modules' refs)
+                    mvn -DskipTests -pl modules/lib -am install
+                    mvn -Pjavadoc-check -pl modules/lib compile javadoc:javadoc-no-fork -DskipTests
+
+                narrow to a package   add -Dsubpackages=com.github.auties00.cobalt.stanza
+                exclude packages      add -DexcludePackageNames=com.github.auties00.cobalt.call.*
+        -->
+        <profile>
+            <id>javadoc-check</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.11.2</version>
+                        <configuration>
+                            <source>${java.version}</source>
+                            <show>private</show>
+                            <doclint>reference</doclint>
+                            <failOnError>true</failOnError>
+                            <failOnWarnings>false</failOnWarnings>
+                            <quiet>true</quiet>
+                            <detectLinks>false</detectLinks>
+                            <detectJavaApiLink>false</detectJavaApiLink>
+                            <detectOfflineLinks>false</detectOfflineLinks>
+                            <additionalOptions>
+                                <additionalOption>--add-modules jdk.incubator.vector</additionalOption>
+                                <additionalOption>-Xmaxerrs 100000</additionalOption>
+                                <additionalOption>-Xmaxwarns 100000</additionalOption>
+                            </additionalOptions>
+                            <!--
+                                Register the three JDK-standard custom tags so the
+                                doclet does not emit "unknown tag" warnings; the
+                                reference group does not need them, but it keeps the
+                                log free of noise unrelated to broken references.
+                            -->
+                            <tags>
+                                <tag>
+                                    <name>apiNote</name>
+                                    <placement>a</placement>
+                                    <head>API Note:</head>
+                                </tag>
+                                <tag>
+                                    <name>implSpec</name>
+                                    <placement>a</placement>
+                                    <head>Implementation Requirements:</head>
+                                </tag>
+                                <tag>
+                                    <name>implNote</name>
+                                    <placement>a</placement>
+                                    <head>Implementation Note:</head>
+                                </tag>
+                            </tags>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>sign</id>
             <activation>
@@ -135,183 +268,5 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
-            <id>uber-jar</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <configuration>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>make-assembly</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
-
-    <packaging>jar</packaging>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>25</java.version>
-        <maven.surefire.plugin.version>3.0.0-M9</maven.surefire.plugin.version>
-        <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
-        <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
-        <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
-        <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
-        <maven.staging.plugin.version>0.8.0</maven.staging.plugin.version>
-        <zxing.version>3.5.1</zxing.version>
-        <json.version>2.0.57</json.version>
-        <protoc.version>3.4.5</protoc.version>
-        <junit.version>5.10.0-M1</junit.version>
-        <libsignal.version>0.0.4</libsignal.version>
-        <curve25519.version>3.0.1</curve25519.version>
-        <lazysodium.version>5.1.4</lazysodium.version>
-        <linkpreview.version>2.3</linkpreview.version>
-        <vcard.version>0.12.1</vcard.version>
-        <qr.terminal.version>2.2</qr.terminal.version>
-        <libphonenumber.version>9.0.4</libphonenumber.version>
-        <maven.versions.version>2.15.0</maven.versions.version>
-        <plist.version>1.27</plist.version>
-        <sl4j.version>2.0.13</sl4j.version>
-        <apk.parser.version>2.6.10</apk.parser.version>
-        <collections.version>1.0.0</collections.version>
-    </properties>
-
-    <build>
-        <plugins>
-            <!-- Compile the project-->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven.compiler.plugin.version}</version>
-                <configuration>
-                    <source>25</source>
-                    <target>25</target>
-                    <release>${java.version}</release>
-                    <annotationProcessorPaths>
-                        <annotationProcessorPath>
-                            <groupId>com.github.auties00</groupId>
-                            <artifactId>protobuf-serialization-plugin</artifactId>
-                            <version>${protoc.version}</version>
-                        </annotationProcessorPath>
-                    </annotationProcessorPaths>
-                    <compilerArgs>--enable-preview</compilerArgs>
-                </configuration>
-            </plugin>
-
-            <!-- Test the library to be sure that everything works-->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven.surefire.plugin.version}</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-engine</artifactId>
-                        <version>${junit.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-        </plugins>
-    </build>
-
-    <dependencies>
-        <!-- Generate and print QR code (Web API) -->
-        <dependency>
-            <groupId>com.google.zxing</groupId>
-            <artifactId>javase</artifactId>
-            <version>${zxing.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>qr-terminal</artifactId>
-            <version>${qr.terminal.version}</version>
-        </dependency>
-
-        <!-- Cryptography (used by Whatsapp) -->
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>libsignal</artifactId>
-            <version>${libsignal.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>curve25519</artifactId>
-            <version>${curve25519.version}</version>
-        </dependency>
-
-        <!-- Protobuf serialization (used by Whatsapp) -->
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>protobuf-base</artifactId>
-            <version>${protoc.version}</version>
-        </dependency>
-
-        <!-- JSON serialization (used by Whatsapp) -->
-        <dependency>
-            <groupId>com.alibaba.fastjson2</groupId>
-            <artifactId>fastjson2</artifactId>
-            <version>${json.version}</version>
-        </dependency>
-
-        <!-- Parse phone numbers (Mobile API) -->
-        <dependency>
-            <groupId>com.googlecode.libphonenumber</groupId>
-            <artifactId>libphonenumber</artifactId>
-            <version>${libphonenumber.version}</version>
-        </dependency>
-
-        <!-- Parse Android APK (Mobile API) -->
-        <dependency>
-            <groupId>net.dongliu</groupId>
-            <artifactId>apk-parser</artifactId>
-            <version>${apk.parser.version}</version>
-        </dependency>
-
-        <!-- Generate message previews -->
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>link-preview</artifactId>
-            <version>${linkpreview.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.googlecode.ez-vcard</groupId>
-            <artifactId>ez-vcard</artifactId>
-            <version>${vcard.version}</version>
-        </dependency>
-
-        <!-- Store messages in memory -->
-        <dependency>
-            <groupId>com.github.auties00</groupId>
-            <artifactId>collections</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-
-        <!-- Testing framework -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 </project>

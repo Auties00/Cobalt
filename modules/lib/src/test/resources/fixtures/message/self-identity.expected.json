@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "message/self-identity",
+  "expression": "JSON.stringify((() => {\n    const me = require('WAWebUserPrefsMeUser');\n    return {\n      mePn: String(me.getMaybeMePnUser()),\n      meLid: String(me.getMaybeMeLidUser()),\n      meDevicePn: String(me.getMaybeMeDevicePn()),\n      meDeviceLid: String(me.getMaybeMeDeviceLid()),\n      meDeviceId: me.getMaybeMeDeviceId(),\n    };\n  })())",
+  "result": {
+    "resultType": "string",
+    "value": "{\"mePn\":\"393495089819@c.us\",\"meLid\":\"258252122116273@lid\",\"meDevicePn\":\"393495089819:77@c.us\",\"meDeviceLid\":\"258252122116273:77@lid\",\"meDeviceId\":77}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

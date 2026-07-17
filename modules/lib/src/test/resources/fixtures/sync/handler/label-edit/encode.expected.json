@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/label-edit/encode",
+  "expression": "JSON.stringify(globalThis.__captures5['handler/label-edit/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"encoded\":\"CIDiz6oGchUKCUN1c3RvbWVycxAFGAAgADABOAA=\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

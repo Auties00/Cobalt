@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "device/adv-decode-self-oracle",
+  "expression": "String(window.__advFull)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"advEncodedIdentityBase64\":\"ChEInOSaQxCqy4jQBhgFIAAoABIgsYZgai71NR+JZBqn1cp0Lp7vsmpryF7WyXKSKHOiz2IaQCf4O6TvFWTJejy2s/j9rv7UQvrlQDXK0ajr3ybAArVvU7FJa6seCx4Zy+BnPmrAbbD6DvDDTgMRJjXpcSNSKAQiQA4q7KXf1ZcnQ8SMFV+LntRmlNgtpL+568wI/8VNA/7Fk+zVHo/WOpz+e3geVLGzEh+ot/WU+ULz267l75Y8wIE=\",\"primaryIdentityKeyBase64\":\"sYZgai71NR+JZBqn1cp0Lp7vsmpryF7WyXKSKHOiz2I=\",\"primaryIdentityKeyLength\":32,\"signedKeyIndexBytesBase64\":\"ChUInOSaQxDozIjQBhgGIgQAAQUGKAASQBCSm04gxPqzczbrBDvartFfp2biYhaqn8AGb8y5U8ig8twVS8f3bbihJshGvvePEe4lCQ+0Bv33TtTv+0Xh/wM=\",\"decoded\":{\"rawId\":140947996,\"timestamp\":1778525800,\"validIndexes\":[0,1,5,6],\"currentIndex\":6,\"accountType\":0}}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

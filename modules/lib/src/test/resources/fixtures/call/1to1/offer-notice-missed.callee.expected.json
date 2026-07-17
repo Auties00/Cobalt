@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "primary",
+  "topic": "call/1to1/offer-notice-missed.callee",
+  "expression": "String(JSON.stringify({ noticeSeen: false }))",
+  "result": {
+    "resultType": "string",
+    "value": "{\"noticeSeen\":false}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

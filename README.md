@@ -1,1180 +1,522 @@
-# Cobalt
+<!-- Link + badge definitions (maintained in one place) -->
+[maven-central]: https://central.sonatype.com/artifact/com.github.auties00/cobalt-lib
+[javadoc]: https://javadoc.io/doc/com.github.auties00/cobalt-lib
+[jitpack]: https://jitpack.io/#Auties00/Cobalt
+[license]: LICENSE
+[issues]: https://github.com/Auties00/Cobalt/issues
+[discussions]: https://github.com/Auties00/Cobalt/discussions
+[sponsor]: https://www.paypal.me/AutiesDevelopment
+[cloud-api]: https://developers.facebook.com/docs/whatsapp/cloud-api
+[java25]: https://openjdk.org/projects/jdk/25/
 
-> **_IMPORTANT:_** The library is currently being rewritten to prepare for a stable release. The code on the master branch is under active development.
+[badge-maven]: https://img.shields.io/maven-central/v/com.github.auties00/cobalt-lib?style=for-the-badge&logo=apachemaven&label=MAVEN%20CENTRAL&labelColor=0b0e14&color=2f81f7
+[badge-javadoc]: https://img.shields.io/badge/JAVADOC-read-2f81f7?style=for-the-badge&logo=readthedocs&logoColor=white&labelColor=0b0e14
+[badge-license]: https://img.shields.io/badge/LICENSE-MIT-2f81f7?style=for-the-badge&labelColor=0b0e14
+[badge-java]: https://img.shields.io/badge/JAVA-25-f89820?style=for-the-badge&logo=openjdk&logoColor=white&labelColor=0b0e14
 
-Whatsapp4j has been renamed to Cobalt to comply with an official request coming from Whatsapp.
-To be clear, this library is not affiliated with Whatsapp LLC in any way.
-This is a personal project that I maintain in my free time
+<div align="center">
 
-### What is Cobalt
+<br/>
 
-Cobalt is a library built to interact with Whatsapp.
-It can be used with:
-1. Whatsapp Web (Companion)
-2. Whatsapp Mobile (Personal and Business)
+# C O B A L T
 
-### Donations
+### Standalone, unofficial, fully-featured WhatsApp Web, Desktop, Mobile and Cloud API for JVM languages
 
-If you like my work, you can become a sponsor here on GitHub or tip me through:
-- [Paypal](https://www.paypal.me/AutiesDevelopment)
+<br/>
 
-I can also work on sponsored features and/or projects!
+[![Java][badge-java]][java25]
+[![License][badge-license]][license]
+[![Maven Central][badge-maven]][maven-central]
+[![Javadoc][badge-javadoc]][javadoc]
 
-### Java version
+</div>
 
-This library requires at least [Java 21](https://openjdk.java.net/projects/jdk/21/).
+## Disclaimer
 
-GraalVM native compilation is supported!
+Cobalt is an independent, unofficial project. It is not affiliated with, authorized, maintained, sponsored, or endorsed by WhatsApp LLC or Meta Platforms, Inc., or any of their affiliates. All product and company names are trademarks of their respective holders.
 
-### Breaking changes policy
+The reverse-engineered Linked transport talks to WhatsApp's private protocol. WhatsApp does not support third-party clients, so this transport may breach its Terms of Service, lead to account restrictions, or stop working at any time. Good-faith use of your own account carries little risk, but sending unsolicited or automated bulk messages, especially from new numbers, is exactly what WhatsApp's anti-spam systems act on. Use Cobalt responsibly and at your own risk. For commercial messaging, prefer the official Cloud API.
 
-Until the library doesn't reach release 1.0, there will be major breaking changes between each release.
-This is needed to finalize the design of the API.
-After this milestone, breaking changes will be present only in major releases.
+---
 
-### Can this library get my device banned?
+## What is Cobalt
 
-While there is no risk in using this library with your main account, keep in mind that Whatsapp has anti-spam measures for their web client.
-If you add a participant from a brand-new number to a group, it will most likely get you banned.
-If you compile the library yourself, don't run the CI on a brand-new number, or it will get banned for spamming too many requests(the CI has to test that all the library works).
-In short, if you use this library without a malicious intent, you will never get banned.
+Cobalt lets a JVM application be a WhatsApp client. It supports two completely different ways of reaching WhatsApp, behind one shared message model:
 
-### How to install
+- **The Linked client** is a clean-room reimplementation of the real WhatsApp Web, Desktop and Mobile apps. No browser, no Selenium, no bridge process.
+- **The Cloud client** drives Meta's official, hosted [WhatsApp Cloud API][cloud-api] over plain HTTPS, with a built-in webhook server for inbound traffic.
 
-#### Maven
+> **_IMPORTANT:_** Cobalt is pre-`1.0`: expect breaking changes between releases until the API is frozen.
+
+---
+
+## Donations
+
+Maintaining Cobalt is an enormous amount of work which I do in my free time because I really like reverse engineering.
+
+If you like my work, you can support me through [GitHub Sponsors](https://github.com/sponsors/Auties00).
+
+---
+
+## How to contribute
+
+Cobalt welcomes contributions from anyone. Reimplementing WhatsApp across Web, Desktop, Mobile and the Cloud API is an enormous job: there are always features to add, behaviours to verify against the real clients, and platforms to keep up with. You do not need to be a reverse engineer to help.
+Performance is an absolute priority for Cobalt; full feature coverage and stability are priorities as well.
+
+### AI contributions
+
+AI-generated code is permitted, but the person opening the PR is accountable for every line in it, and it will be reviewed in depth against Cobalt's priorities like any other change.
+
+No AI-generated commit messages, issue bodies, PR descriptions, discussion posts, or review comments. 
+Human-to-human interactions must remain in natural language: I prefer to talk with a person, and I would rather read confused human text than an LLM's.
+It's also recommended to not translate your messages into other languages using translators or LLMs, as there is a concrete chance the person on the other end
+understands your language, even if it's not their first language, and if they don't or prefer a translation, they can pick their own software to translate the message.
+
+### Tooling
+
+#### Codegen
+
+Some parts of Cobalt are auto-generated by deterministic extractors that run against the real WhatsApp Web client, so they can be regenerated whenever WhatsApp ships a new revision:
+
+- **Protobuf definitions**: [tools/web/proto-extractor](tools/web/proto-extractor) extracts every protobuf message and enum from WhatsApp Web's JavaScript chunks and WASM binaries into a single `whatsapp.proto`, the reference spec used to keep the hand-written domain classes in [modules/model](modules/model) complete and up to date.
+- **AB Props**: [tools/web/ab-props-codegen](tools/web/ab-props-codegen) extracts the A/B feature-flag definitions (name, type, default value) from a live bundle and regenerates the `ABProp` constants in [modules/model](modules/model).
+- **GraphQL request/response models**: [tools/web/graphql-extractor](tools/web/graphql-extractor) dumps the spec of every GraphQL operation (id, kind, variables, transport) from the persisted-query layer; the typed request and response models in [modules/lib](modules/lib) are validated against it.
+- **WAM (WhatsApp Metrics)**: [tools/web/wam-codegen](tools/web/wam-codegen) extracts the telemetry event and enum schemas from the WAM runtime and regenerates the per-event Java classes consumed by the [modules/wam-core](modules/wam-core) annotation processor.
+
+Every extractor is a Node project: `npm install`, then `npm run build`, then `npm start`.
+
+#### MCP Server
+
+I understand that very few people have in-depth reverse-engineering skills across so many platforms, but I'd still want people who have good problem-solving abilities to be able to contribute.
+That is why I built the **Cobalt MCP** ([tools/web/mcp-server](tools/web/mcp-server)).
+
+The first time you want to use the MCP, you need to build it:
+
+```bash
+cd tools/web/mcp-server
+npm install
+npx playwright install chromium
+npm run build
+```
+
+After the build, you can run it:
+
+```bash
+cd tools/web/mcp-server
+npm start
+```
+
+Your agent will automatically recognize the MCP server if your working directory is Cobalt's.
+
+#### Agentic Validator
+
+Cobalt also ships a `/validate` command for agentic coding tools ([.claude/commands/validate.md](.claude/commands/validate.md)). It orchestrates a fleet of agents that try to prove Cobalt implements every WhatsApp feature correctly, on two levels:
+
+- **Source parity**: each Cobalt module is checked against the behaviour of its WhatsApp counterpart.
+- **Observable parity**: the stanzas, events and requests Cobalt produces for a given input are diffed against what the real WhatsApp runtime produces for the same input, captured live through the MCP.
+
+To be transparent, this is highly experimental, something I built because I like trying things out and wanted to see whether it could help us maintain a repository of this size long term. 
+Treat it as an experiment, not as a required part of the workflow, and consider it has never been run end to end (it's incredibly expensive).
+If you want to design something better, feel free to try to do so.
+
+---
+
+## Install
+
+Cobalt targets **Java 25**. Depend on `com.github.auties00:cobalt-lib`.
+
+**Maven**
+
 ```xml
 <dependency>
     <groupId>com.github.auties00</groupId>
-    <artifactId>cobalt</artifactId>
-    <version>0.0.10</version>
+    <artifactId>cobalt-lib</artifactId>
+    <version>0.1.0</version>
 </dependency>
 ```
 
-#### Gradle
+**Gradle (Kotlin DSL)**
 
-- Groovy DSL
-    ```groovy
-    implementation 'com.github.auties00:cobalt:0.0.10'
-    ```
+```kotlin
+implementation("com.github.auties00:cobalt-lib:0.1.0")
+```
 
-- Kotlin DSL
-    ```groovy
-    implementation("com.github.auties00:cobalt:0.0.10")
-    ```
+**Gradle (Groovy DSL)**
 
-### Javadocs & Documentation
+```groovy
+implementation 'com.github.auties00:cobalt-lib:0.1.0'
+```
 
-Javadocs for Cobalt are available [here](https://www.javadoc.io/doc/com.github.auties00/cobalt/0.0.10).
-The documentation for this project reaches most of the publicly available APIs(i.e. public members in exported packages), but sometimes the Javadoc may be incomplete
-or some methods could be absent from the project's README. If you find any of the latter, know that even small contributions are welcomed!
+Snapshots and per-commit builds are available through [JitPack][jitpack].
 
-### How to contribute
+### Native libraries
 
-As of today, no additional configuration or artifact building is needed to edit this project.
-I recommend using the latest version of IntelliJ, though any other IDE should work.
-If you are not familiar with git, follow these short tutorials in order:
+Calls and media use native components. 
+By default, nothing ships in the jar: the right binary for the host is downloaded on first use, SHA-256 verified, and cached under `~/.cobalt/natives/`. That is all a normal setup needs.
 
-1. [Fork this project](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo)
-2. [Clone the new repo](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository)
-3. [Create a new branch](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/managing-branches#creating-a-branch)
-4. Once you have implemented the new feature, [create a new merge request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
+If you want to have the native libraries bundled in the JAR, add the vendored bundle for each platform you target. The bundles are classified artifacts of `cobalt-lib`, one per target. Expand the block for your platform to get the Maven and Gradle snippets:
 
-Check the frida module to understand how I go about reversing features
-
-### Disclaimer about async operations
-This library heavily depends on async operations using the CompletableFuture construct.
-Remember to handle them as your application will terminate without doing anything if the main thread is not executing any task.
-Please do not open redundant issues on GitHub because of this.
-
-### How to create a connection
 <details>
-  <summary>Detailed Walkthrough</summary>
+<summary><b>Windows x86-64</b></summary>
 
+**Maven**
 
-To create a new connection, start by creating a builder with the api you need:
-- Web
-    ```java
-    Whatsapp.webBuilder()
-    ```
-- Mobile
-  ```java
-    Whatsapp.mobileBuilder()
-  ```
-If you want to use a custom serializer, specify it:
-  ```java
-  .serializer(new CustomControllerSerializer())
-  ```  
-Now select the type of connection that you need:
-- Create a fresh connection
-  ```java
-  .newConnection(someUuid)
-  ```   
-- Retrieve a connection by id if available, otherwise create a new one
-  ```java
-  .newConnection(someUuid)
-  ```
-- Retrieve a connection by phone number if available, otherwise create a new one
-  ```java
-  .newConnection(phoneNumber)
-  ```
-- Retrieve a connection by an alias if available, otherwise create a new one
-  ```java
-  .newConnection(alias)
-  ```
-- Retrieve a connection by id if available, otherwise returns an empty Optional
-  ```java
-  .newOptionalConnection(someUuid)
-  ```
-- Retrieve the first connection that was serialized if available, otherwise create a new one
-  ```java
-  .firstConnection()
-  ```
-- Retrieve the first connection that was serialized if available, otherwise returns an empty Optional
-  ```java
-  .firstOptionalConnection()
-  ```
-- Retrieve the last connection that was serialized if available, otherwise create a new one
-  ```java
-  .lastConnection()
-  ```
-- Retrieve the last connection that was serialized if available, otherwise returns an empty Optional
-  ```java
-  .lastOptionalConnection()
-  ```
-You can now customize the API with these options:
-- name - The device's name for Whatsapp Web, the push name for Whatsapp's Mobile
-  ```java
-  .name("Some Custom Name :)")
-  ```
-- version - The version of Whatsapp to use
-  ```java
-  .version(new Version("x.xx.xx"))
-  ```
-- autodetectListeners - Whether listeners annotated with `@RegisterListener` should automatically be registered
-  ```java
-  .autodetectListeners(true)
-  ```
-- whatsappMessagePreviewHandler - Whether a media preview should be generated for text messages containing links
-  ```java
-  .whatsappMessagePreviewHandler(TextPreviewSetting.ENABLED_WITH_INFERENCE)
-  ```
-- checkPatchMacs - Whether patch macs coming from app state pulls should be validated
-  ```java
-  .checkPatchMacs(checkPatchMacs)
-  ```
-- proxy - The proxy to use for the socket connection
-  ```java
-  .proxy(someProxy)
-  ```
+```xml
+<dependency>
+    <groupId>com.github.auties00</groupId>
+    <artifactId>cobalt-lib</artifactId>
+    <version>0.1.0</version>
+    <classifier>natives-windows-x86_64</classifier>
+    <scope>runtime</scope>
+</dependency>
+```
 
-There are also platform specific options:
-1. Web
-    - historyLength: The amount of messages to sync from the companion device
-      ```java
-      .historyLength(WebHistoryLength.THREE_MONTHS)
-      ```
-2. Mobile
-    - device: the device you want to fake:
-      ```java
-      .device(CompanionDevice.android(false)) // Standard Android
-      .device(CompanionDevice.android(true)) //Business android
-      .device(CompanionDevice.ios(false)) // Standard iOS
-      .device(CompanionDevice.ios(true)) // Business iOS
-      .device(CompanionDevice.kaiOs()) // Standard KaiOS
-       ```
-    - businessCategory: the category of your business account
-      ```java
-      .businessCategory(new BusinessCategory(id, name))
-       ```
-    - businessEmail: the email of your business account
-      ```java
-      .businessEmail("email@domanin.com")
-       ```
-    - businessWebsite: the website of your business account
-      ```java
-      .businessWebsite("https://google.com")
-       ```
-    - businessDescription: the description of your business account
-      ```java
-      .businessDescription("A nice description")
-       ```
-    - businessLatitude: the latitude of your business account
-      ```java
-      .businessLatitude(37.386051)
-       ```
-    - businessLongitude: the longitude of your business account
-      ```java
-      .businessLongitude(-122.083855)
-       ```
-    - businessAddress: the address of your business account
-      ```java
-      .businessAddress("1600 Amphitheatre Pkwy, Mountain View")
-       ```
+**Gradle (Kotlin DSL)**
 
-> **_IMPORTANT:_** All options are serialized: there is no need to specify them again when deserializing an existing sessionRecord
+```kotlin
+runtimeOnly("com.github.auties00:cobalt-lib:0.1.0:natives-windows-x86_64")
+```
 
-Finally select the registration status of your sessionRecord:
-- Creates a new registered sessionRecord: this means that the QR code was already scanned / the OTP was already sent to Whatsapp
-  ```java
-  .registered()
-  ```
-- Creates a new unregistered sessionRecord: this means that the QR code wasn't scanned / the OTP wasn't sent to the companion's phone via SMS/Call/OTP
+**Gradle (Groovy DSL)**
 
-  If you are using the Web API, you can either register via QR code:
-  ```java
-  .unregistered(QrHandler.toTerminal())
-  ```  
-  or with a pairing code(new feature):
-  ```java
-  .unregistered(yourPhoneNumberWithCountryCode, PairingCodeHandler.toTerminal())
-  ```  
-  Otherwise, if you are using the mobile API, you can decide if you want to receive an SMS, a call or an OTP:
-  ```java
-  .verificationCodeMethod(VerificationCodeMethod.SMS)
-  ```  
-  Then provide a supplier for that verification method:
-  ```java
-  .verificationCodeSupplier(() -> yourAsyncOrSyncLogic())
-  ```
-  Finally, register:
-  ```java
-  .register(yourPhoneNumberWithCountryCode)
-  ```
+```groovy
+runtimeOnly 'com.github.auties00:cobalt-lib:0.1.0:natives-windows-x86_64'
+```
 
-Now you can connect to your sessionRecord:
-  ```java
-  .connect()
-  ```
-to connect to Whatsapp.
-Remember to handle the result using, for example, `join` to await the connection's result.
-Finally, if you want to pause the current thread until the connection is closed, use:
-  ```java
-  .awaitDisconnection()
-  ```
 </details>
 
 <details>
-  <summary>Web QR Pairing Example</summary>
+<summary><b>Windows ARM64</b></summary>
 
-  ```java
-  Whatsapp.webBuilder() // Use the Web api
-        .newConnection() // Create a new connection
-        .unregistered(QrHandler.toTerminal()) // Print the QR to the terminal
-        .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
-        .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
-        .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
-        .connect() // Connect to Whatsapp asynchronously
-        .join() // Await the result
-        .awaitDisconnection(); // Wait 
-  ```
+**Maven**
+
+```xml
+<dependency>
+    <groupId>com.github.auties00</groupId>
+    <artifactId>cobalt-lib</artifactId>
+    <version>0.1.0</version>
+    <classifier>natives-windows-aarch64</classifier>
+    <scope>runtime</scope>
+</dependency>
+```
+
+**Gradle (Kotlin DSL)**
+
+```kotlin
+runtimeOnly("com.github.auties00:cobalt-lib:0.1.0:natives-windows-aarch64")
+```
+
+**Gradle (Groovy DSL)**
+
+```groovy
+runtimeOnly 'com.github.auties00:cobalt-lib:0.1.0:natives-windows-aarch64'
+```
+
 </details>
 
 <details>
-  <summary>Web Pairing Code Example</summary>
+<summary><b>Linux x86-64</b></summary>
 
-  ```java
-  System.out.println("Enter the phone number(include the country code prefix, but no +, spaces or parenthesis):")
-var scanner = new Scanner(System.in);
-var phoneNumber = scanner.nextLong();
-  Whatsapp.webBuilder() // Use the Web api
-        .newConnection() // Create a new connection
-        .unregistered(phoneNumber, PairingCodeHandler.toTerminal()) // Print the pairing code to the terminal
-        .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
-        .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
-        .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
-        .connect() // Connect to Whatsapp asynchronously
-        .join() // Await the result
-        .awaitDisconnection(); // Wait 
-  ```
+**Maven**
+
+```xml
+<dependency>
+    <groupId>com.github.auties00</groupId>
+    <artifactId>cobalt-lib</artifactId>
+    <version>0.1.0</version>
+    <classifier>natives-linux-x86_64</classifier>
+    <scope>runtime</scope>
+</dependency>
+```
+
+**Gradle (Kotlin DSL)**
+
+```kotlin
+runtimeOnly("com.github.auties00:cobalt-lib:0.1.0:natives-linux-x86_64")
+```
+
+**Gradle (Groovy DSL)**
+
+```groovy
+runtimeOnly 'com.github.auties00:cobalt-lib:0.1.0:natives-linux-x86_64'
+```
+
 </details>
 
 <details>
-  <summary>Mobile Example</summary>
+<summary><b>Linux ARM64</b></summary>
 
-  ```java
-  System.out.println("Enter the phone number(include the country code prefix, but no +, spaces or parenthesis):")
-var scanner = new Scanner(System.in);
-var phoneNumber = scanner.nextLong();
-  Whatsapp.mobileBuilder() // Use the Mobile api
-        .newConnection() // Create a new connection
-        .device(CompanionDevice.ios(false)) // Use a non-business iOS account
-        .unregistered() // If the connection was just created, it needs to be registered
-        .verificationCodeMethod(VerificationCodeMethod.SMS) // If the connection was just created, send an SMS OTP
-        .verificationCodeSupplier(() -> { // Called when the OTP needs to be sent to Whatsapp
-        System.out.println("Enter OTP: ");
-var scanner = new Scanner(System.in);
-            return scanner.nextLine();
-        })
-                .register(phoneNumber) // Register the phone value asynchronously, if necessary
-        .join() // Await the result
-        .whatsapp() // Access the Whatsapp instance
-        .addLoggedInListener(api -> System.out.printf("Connected: %s%n", api.store().privacySettings())) // Print a message when connected
-        .addDisconnectedListener(reason -> System.out.printf("Disconnected: %s%n", reason)) // Print a message when disconnected
-        .addNewChatMessageListener(message -> System.out.printf("New message: %s%n", message.toJson())) // Print a message when a new chat message arrives
-        .connect() // Connect to Whatsapp asynchronously
-        .join() // Await the result
-        .awaitDisconnection(); // Wait 
-  ```
+**Maven**
+
+```xml
+<dependency>
+    <groupId>com.github.auties00</groupId>
+    <artifactId>cobalt-lib</artifactId>
+    <version>0.1.0</version>
+    <classifier>natives-linux-aarch64</classifier>
+    <scope>runtime</scope>
+</dependency>
+```
+
+**Gradle (Kotlin DSL)**
+
+```kotlin
+runtimeOnly("com.github.auties00:cobalt-lib:0.1.0:natives-linux-aarch64")
+```
+
+**Gradle (Groovy DSL)**
+
+```groovy
+runtimeOnly 'com.github.auties00:cobalt-lib:0.1.0:natives-linux-aarch64'
+```
+
 </details>
 
-### How to close a connection
+<details>
+<summary><b>macOS Intel</b></summary>
 
-There are three ways to close a connection:
+**Maven**
 
-1. Disconnect
-
-   ```java
-   api.disconnect();
-   ```
-   > **_IMPORTANT:_** The sessionRecord remains valid for future uses
-
-2. Reconnect
-
-   ```java
-   api.reconnect();
-   ```
-   > **_IMPORTANT:_** The sessionRecord remains valid for future uses
-
-3. Log out
-
-   ```java
-   api.logout();
-   ```
-   > **_IMPORTANT:_** The sessionRecord doesn't remain valid for future uses
-
-### What is a listener and how to register it
-
-Listeners are crucial to handle events related to Whatsapp and implement logic for your application.
-Listeners can be used either as:
-
-1. Standalone concrete implementation
-
-   If your application is complex enough,
-   it's preferable to divide your listeners' logic across multiple specialized classes.
-   To create a new concrete listener, declare a class or record that implements the Listener interface:
-
-   ```java
-import com.github.auties00.cobalt.listener.WhatsAppClientListener;
-
-   public class MyListener implements com.github.auties00.cobalt.listener.WhatsAppClientListener {
-    @Override
-    public void onLoggedIn() {
-        System.out.println("Hello :)");
-    }
-   }
-   ```
-
-   Remember to register this listener:
-
-   ```java
-   api.addListener(new MyListener());
-   ```
-
-2. Functional interface
-
-   If your application is very simple or only requires this library in small operations,
-   it's preferable to add a listener using a lambda instead of using full-fledged classes.
-   To declare a new functional listener, call the method add followed by the name of the listener that you want to implement without the on suffix:
-   ```java
-   api.addDisconnectedListener(reason -> System.out.println("Goodbye: " + reason));
-   ```
-
-   All lambda listeners can access the instance of `Whatsapp` that called them:
-   ```java
-   api.addDisconnectedListener((whatsapp, reason) -> System.out.println("Goodbye: " + reason));
-   ```
-
-   This is extremely useful if you want to implement a functionality for your application in a compact manner:
-   ```java
-    Whatsapp.newConnection()
-                .addLoggedInListener(() -> System.out.println("Connected"))
-                .addNewMessageListener((whatsapp, info) -> whatsapp.sendMessage(info.chatJid(), "Automatic answer", info))
-                .connect()
-                .join();
-   ```
-
-### How to handle serialization
-
-In the original version of WhatsappWeb, chats, contacts and messages could be queried at any from Whatsapp's servers.
-The multi-device implementation, instead, sends all of this information progressively when the connection is initialized for the first time and doesn't allow any subsequent queries to access the latter.
-In practice, this means that this data needs to be serialized somewhere.
-The same is true for the mobile api.
-
-By default, this library serializes data regarding a sessionRecord at `$HOME/.whatsapp4j/[web|mobile]/<session_id>`.
-The data is stored in protobuf files.
-
-If your application needs to serialize data in a different way, for example in a database create a custom implementation of ControllerSerializer.
-Then make sure to specify your implementation in the `Whatsapp` builder.
-This is explained in the "How to create a connection" section.
-
-### How to handle sessionRecord disconnects
-
-When the sessionRecord is closed, the onDisconnect method in any listener is invoked.
-These are the three reasons that can cause a disconnect:
-
-1. DISCONNECTED
-
-   A normal disconnection.
-   This doesn't indicate any error being thrown.
-
-2. RECONNECTING
-
-   The client is being disconnected but only to reopen the connection.
-   This always happens when the QR is first scanned for example.
-
-3. LOGGED_OUT
-
-   The client was logged out by itself or by its companion.
-   By default, no error is thrown if this happens, though this behaviour can be changed easily:
-    ```java
-
-
-    class ThrowOnLogOut implements WhatsappListener {
-        @Override
-        public void onDisconnected(DisconnectReason reason) {
-            if (reason != SocketEvent.LOGGED_OUT) {
-                return;
-            }
-
-            throw new RuntimeException("Hey, I was logged off :/");
-        }
-    }
-    ```
-
-4. BANNED
-
-   The client was banned by Whatsapp, usually happens when sending spam messages to people that aren't in your contact list
-
-### How to query chats, contacts, messages and status
-
-Access the store associated with a connection by calling the store method:
-```java
-var store = api.store();
+```xml
+<dependency>
+    <groupId>com.github.auties00</groupId>
+    <artifactId>cobalt-lib</artifactId>
+    <version>0.1.0</version>
+    <classifier>natives-darwin-x86_64</classifier>
+    <scope>runtime</scope>
+</dependency>
 ```
 
-> **_IMPORTANT:_** When your program first starts up, these fields will be empty. For each type of data, an event is
-> fired and listenable using a WhatsappListener
+**Gradle (Kotlin DSL)**
 
-You can access all the chats that are in memory:
+```kotlin
+runtimeOnly("com.github.auties00:cobalt-lib:0.1.0:natives-darwin-x86_64")
+```
+
+**Gradle (Groovy DSL)**
+
+```groovy
+runtimeOnly 'com.github.auties00:cobalt-lib:0.1.0:natives-darwin-x86_64'
+```
+
+</details>
+
+<details>
+<summary><b>macOS Apple Silicon</b></summary>
+
+**Maven**
+
+```xml
+<dependency>
+    <groupId>com.github.auties00</groupId>
+    <artifactId>cobalt-lib</artifactId>
+    <version>0.1.0</version>
+    <classifier>natives-darwin-aarch64</classifier>
+    <scope>runtime</scope>
+</dependency>
+```
+
+**Gradle (Kotlin DSL)**
+
+```kotlin
+runtimeOnly("com.github.auties00:cobalt-lib:0.1.0:natives-darwin-aarch64")
+```
+
+**Gradle (Groovy DSL)**
+
+```groovy
+runtimeOnly 'com.github.auties00:cobalt-lib:0.1.0:natives-darwin-aarch64'
+```
+
+</details>
+
+---
+
+## Quickstart
+
+### Linked, log in with a QR code
+
+Scan the printed QR from your phone (WhatsApp, then Linked devices), then send and receive in real time.
 
 ```java
-var chats = store.chats();
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.client.linked.LinkedWhatsAppClientVerificationHandler.Web.QrCode;
+import com.github.auties00.cobalt.model.message.MessageContainer;
+
+void main() throws Exception {
+    WhatsAppClient.builder()
+            .linkedApi()
+            .webClient()                               // in-memory session
+            .createConnection()                        // a fresh connection
+            .name("Cobalt Bot")                        // the linked-device name shown in WhatsApp
+            .unregistered(QrCode.toTerminal())         // print the QR to scan
+            .addLoggedInListener(api -> System.out.println("Connected"))
+            .addNewMessageListener((api, message) -> {
+                if (!message.key().fromMe()) {
+                    message.key()
+                            .parentJid()
+                            .ifPresent(chat -> api.sendMessage(chat, MessageContainer.of("Got your message")));
+                }
+            })
+            .connect()                                 // returns once the socket is live
+            .waitForDisconnection();                   // park this thread for the session
+}
 ```
 
-Or the contacts:
+Prefer a pairing code over a QR? Swap the terminal:
 
 ```java
-var contacts = store.contacts();
+.unregistered(<your_phone_number>, PairingCode.toTerminal())   // phone with country code, no + or spaces
 ```
 
-Or even the status:
+### Cloud API
+
+For a Business Platform number, supply your credentials and let Cobalt run the webhook server for inbound traffic.
 
 ```java
-var status = store.status();
+import com.github.auties00.cobalt.client.WhatsAppClient;
+import com.github.auties00.cobalt.model.message.MessageContainer;
+
+void main() {
+    WhatsAppClient.builder()
+            .cloudApi()
+            .loadConnection("EAAB...", "123456789")    // system-user token + phone number id (required)
+            .appSecret("...")                          // verifies inbound webhook signatures
+            .webhook("my-verify-token", 8080)          // start the webhook server on :8080
+            .build()
+            .addLoggedInListener(api -> System.out.println("Connected"))
+            .addNewMessageListener((api, message) -> {
+                message.key()
+                        .parentJid()
+                        .ifPresent(chat -> api.sendMessage(chat, MessageContainer.of("Got your message")));
+            })
+            .connect()                                 // validates the token, starts the webhook
+            .waitForDisconnection();                   // park this thread for the session
+}
 ```
 
-Data can also be easily queried by using these methods:
+---
 
-- Chats
-    - Query a chat by its jid
-      ```java
-      var chat = store.findChatByJid(jid);
-      ```
-    - Query a chat by its name
-      ```java
-      var chat = store.findChatByName(name);
-      ```  
-    - Query a chat by a message inside it
-      ```java
-      var chat = store.findChatByMessage(message);
-      ```   
-    - Query all chats that match a name
-      ```java
-      var chats = store.findChatsByName(name);
-      ```  
-- Contacts
-    - Query a contact by its jid
-      ```java
-      var chat = store.findContactByJid(jid);
-      ```  
-    - Query a contact by its name
-      ```java
-      var contact = store.findContactByName(name);
-      ```
-    - Query all contacts that match a name
-      ```java
-      var contacts = store.findContactsByName(name);
-      ```     
-- Media status
-    - Query status by sender
-      ```java
-      var chat = store.findStatusBySender(contact);
-      ```  
+## The quickstart, explained
 
-### How to query other data
+The QR example above is a complete client in one expression. Walking it line by line touches every concept Cobalt relies on.
 
-To access information about the companion device:
-```java
-var companion = store.jid();
-```
-This object is a jid like any other, but it has the device field filled to distinguish it from the main one.
-Instead, if you only need the phone number:
-```java
-var phoneNumber = store.jid().toPhoneNumber();
-```
-All the settings and metadata about the companion is available inside the Store class
-```java
-var store = api.store();
-```
-Explore of the available methods!
+### `WhatsAppClient.builder()`
 
-### How to query cryptographic data
+`WhatsAppClient` is a sealed interface with exactly two implementations, so this is the fork in the road:
 
-Access keys store associated with a connection by calling the keys method:
-```java
-var keys = api.keys();
-```
-There are several methods to access and query cryptographic data, but as it's only necessary for advanced users,
-please check the javadocs if this is what you need.
+- `.linkedApi()` leads to the reverse-engineered transport.
+- `.cloudApi()` leads to the official Cloud API.
 
-### How to send messages
+Operations that exist on both transports (connect, send, react, mark read, block) live on the shared type, so code written against `WhatsAppClient` works with either.
 
-To send a message, start by finding the chat where the message should be sent. Here is an example:
+### `.webClient()`
+
+Picks the flavour of the Linked client and, implicitly, where the session lives:
+
+- `webClient()` pairs as a companion device, like WhatsApp Web. With no argument the session is held in memory and lost on exit; pass a `WhatsAppStoreFactory` to persist it to disk instead.
+- `mobileClient()` registers as a standalone phone (iOS or Android) rather than a companion.
+- `customClient()` lets you supply your own store implementation.
+
+The store is the session's single source of truth: Signal keys, your account identity, contacts, chats, messages, sync state, settings. The persistent variant snapshots metadata as protobuf and keeps messages in an embedded MDBX database. You query it at runtime through typed sub-stores:
 
 ```java
-var chat = api.store()
-        .findChatByName("My Awesome Friend")
-        .orElseThrow(() -> new NoSuchElementException("Hey, you don't exist"));
-``` 
-
-All types of messages supported by Whatsapp are supported by this library:
-> **_IMPORTANT:_** Buttons are not documented here because they are unstable.
-> If you are interested you can try to use them, but they are not guaranteed to work.
-> There are some examples in the tests directory.
-
-- Text
-
-    ```java
-    api.sendMessage(chat,  "This is a text message!");
-    ```
-
-- Complex text
-
-    ```java
-    var message = new TextMessageBuilder() // Create a new text message
-            .text("Check this video out: https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the text of the message
-            .canonicalUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the url of the message
-            .matchedText("https://www.youtube.com/watch?v=dQw4w9WgXcQ") // Set the matched text for the url in the message
-            .title("A nice suprise") // Set the title of the url
-            .description("Check me out") // Set the description of the url
-            .build(); // Create the message
-    api.sendMessage(chat,  message); 
-    ```
-
-- Location
-
-    ```java
-    var location = new LocationMessageBuilder() // Create a new location message
-            .caption("Look at this!") // Set the caption of the message, that is the text below the file
-            .latitude(38.9193) // Set the longitude of the location to share
-            .longitude(1183.1389) // Set the latitude of the location to share
-            .build(); // Create the message
-    api.sendMessage(chat, location);
-    ```
-
-- Live location
-
-    ```java
-    var location = new LiveLocationMessageBuilder() // Create a new live location message
-            .caption("Look at this!") // Set the caption of the message, that is the text below the file. Not available if this message is live
-            .latitude(38.9193) // Set the longitude of the location to share
-            .longitude(1183.1389) // Set the latitude of the location to share
-            .accuracy(10) // Set the accuracy of the location in meters
-            .speed(12) // Set the speed of the device sharing the location in meter per endTimeStamp
-            .build(); // Create the message
-    api.sendMessage(chat, location);
-    ```
-  > **_IMPORTANT:_** Live location updates are not supported by Whatsapp multi-device. No ETA has been given for a fix.
-
-- Group invite
-    ```java
-    var group = api.store()
-            .findChatByName("Programmers")
-            .filter(Chat::isGroup)
-            .orElseThrow(() -> new NoSuchElementException("Hey, you don't exist"));
-    var inviteCode = api.queryGroupInviteCode(group).join();
-    var groupInvite = new GroupInviteMessageBuilder() // Create a new group invite message
-            .caption("Come join my group of fellow programmers") // Set the caption of this message
-            .name(group.name()) // Set the name of the group
-            .groupJid(group.jid())) // Set the value of the group
-            .inviteExpiration(ZonedDateTime.now().plusDays(3).toEpochSecond()) // Set the expiration of this invite
-            .inviteCode(inviteCode) // Set the code of the group
-            .build(); // Create the message
-    api.sendMessage(chat, groupInvite); 
-    ```
-
-- Contact
-    ```java
-     var vcard = new ContactCardBuilder() // Create a new vcard
-            .name("A nice friend") // Set the name of the contact
-            .phoneNumber(contact) // Set the phone value of the contact
-            .build(); // Create the vcard
-    var contactMessage = new ContactMessageBuilder()  // Create a new contact message
-            .name("A nice friend") // Set the display name of the contact
-            .vcard(vcard) // Set the vcard(https://en.wikipedia.org/wiki/VCard) of the contact
-            .build(); // Create the message
-    api.sendMessage(chat, contactMessage);
-    ```
-
-- Contact array
-
-    ```java
-    var contactsMessage = new ContactsArrayMessageBuilder()  // Create a new contacts array message
-            .name("A nice friend") // Set the display name of the first contact that this message contains
-            .contacts(List.of(jack,lucy,jeff)) // Set a list of contact messages that this message wraps
-            .build(); // Create the message
-    api.sendMessage(chat, contactsMessage);
-    ```
-
-- Media
-
-  > **_IMPORTANT:_**
-  >
-  > The thumbnail for videos and gifs is generated automatically only if ffmpeg is installed on the host machine.
-  >
-  > The length of videos, gifs and audios in seconds is computed automatically only if ffprobe is installed on the host machine.
-
-  To send a media, start by reading the content inside a byte array.
-  You might want to read it from a file:
-
-    ```java
-    var media = Files.readAllBytes(Path.of("somewhere"));
-    ```
-
-  Or from a URL:
-
-    ```java
-    var media = new URL(url).openStream().readAllBytes();
-    ```
-
-  All medias supported by Whatsapp are supported by this library:
-
-    - Image
-
-      ```java
-      var image = new ImageMessageSimpleBuilder() // Create a new image message builder
-            .media(media) // Set the image of this message
-            .caption("A nice image") // Set the caption of this message
-            .build(); // Create the message
-      api.sendMessage(chat,  image);
-      ```
-
-    - Audio or voice
-
-      ```java
-       var audio = new AudioMessageSimpleBuilder() // Create a new audio message builder
-             .media(urlMedia) // Set the audio of this message
-             .voiceMessage(false) // Set whether this message is a voice message
-             .build(); // Create the message
-       api.sendMessage(chat,  audio);
-      ```
-
-    -  Video
-
-       ```java
-       var video = new VideoMessageSimpleBuilder() // Create a new video message builder
-             .media(urlMedia) // Set the video of this message
-             .caption("A nice video") // Set the caption of this message
-             .width(100) // Set the width of the video
-             .height(100) // Set the height of the video
-             .build(); // Create the message
-       api.sendMessage(chat,  video); 
-       ```
-
-    -  GIF(Video)
-
-       ```java
-       var gif = new GifMessageSimpleBuilder() // Create a new gif message builder
-             .media(urlMedia) // Set the gif of this message
-             .caption("A nice gif") // Set the caption of this message
-             .gifAttribution(VideoMessageAttribution.TENOR) // Set the source of the gif
-             .build(); // Create the message
-       api.sendMessage(chat,  gif);
-       ```
-       > **_IMPORTANT:_** Whatsapp doesn't support conventional gifs. Instead, videos can be played as gifs if particular attributes are set. Sending a conventional gif will result in an exception if detected or in undefined behaviour.
-
-    -  Document
-
-       ```java
-       var document = new DocumentMessageSimpleBuilder() // Create a new document message builder
-             .media(urlMedia) // Set the document of this message
-             .title("A nice pdf") // Set the title of the document
-             .fileName("pdf-test.pdf") // Set the name of the document
-             .pageCount(1) // Set the value of pages of the document
-             .build(); // Create the message
-       api.sendMessage(chat,  document);
-       ```
-- Reaction
-
-    - Send a reaction
-
-    ```java
-    var someMessage = ...; // The message to react to
-    api.sendReaction(someMessage, Emoji.RED_HEART); // Use the Emoji class for a list of all Emojis
-    ```
-
-    - Remove a reaction
-
-    ```java
-    var someMessage = ...; // The message to react to
-    api.removeReaction(someMessage); // Use the Emoji class for a list of all Emojis
-    ```
-
-### How to wait for replies
-
-If you want to wait for a single reply, use:
-``` java
-var response = api.awaitReply(info).join(); 
+Optional<Chat> chat = client.store().chatStore().findChatByJid(someJid);
 ```
 
-You can also register a listener, but in many cases the async/await paradigm is easier to use then callback based listeners.
+### `.createConnection()`
 
-### How to delete messages
+A connection is one registered session, and this stage decides where it comes from:
 
-``` java
-var result = api.delete(someMessage, everyone); // Deletes a message for yourself or everyone
+- `createConnection()` starts a fresh, unregistered session.
+- `loadLatestConnection()`, `loadConnection(uuid)` and `loadConnection(phoneNumber)` reopen a persisted one; each has a `...OrCreate` variant.
+- `createConnection(sixParts)` imports credentials from a portable six-part key string.
+
+This stage is why a persisted client never shows the QR twice.
+
+### `.name("Cobalt Bot")`
+
+The options stage configures the session before registration:
+
+- `name(...)` is the device name shown under Linked devices.
+- `proxy(...)` routes the connection through a proxy.
+- `device(...)` is the device Cobalt presents itself as.
+- `clientVersion(...)` pins the WhatsApp client version.
+- `releaseChannel(...)` selects RELEASE or BETA; BETA unlocks Web calling.
+- `historySetting(...)` controls how much history the phone syncs.
+- `errorHandler(...)` sets the recovery policy.
+
+The error handler is Cobalt's whole recovery policy: every failure is a typed exception in a sealed `WhatsAppException` hierarchy, and your handler maps it to one of `DISCARD`, `DISCONNECT`, `RECONNECT`, `LOG_OUT`, or `BAN`. Nothing is hardcoded; the default handler logs and keeps the client alive.
+
+### `.unregistered(QrCode.toTerminal())`
+
+The terminal stage: it declares how this session proves itself to WhatsApp and produces the actual `LinkedWhatsAppClient`. A verification handler decides how the proof reaches the user:
+
+- `unregistered(QrCode.toTerminal())` prints the QR to scan; `QrCode.toFile(...)` writes it to disk instead.
+- `unregistered(phone, PairingCode.toTerminal())` prints a pairing code to type into the phone.
+- `registered()` skips verification entirely by reusing the persisted credentials.
+- On the mobile flavour, `register(phone, Mobile.sms(...))` runs the OTP ceremony, with handlers for SMS, call, and in-app codes.
+
+### `.addNewMessageListener(...)`
+
+Everything WhatsApp pushes to the client surfaces as an event, and there are two ways to subscribe:
+
+- One chainable registrar per event: `addLoggedInListener`, `addNewMessageListener`, `addCallListener`, `addDisconnectedListener`, and dozens more.
+- One class implementing `LinkedWhatsAppClientListener`, which has a no-op default for every event, registered once with `addListener(...)`.
+
+Each listener invocation runs on its own virtual thread, so a slow listener never stalls the connection; every lambda also receives the client instance (`api`), so listeners need no outside references.
+
+### `message.key()`
+
+Inside the listener you meet the message model, three types that appear in every messaging call:
+
+- `MessageInfo` is a message as it exists in a chat: content plus metadata (sender, timestamp, status).
+- `MessageKey` is its identity: the chat (`parentJid()`), the author (`senderJid()`), the id, and `fromMe()`, which the example checks to avoid replying to itself. Keys are what you pass to react, edit, delete, star, and pin.
+- `MessageContainer` is the content itself, a one-of where exactly one message type (text, image, poll, ...) is set.
+
+`parentJid()` returns a `Jid`, the address of any entity: a user, a group, a newsletter, a broadcast list. Build one with `Jid.of("15551234567")`. Most methods actually accept a `JidProvider`, implemented by `Jid`, `Chat`, `Contact`, `GroupMetadata` and `Newsletter` alike, so a resolved object can be passed wherever an address is expected.
+
+### `api.sendMessage(chat, MessageContainer.of("..."))`
+
+`MessageContainer.of(...)` wraps content for sending; the `String` overload is plain text. Richer content is built first, because every model in Cobalt follows the same convention: a generated `<TypeName>Builder` constructs it, fields are read with `field()` accessors (not `getField()`), absent fields return `Optional`, and lists are unmodifiable.
+
+```java
+var location = new LocationMessageBuilder()
+        .latitude(37.386051).longitude(-122.083855).caption("Meet here")
+        .build();
+api.sendMessage(chat, MessageContainer.of(location));
 ```
 
-### How to change your status
+`sendMessage` returns the `MessageKey` of what was sent, closing the loop: hold on to it to edit, delete, or react later.
 
-To change the status of the client:
+> **_IMPORTANT:_** `sendMessage` is a plain blocking call, like every operation in Cobalt: it returns the result or throws, and there is no `CompletableFuture` anywhere in the API. Blocking is cheap because everything runs on virtual threads; this listener is already on its own, so a slow send never stalls the connection. To run operations in parallel, start your own virtual threads.
 
-``` java
-api.changePresence(true); // online
-api.changePresence(false); // offline
-```
+### `.connect()`
 
-If you want to change the status of your companion, start by choosing the right presence:
-These are the allowed values:
+Opens the encrypted socket, runs the Noise handshake, and starts processing traffic; it returns as soon as the connection is live.
 
-- AVAILABLE
-- UNAVAILABLE
-- COMPOSING
-- RECORDING
+### `.waitForDisconnection()`
 
-Then, execute this method:
+`connect()` does not block for the session's lifetime, so without this line the main thread would fall through and the JVM could exit. `waitForDisconnection()` parks the calling thread until a terminal disconnect: transient network drops are reconnected automatically and do not wake it. The reason is reported to `addDisconnectedListener` as one of `DISCONNECTED`, `RECONNECTING`, `LOGGED_OUT`, or `BANNED`. Deliberate teardown:
 
-``` java
-api.changePresence(chat,  presence);
-```
+- `disconnect()` closes the connection; the session stays valid.
+- `reconnect()` tears down and reconnects in one call.
+- `logout()` closes the connection and invalidates the session.
 
-> **_IMPORTANT:_** The changePresence method returns a CompletableFuture: remember to handle this async construct if
-> needed
+### The Cloud variant
 
-### How to query the last known presence for a contact
+The Cloud quickstart follows the same shape with a different first stage. There is no QR and no store:
 
-To query the last known status of a Contact, use the following snippet:
+- `loadConnection(accessToken, phoneNumberId)` collects the required credentials and opens the configuration stage.
+- `appSecret(...)` lets Cobalt sign requests and verify webhook payloads.
+- `webhook(verifyToken, port)` starts the built-in webhook server when you connect; it answers Meta's verification handshake and validates the `X-Hub-Signature-256` of every delivery before dispatching events.
+- `build()` produces the `CloudWhatsAppClient`.
 
-``` java
-var lastKnownPresenceOptional = contact.lastKnownPresence();
-```
+Listeners register exactly as on the Linked client, and `sendMessage` takes the same `MessageContainer`, so everything from the message model onward carries over unchanged.
 
-If the returned value is an empty Optional, the last status of the contact is unknown.
+---
 
-Whatsapp starts sending updates regarding the presence of a contact only when:
+## Documentation
 
-- A message was recently exchanged between you and said contact
-- A new message arrives from said contact
-- You send a message to said contact
-
-To force Whatsapp to send these updates use:
-
-``` java
-api.subscribeToPresence(contact);
-```
-
-Then, after the subscribeToUserPresence's future is completed, query again the presence of that contact.
-
-### Query data about a group, or a contact
-
-##### About
-
-``` java
-var status = api.queryAbout(contact) // A completable future
-      .join() // Wait for the future to complete
-      .flatMap(ContactAboutResponse::about) // Map the response to its status
-      .orElse(null); // If no status is available yield null
-```
-
-##### Profile picture or chat picture
-
-``` java
-var picture = api.queryPicture(contact) // A completable future
-      .join() // Wait for the future to complete
-      .orElse(null); // If no picture is available yield null
-```
-
-##### Group's Metadata
-
-``` java
-var metadata = api.queryGroupMetadata(group); // A completable future
-      .join(); // Wait for the future to complete
-```
-
-### Search messages
-
-``` java
-var messages = chat.messages(); // All the messages in a chat
-var firstMessage = chat.firstMessage(); // First message in a chat chronologically
-var lastMessage = chat.lastMessage(); // Last message in a chat chronologically 
-var starredMessages = chat.starredMessages(); // All the starred messages in a chat
-```
-
-### Change the state of a chat
-
-##### Mute a chat
-
-``` java
-var future = api.muteChat(chat);
-```
-
-##### Unmute a chat
-
-``` java
-var future = api.unmuteChat(chat);
-```
-
-##### Archive a chat
-
-``` java
-var future = api.archiveChat(chat);
-```
-
-##### Unarchive a chat
-
-``` java
-var future = api.unarchiveChat(chat);
-```
-
-##### Change ephemeral message status in a chat
-
-``` java
-var future = api.changeEphemeralTimer(chat,  ChatEphemeralTimer.ONE_WEEK);
-```   
-
-##### Mark a chat as read
-
-``` java
-var future = api.markChatRead(chat);
-```   
-
-##### Mark a chat as unread
-
-``` java
-var future = api.markChatUnread(chat);
-```   
-
-##### Pin a chat
-
-``` java
-var future = api.pinChat(chat);
-``` 
-
-##### Unpin a chat
-
-``` java
-var future = api.unpinChat(chat);
-```
-
-##### Clear a chat
-
-``` java
-var future = api.clearChat(chat, false);
-```
-
-##### Delete a chat
-
-``` java
-var future = api.deleteChat(chat);
-```
-
-### Change the state of a participant of a group
-
-##### Add a contact to a group
-
-``` java
-var future = api.addGroupParticipant(group, contact);
-```
-
-##### Remove a contact from a group
-
-``` java
-var future = api.removeGroupParticipant(group, contact);
-```
-
-##### Promote a contact to admin in a group
-
-``` java
-var future = api.promoteGroupParticipant(group, contact);
-```
-
-##### Demote a contact to user in a group
-
-``` java
-var future = api.demoteGroupParticipant(group, contact);
-```
-
-### Change the metadata or settings of a group
-
-##### Change group's name/subject
-
-``` java
-var future = api.changeGroupSubject(group, newName);
-```
-
-##### Change or remove group's description
-
-``` java
-var future = api.changeGroupDescription(group, newDescription);
-```
-
-##### Change a setting in a group
-
-``` java
-var future = api.changeGroupSetting(group, GroupSetting.EDIT_GROUP_INFO, GroupPolicy.ANYONE);
-```
-
-##### Change or remove the picture of a group
-
-``` java
-var future = api.changeGroupPicture(group, img);
-```
-
-### Other group related methods
-
-##### Create a group
-
-``` java
-var future = api.createGroup("A nice name :)", friend, friend2);
-```
-
-##### Leave a group
-
-``` java
-var future = api.leaveGroup(group);
-```
-
-##### Query a group's invite code
-
-``` java
-var future = api.queryGroupInviteCode(group);
-```
-
-##### Revoke a group's invite code
-
-``` java
-var future = api.revokeGroupInvite(group);
-```
-
-##### Accept a group invite
-
-``` java
-var future = api.acceptGroupInvite(inviteCode);
-```
-
-### 2FA (Mobile api only)
-
-##### Enable 2FA
-
-``` java
-var future = api.enable2fa("000000", "mail@domain.com");
-```
-
-##### Disable 2FA
-
-``` java
-var future = api.disable2fa();
-```
-
-### Calls (Mobile api only)
-
-##### Start a call
-
-``` java
-var future = api.startCall(contact);
-```
-
-> **_IMPORTANT:_** Currently there is no audio/video support
-
-##### Stop or reject a call
-
-``` java
-var future = api.stopCall(contact);
-```
-
-### Communities
-
--   **Create a community:**
-    ```java
-    var future = api.createCommunity("New Community Name", "Optional community description");
-    ```
-    
--   **Query community metadata:**
-    ```java
-    var future = api.queryCommunityMetadata(communityJid);
-    ```
-    
--   **Deactivate a community:**
-    ```java
-    var future = api.deactivateCommunity(communityJid);
-    ```
--   **Change community picture:**
-    ```java
-    byte[] imageBytes = ...; // Or use URI
-    var future = api.changeCommunityPicture(communityJid, imageBytes);
-    var removeFuture = api.changeCommunityPicture(communityJid, (byte[]) null); // Remove picture
-    ```
-    
--   **Change community subject (name):**
-    ```java
-    var future = api.changeCommunitySubject(communityJid, "Updated Community Name");
-    ```
-    
--   **Change community description:**
-    ```java
-    var future = api.changeCommunityDescription(communityJid, "Updated description");
-    var removeFuture = api.changeCommunityDescription(communityJid, null); // Remove description
-    ```
-    
--   **Change community setting:**
-    ```java
-    // Who can add groups (MODIFY_GROUPS) or add participants (ADD_PARTICIPANTS)
-    var future = api.changeCommunitySetting(communityJid, CommunitySetting.MODIFY_GROUPS, ChatSettingPolicy.ADMINS);
-    ```
-    
--   **Link groups to a community:**
-    ```java
-    var future = api.addCommunityGroups(communityJid, groupJid1, groupJid2);
-    ```
-    
--   **Unlink a group from a community:**
-    ```java
-    var future = api.removeCommunityGroup(communityJid, groupJid);
-    ```
-    
--   **Promote participants to admin in a community:**
-    ```java
-    var future = api.promoteCommunityParticipants(communityJid, contactJid1, contactJid2);
-    ```
-    
--   **Demote participants to member in a community:**
-    ```java
-    var future = api.demoteCommunityParticipants(communityJid, contactJid1, contactJid2);
-    ```
-    
--   **Add participants to a community:** (Adds to announcement group)
-    ```java
-    var future = api.addCommunityParticipants(communityJid, contactJid1, contactJid2);
-    ```
-    
--   **Remove participants from a community:**
-    ```java
-    var future = api.removeCommunityParticipants(communityJid, contactJid1, contactJid2);
-    ```
-    
--   **Leave a community:** (Leaves community and all linked groups)
-    ```java
-    var future = api.leaveCommunity(communityJid);
-    ```
-
-### Newsletters / Channels
-
--   **Query recommended newsletters:**
-    ```java
-    var future = api.queryRecommendedNewsletters("US", 50); // Country code and limit
-    ```
-    
--   **Query newsletter messages:**
-    ```java
-    var future = api.queryNewsletterMessages(newsletterJid, 100); // Query last 100 messages
-    ```
-    
--   **Subscribe to newsletter reactions:**
-    ```java
-    var future = api.subscribeToNewsletterReactions(newsletterJid);
-    ```
-    
--   **Create a newsletter:**
-    ```java
-    byte[] pictureBytes = ...; // Optional picture
-    var future = api.createNewsletter("My Newsletter", "Description", pictureBytes);
-    var simpleFuture = api.createNewsletter("Simple Newsletter"); // Name only
-    ```
-    
--   **Change newsletter description:**
-    ```java
-    var future = api.changeNewsletterDescription(newsletterJid, "New Description");
-    var removeFuture = api.changeNewsletterDescription(newsletterJid, null); // Remove description
-    ```
-    
--   **Join a newsletter:**
-    ```java
-    var future = api.joinNewsletter(newsletterJid);
-    ```
-    
--   **Leave a newsletter:**
-    ```java
-    var future = api.leaveNewsletter(newsletterJid);
-    ```
-    
--   **Query newsletter subscribers count:**
-    ```java
-    var future = api.queryNewsletterSubscribers(newsletterJid);
-    ```
-    
--   **Invite newsletter admins:** (Sends an invite message to the user)
-    ```java
-    var future = api.inviteNewsletterAdmins(newsletterJid, "Join as admin!", adminJid1, adminJid2);
-    ```
-    
--   **Revoke newsletter admin invite:**
-    ```java
-    var future = api.revokeNewsletterAdminInvite(newsletterJid, adminJid);
-    ```
-    
--   **Accept newsletter admin invite:**
-    ```java
-    var future = api.acceptNewsletterAdminInvite(newsletterJid);
-    ```
-    
--   **Query newsletter metadata:**
-    ```java
-    // Role required depends on what info you need (e.g., GUEST, SUBSCRIBER, ADMIN)
-    var future = api.queryNewsletter(newsletterJid, NewsletterViewerRole.SUBSCRIBER);
-    ```
-    
--   **Send newsletter message:**
-    ```java
-    var future = api.sendNewsletterMessage(newsletterJid, message);
-    ```
-    
--   **Edit newsletter message:**
-    ```java
-    var future = api.editMessage(oldMessage, newContent);
-    ```
-    
--   **Delete newsletter message:**
-    ```java
-    var future = api.deleteMessage(messageToDelete);
-    
-    ```
--   **Download newsletter media:**
-    ```java
-    var future = api.downloadMedia(mediaMessageInfo);
-    ```
-
-Some methods may not be listed here, all contributions are welcomed to this documentation!
-
-Some methods may not be supported on the mobile api, please report them, so I can fix them.
-
-Ideally I'd like all of them to work.
+Every member of the library, public and internal alike, carries extensive Javadocs, so this README only covers the essentials. For anything not spelled out here, or any doubt about how a type or method behaves, refer to the [Javadoc][javadoc].
+The goal of this library to allow you to do anything you can do in WhatsApp, on any client, so if your use case is not covered, feel free to open an issue about it.

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "device/icdc-oracle",
+  "expression": "String(window.__icdcOracle)",
+  "result": {
+    "resultType": "string",
+    "value": "[{\"tag\":\"self\",\"jid\":\"393495089819@c.us\",\"meta\":{\"keyHashBase64\":\"Mp4BNPQ86fpp+Q==\",\"timestamp\":1778522044}},{\"tag\":\"self-lid\",\"jid\":\"258252122116273@lid\",\"meta\":{\"keyHashBase64\":\"Mp4BNPQ86fpp+Q==\",\"timestamp\":1778522044}},{\"tag\":\"hosted-pn\",\"jid\":\"15086146312@c.us\",\"meta\":null},{\"tag\":\"hosted-lid\",\"jid\":\"44650513604847@lid\",\"meta\":null}]",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

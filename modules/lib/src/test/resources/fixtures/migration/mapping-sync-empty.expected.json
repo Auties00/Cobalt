@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "migration/mapping-sync-empty",
+  "expression": "JSON.stringify((() => {\n  // Capture the parser's transformation semantics by invoking the same mapping function over a\n  // synthesised payload — bypassing the gzip + protobuf byte path which is environment-dependent.\n  // Replicates the body of WAWebLid1x1MigrationMsgParser.parseLidMigrationMappingSyncMsg's\n  // post-decode block.\n  const WidFactory = require('WAWebWidFactory');\n\n  function transform(payload) {\n    if (payload == null || payload.pnToLidMappings.length === 0) {\n      return { mappings: [], primaryMigrationTsSec: null };\n    }\n    const i = payload.pnToLidMappings.map(e => {\n      const pnUser = WidFactory.asUserWidOrThrow(WidFactory.createUserWidOrThrow(e.pn.toString()));\n      const assignedLid = WidFactory.asUserWidOrThrow(WidFactory.createWid(e.assignedLid.toString() + '@lid'));\n      const latestLid = (e?.latestLid) != null\n        ? WidFactory.asUserWidOrThrow(WidFactory.createWid(e.latestLid.toString() + '@lid'))\n        : null;\n      return { pnUser: String(pnUser), assignedLid: String(assignedLid), latestLid: latestLid ? String(latestLid) : null };\n    });\n    return { mappings: i, primaryMigrationTsSec: payload.chatDbMigrationTimestamp };\n  }\n\n  // Case: empty payload object.\n  return transform({ pnToLidMappings: [], chatDbMigrationTimestamp: null });\n})())",
+  "result": {
+    "resultType": "string",
+    "value": "{\"mappings\":[],\"primaryMigrationTsSec\":null}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

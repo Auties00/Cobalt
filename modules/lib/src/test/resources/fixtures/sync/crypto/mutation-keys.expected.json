@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/crypto/mutation-keys",
+  "expression": "String(globalThis.__r)",
+  "result": {
+    "resultType": "string",
+    "value": "{\"zero\":{\"syncKey\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"indexKey\":\"Frp2Gb14RHXb3lbK844BA8u6Xmy4k56520ZZfJagR+c=\",\"valueEncryptionKey\":\"QFtEQY11PSaQ/pDmjTUjT0U1hMx1s8YOwohpW9YnUIU=\",\"valueMacKey\":\"8UQDfEou8GtfIYcv8MRq/AkyRQPS8+2+j0zq9+2RiMQ=\",\"snapshotMacKey\":\"Oh+NWg58ivC2q4MNfySbaP/LPrS5SslkYq/GmOW4mQg=\",\"patchMacKey\":\"MVXa+/Nb5aI9F7u1b+ZQAyJA9z4FPFbwJKgdhTKOabM=\"},\"ones\":{\"syncKey\":\"//////////////////////////////////////////8=\",\"indexKey\":\"RtxlQ/MHsOuBhMHUiHlj38K3nMTHUZWpYxXcl/1Thv8=\",\"valueEncryptionKey\":\"6kK0Yfg0iEBYLWUywpuJWRtWk/lk2VAd0Wd1nf5FaVE=\",\"valueMacKey\":\"7WznWXM5KHyIEDLyZ2lLmSiwBrrzEpKvN7ZWvirYcv0=\",\"snapshotMacKey\":\"2cLP5fFGxUL0V3rOnORgP5ywq3sWNubWnQLVmoRsm6k=\",\"patchMacKey\":\"7lpCgb7tAd70qB5U0XbxWODwKlWuPqkZ9ZL5x7oyFOE=\"},\"pattern\":{\"syncKey\":\"AAcOFRwjKjE4P0ZNVFtiaXB3foWMk5qhqK+2vcTL0tk=\",\"indexKey\":\"6+toIlrztn3gSeNDe6WMemvr7vJ9V6mXf/bg7ujMXu8=\",\"valueEncryptionKey\":\"xI1PcPLPmd5d2n5NeNdExj6OxGr4faU2L+rWZF43cRY=\",\"valueMacKey\":\"InnQ/PCMWfOp3iDWUmkD43LZbOFNd1GBhy4D8Tth5WI=\",\"snapshotMacKey\":\"CE6Qpol2eeyI8Ty3+xUICiky3zL71k+3I6eK/4SLpcM=\",\"patchMacKey\":\"eYDhM6VnLbMj2w5MYkKlJQa5dGHUocL5E1AtcMl5mGU=\"}}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

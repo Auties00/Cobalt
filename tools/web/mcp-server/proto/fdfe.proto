@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package fdfe;
+
+message HttpCookie {
+  string name = 1;
+  string value = 2;
+}
+
+message SplitDeliveryData {
+  string name = 1;
+  string downloadUrl = 5;
+}
+
+message AppDeliveryData {
+  string downloadUrl = 3;
+  repeated bytes field4Entries = 4;
+  repeated SplitDeliveryData splits = 15;
+}
+
+message DeliveryResponse {
+  AppDeliveryData appDeliveryData = 2;
+}
+
+message AppDetails {
+  int32 versionCode = 3;
+  string versionName = 4;
+}
+
+message DocDetails {
+  AppDetails appDetails = 1;
+}
+
+message DocV2 {
+  DocDetails docDetails = 13;
+}
+
+message DetailsResponse {
+  DocV2 docV2 = 4;
+}
+
+message Payload {
+  DetailsResponse detailsResponse = 2;
+  DeliveryResponse deliveryResponse = 21;
+}
+
+message ResponseWrapper {
+  Payload payload = 1;
+}

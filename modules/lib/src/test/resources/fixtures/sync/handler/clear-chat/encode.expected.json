@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/clear-chat/encode",
+  "expression": "JSON.stringify(globalThis.__captures['handler/clear-chat/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"encoded\":\"CIDiz6oGqgEA\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/pin-chat/encode",
+  "expression": "JSON.stringify(globalThis.__captures['handler/pin-chat/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"pinned\":true,\"encoded\":\"CIDiz6oGKgIIAQ==\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

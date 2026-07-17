@@ -1,0 +1,11 @@
+{
+  "version": "0.1.0",
+  "commitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "binaries": {
+    "ffmpeg-avformat/linux-x86_64": {
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "size": 200,
+      "path": "modules/call-toolkit/dependencies/ffmpeg/bin/linux-x86_64/libavformat.so"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "primary",
+  "topic": "call/1to1/audio-offer-place.primary",
+  "expression": "String(JSON.stringify({ result: window.__r || null, auto: window.__autoState || null }))",
+  "result": {
+    "resultType": "string",
+    "value": "{\"result\":null,\"auto\":null}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}

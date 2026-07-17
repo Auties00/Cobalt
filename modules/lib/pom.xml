@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.github.auties00</groupId>
+        <artifactId>cobalt</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>cobalt-lib</artifactId>
+    <packaging>jar</packaging>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Standalone fully-featured WhatsApp Web API for Java and Kotlin</description>
+
+    <profiles>
+        <profile>
+            <id>uber-jar</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-assembly</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+            Native-bundle JARs — opt-in per-classifier artifacts for
+            consumers that don't want the runtime download. The
+            default `cobalt` artifact ships no binaries; the loader
+            fetches them from Github on first use, verifies the SHA-256 against the bundled
+            META-INF/native-checksums.json manifest, and caches the
+            result under ${user.home}/.cobalt/natives/.
+
+            Activated by `-Pnatives` plus one of the
+            `-Dnatives.classifier=` values:
+
+                mvn -Pnatives -Dnatives.classifier=linux-x86_64    package
+                mvn -Pnatives -Dnatives.classifier=linux-aarch64   package
+                mvn -Pnatives -Dnatives.classifier=darwin-x86_64   package
+                mvn -Pnatives -Dnatives.classifier=darwin-aarch64  package
+                mvn -Pnatives -Dnatives.classifier=windows-x86_64  package
+
+            The binary is taken from the same
+            `natives/bin/<classifier>/` tree the manifest references —
+            the assembly descriptor copies it into the
+            `modules/lib/natives/bin/<classifier>/` resource path the
+            loader looks it up at.
+        -->
+        <profile>
+            <id>natives</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>natives-bundle</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <appendAssemblyId>true</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>${project.basedir}/src/main/assembly/natives-only.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+            Self-contained per-platform uber JARs — a fat JAR that bundles the
+            full runtime dependency closure (like the `uber-jar` profile above)
+            AND the platform's combined native library, so the artifact runs
+            with no transitive Maven deps and no runtime GitHub download of the
+            binary.
+
+            Each profile only sets `${natives.classifier}`; the shared
+            src/main/assembly/uber-jar-natives.xml descriptor packs the native
+            under the repo-relative path the loader probes on the classpath and
+            names the output `cobalt-lib-${project.version}-uber-<classifier>.jar`.
+
+                mvn -Puber-jar-linux-x86_64    package
+                mvn -Puber-jar-linux-aarch64   package
+                mvn -Puber-jar-darwin-x86_64   package
+                mvn -Puber-jar-darwin-aarch64  package
+                mvn -Puber-jar-windows-x86_64  package
+                mvn -Puber-jar-windows-aarch64 package
+
+            The native for a classifier must be present under
+            natives/bin/<classifier>/ (built by .github/scripts/build-natives.sh);
+            when absent the descriptor still produces a JAR, but binary-free,
+            and the loader falls back to its runtime download.
+        -->
+        <profile>
+            <id>uber-jar-linux-x86_64</id>
+            <properties>
+                <natives.classifier>linux-x86_64</natives.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>uber-jar-natives</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <appendAssemblyId>true</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>${project.basedir}/src/main/assembly/uber-jar-natives.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>uber-jar-linux-aarch64</id>
+            <properties>
+                <natives.classifier>linux-aarch64</natives.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>uber-jar-natives</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <appendAssemblyId>true</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>${project.basedir}/src/main/assembly/uber-jar-natives.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>uber-jar-darwin-x86_64</id>
+            <properties>
+                <natives.classifier>darwin-x86_64</natives.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>uber-jar-natives</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <appendAssemblyId>true</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>${project.basedir}/src/main/assembly/uber-jar-natives.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>uber-jar-darwin-aarch64</id>
+            <properties>
+                <natives.classifier>darwin-aarch64</natives.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>uber-jar-natives</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <appendAssemblyId>true</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>${project.basedir}/src/main/assembly/uber-jar-natives.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>uber-jar-windows-x86_64</id>
+            <properties>
+                <natives.classifier>windows-x86_64</natives.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>uber-jar-natives</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <appendAssemblyId>true</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>${project.basedir}/src/main/assembly/uber-jar-natives.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>uber-jar-windows-aarch64</id>
+            <properties>
+                <natives.classifier>windows-aarch64</natives.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>uber-jar-natives</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <appendAssemblyId>true</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>${project.basedir}/src/main/assembly/uber-jar-natives.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <!--
+            Layer the module's `natives/bin/<classifier>/` tree onto the
+            test classpath so the loader's classpath probe (which uses
+            the manifest's repo-relative path verbatim, e.g.
+            `modules/lib/natives/bin/linux-x86_64/libcobalt-native.so`)
+            hits the local binary during `mvn test` instead of trying
+            to download from GitHub at a release tag that may not
+            exist yet during development.
+
+            This affects only the test classpath — the main JAR
+            stays binary-free and downloads at runtime in production.
+        -->
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+            <testResource>
+                <directory>${project.basedir}/natives</directory>
+                <targetPath>modules/lib/natives</targetPath>
+                <includes>
+                    <include>bin/**</include>
+                </includes>
+            </testResource>
+        </testResources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.plugin.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <release>${java.version}</release>
+                    <annotationProcessorPaths>
+                        <annotationProcessorPath>
+                            <groupId>com.github.auties00</groupId>
+                            <artifactId>protobuf-serialization-plugin</artifactId>
+                            <version>${protoc.version}</version>
+                        </annotationProcessorPath>
+                        <annotationProcessorPath>
+                            <groupId>com.github.auties00</groupId>
+                            <artifactId>cobalt-source-meta</artifactId>
+                            <version>${project.version}</version>
+                        </annotationProcessorPath>
+                        <annotationProcessorPath>
+                            <groupId>org.openjdk.jmh</groupId>
+                            <artifactId>jmh-generator-annprocess</artifactId>
+                            <version>${jmh.version}</version>
+                        </annotationProcessorPath>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <argLine>--add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED</argLine>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.jupiter</groupId>
+                        <artifactId>junit-jupiter-engine</artifactId>
+                        <version>${junit.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- Used by /validate scratch validators in src/test/java to invoke a main() against the test classpath. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <classpathScope>test</classpathScope>
+                    <commandlineArgs>--add-modules jdk.incubator.vector --add-opens java.base/jdk.internal.misc=ALL-UNNAMED</commandlineArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <!-- Source provenance annotations -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>cobalt-source-meta</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- WhatsApp protobuf data model -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>cobalt-wire-linked</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>cobalt-stanza-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>cobalt-telemetry-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>cobalt-wire-cloud</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>cobalt-wire-wam</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>cobalt-wire-stanza</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>cobalt-wire-graphql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>cobalt-wire-push</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- WAM annotation processor and types -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>cobalt-wam-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Generate and print QR code (Web API) -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>${zxing.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>qr-terminal</artifactId>
+            <version>${qr.terminal.version}</version>
+        </dependency>
+
+        <!-- Cryptography (used by Whatsapp) -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>libsignal</artifactId>
+            <version>${libsignal.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>curve25519</artifactId>
+            <version>${curve25519.version}</version>
+        </dependency>
+
+        <!-- BouncyCastle (test only: cross-checks the pure-JDK crypto/cert/DTLS against a second provider) -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bctls-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Protobuf serialization (used by Whatsapp) -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>protobuf-base</artifactId>
+            <version>${protoc.version}</version>
+        </dependency>
+
+        <!-- JSON serialization (used by Whatsapp) -->
+        <dependency>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+            <version>${json.version}</version>
+        </dependency>
+
+        <!-- Parse phone numbers (Mobile API) -->
+        <dependency>
+            <groupId>com.googlecode.libphonenumber</groupId>
+            <artifactId>libphonenumber</artifactId>
+            <version>${libphonenumber.version}</version>
+        </dependency>
+
+        <!-- Parse Android APK (Mobile API) -->
+        <dependency>
+            <groupId>net.dongliu</groupId>
+            <artifactId>apk-parser</artifactId>
+            <version>${apk.parser.version}</version>
+        </dependency>
+
+        <!-- Generate message previews -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>link-preview</artifactId>
+            <version>${linkpreview.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.ez-vcard</groupId>
+            <artifactId>ez-vcard</artifactId>
+            <version>${vcard.version}</version>
+        </dependency>
+
+        <!-- Store messages in memory -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>collections</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
+        <!-- Persistent message store (embedded H2 MVStore, pure Java) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2-mvstore</artifactId>
+            <version>${h2.mvstore.version}</version>
+        </dependency>
+
+        <!-- PDF rendering for document thumbnails in the upload transcoder -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
+        </dependency>
+
+        <!-- Event-driven network connectivity monitor (FFM, jextract bindings) -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>vigil</artifactId>
+            <version>${vigil.version}</version>
+        </dependency>
+
+        <!-- Native OS passkey (WebAuthn) assertion (FFM, jextract bindings) -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>warden</artifactId>
+            <version>${warden.version}</version>
+        </dependency>
+
+        <!-- Pure-Java SRTP/SRTCP (replaces the native libsrtp shim) -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>srtp</artifactId>
+            <version>${srtp.version}</version>
+        </dependency>
+
+        <!-- Pure-Java SCTP for WebRTC Data Channels (replaces the native usrsctp shim) -->
+        <dependency>
+            <groupId>com.github.auties00</groupId>
+            <artifactId>sctp</artifactId>
+            <version>${sctp.version}</version>
+        </dependency>
+
+        <!-- Testing framework -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Selenium for TLS fingerprint verification -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>${selenium.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Micro-benchmarks -->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

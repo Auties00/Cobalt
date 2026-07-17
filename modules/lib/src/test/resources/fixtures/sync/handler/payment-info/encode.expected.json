@@ -1,0 +1,13 @@
+{
+  "schema": "v1",
+  "sessionId": "personal",
+  "topic": "sync/handler/payment-info/encode",
+  "expression": "JSON.stringify(globalThis.__captures4['handler/payment-info/encode'])",
+  "result": {
+    "resultType": "string",
+    "value": "{\"timestampSeconds\":1700000000,\"encoded\":\"CIDiz6oGggMMCgpzYW1wbGUtY3Bp\"}",
+    "description": null,
+    "unserializableValue": null,
+    "exception": null
+  }
+}
