@@ -438,7 +438,7 @@ EOF
         --enable-pic --enable-lto --optflags=-O2 \
         --disable-iconv \
         --pkg-config-flags=--static \
-        --enable-demuxer=mov,matroska,ogg,mp3,wav,flac,mp4,aac,image2,webp_pipe,jpeg_pipe \
+        --enable-demuxer=mov,matroska,ogg,mp3,wav,flac,mp4,aac,image2,image_webp_pipe,image_jpeg_pipe,image_png_pipe \
         --enable-muxer=matroska,mov,wav,mp4,ipod,webp,image2,ogg,opus \
         --enable-parser=h264,aac,mpegaudio,vp8,opus \
         --enable-protocol=file \
