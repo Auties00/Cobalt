@@ -552,11 +552,16 @@ public final class ImagePipeline {
             AVFormatContext.pb(formatCtx, bridge.ioContext());
             var formatPp = arena.allocate(ValueLayout.ADDRESS);
             formatPp.set(ValueLayout.ADDRESS, 0L, formatCtx);
-            FFmpegError.check("avformat_open_input",
-                    Ffmpeg.avformat_open_input(formatPp, MemorySegment.NULL,
-                            MemorySegment.NULL, MemorySegment.NULL));
-            formatCtx = formatPp.get(ValueLayout.ADDRESS, 0L)
-                    .reinterpret(AVFormatContext.layout().byteSize());
+            var openResult = Ffmpeg.avformat_open_input(formatPp, MemorySegment.NULL,
+                    MemorySegment.NULL, MemorySegment.NULL);
+            // avformat_open_input frees the context and sets *ps to NULL on failure, so the
+            // pointer we allocated above is already dangling. Re-read it BEFORE check() can
+            // throw: otherwise freeOnFailure closes a freed context (double free -> SIGSEGV).
+            var openedCtx = formatPp.get(ValueLayout.ADDRESS, 0L);
+            formatCtx = MemorySegment.NULL.equals(openedCtx)
+                    ? MemorySegment.NULL
+                    : openedCtx.reinterpret(AVFormatContext.layout().byteSize());
+            FFmpegError.check("avformat_open_input", openResult);
             FFmpegError.check("avformat_find_stream_info",
                     Ffmpeg.avformat_find_stream_info(formatCtx, MemorySegment.NULL));
             var streamIndex = pickVideoStream(formatCtx);
