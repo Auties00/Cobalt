@@ -216,16 +216,29 @@ final class AndroidClientRegistration extends MobileClientRegistration {
      * {@code manage_call_permission}, {@code clicked_education_link},
      * {@code aid}, and {@code push_code}.
      *
+     * <p>Three of those fields state whether the client can observe an
+     * incoming call, which is what the server routes a flash call on:
+     * {@code prefer_sms_over_flash} is {@code "false"} and
+     * {@code call_log_permission} and {@code manage_call_permission}
+     * are {@code "true"} when the requested method is {@code flash},
+     * and they carry their headless-safe values for every other
+     * method.
+     *
      * @implNote
      * This implementation does not include the Play Integrity sextuple
      * here because it ships on every attested endpoint via
-     * {@link #attestationFields()}.
+     * {@link #attestationFields()}. The three call-observation fields
+     * are a statement the server acts on rather than a fingerprint:
+     * asking for {@code flash} while any of them still says the client
+     * cannot watch for a call is answered with an SMS, or with no
+     * route at all.
      */
     @Override
     protected String[] getRequestVerificationCodeParameters(String method) {
         if (Log.DEBUG) {
             LOGGER.log(Level.DEBUG, "android verification code request method={0}", method);
         }
+        var wantsFlash = "flash".equalsIgnoreCase(method);
         return new String[]{
                 "method", method,
                 "sim_mcc", "000",
@@ -238,7 +251,7 @@ final class AndroidClientRegistration extends MobileClientRegistration {
                 "sim_type", "1",
                 "recaptcha", "%7B%22stage%22%3A%22ABPROP_DISABLED%22%7D",
                 "network_radio_type", "1",
-                "prefer_sms_over_flash", "true",
+                "prefer_sms_over_flash", wantsFlash ? "false" : "true",
                 "simnum", "0",
                 "airplane_mode_type", "0",
                 "client_metrics", buildClientMetrics(),
@@ -252,12 +265,24 @@ final class AndroidClientRegistration extends MobileClientRegistration {
                 "cellular_strength", "5",
                 "backup_token", toUrlHex(store.signalStore().backupToken()),
                 "tos_version", "5",
-                "call_log_permission", "false",
-                "manage_call_permission", "false",
+                "call_log_permission", wantsFlash ? "true" : "false",
+                "manage_call_permission", wantsFlash ? "true" : "false",
                 "clicked_education_link", "false",
                 "aid", "",
                 "push_code", pushClient.getPushCode()
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>On Android, returns {@code true}: the platform exposes an
+     * incoming call's number to an application holding the call-log
+     * permissions, which is what reading a flash-call code depends on.
+     */
+    @Override
+    protected boolean supportsFlashCall() {
+        return true;
     }
 
     /**

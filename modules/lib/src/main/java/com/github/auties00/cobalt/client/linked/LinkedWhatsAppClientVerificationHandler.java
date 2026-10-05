@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -585,9 +586,9 @@ public sealed interface LinkedWhatsAppClientVerificationHandler {
      * Mobile registration requires the user to receive a one-time code
      * on the phone number being registered and to feed it back into
      * the client. Implementations expose two decisions: which delivery
-     * channel to request (SMS, voice call, in-app WhatsApp, or
-     * server-chosen) and how to obtain the code once it has been
-     * delivered. Optional callbacks handle CAPTCHA challenges and
+     * channel to request (SMS, voice call, in-app WhatsApp, flash
+     * call, or server-chosen) and how to obtain the code once it has
+     * been delivered. Optional callbacks handle CAPTCHA challenges and
      * two-factor PIN prompts.
      */
     non-sealed interface Mobile extends LinkedWhatsAppClientVerificationHandler {
@@ -597,9 +598,9 @@ public sealed interface LinkedWhatsAppClientVerificationHandler {
          *
          * @apiNote
          * Supported values mirror the WhatsApp server-side method
-         * identifiers: {@code sms}, {@code voice}, and {@code wa_old}.
-         * Returning {@link Optional#empty()} lets the server pick a
-         * default channel.
+         * identifiers: {@code sms}, {@code voice}, {@code wa_old}, and
+         * {@code flash}. Returning {@link Optional#empty()} lets the
+         * server pick a default channel.
          *
          * @return the preferred delivery method, or empty to defer the
          *         choice to the server
@@ -617,6 +618,55 @@ public sealed interface LinkedWhatsAppClientVerificationHandler {
          * @return the verification code
          */
         String verificationCode();
+
+        /**
+         * Returns the number of digits the flash-call verification code
+         * is, overriding the length the server stated.
+         *
+         * @apiNote
+         * Only consulted when the requested method is {@code flash},
+         * where {@link #verificationCode()} returns the caller id of
+         * the missed call rather than a code and the code is its
+         * trailing digits. The {@code /v2/code} reply names the length
+         * itself, so overriding it is for the rare number whose server
+         * states one the call does not honour.
+         *
+         * @implSpec
+         * The default implementation returns
+         * {@link OptionalInt#empty()}, which keeps the length the
+         * server stated, or six digits when it stated none.
+         *
+         * @return the code length to use, or empty to use the
+         *         server's
+         */
+        default OptionalInt flashCodeLength() {
+            return OptionalInt.empty();
+        }
+
+        /**
+         * Returns the regular expression isolating the flash-call
+         * verification code inside the caller id, overriding the one
+         * the server stated.
+         *
+         * @apiNote
+         * Only consulted when the requested method is {@code flash}.
+         * The code follows the dialling prefix, so the expression
+         * captures the prefix and the part after it separately and the
+         * last capturing group that holds digits is taken as the code,
+         * as in {@code "(.*)373(.*)"}. Overriding is for a session that
+         * requested the code outside Cobalt and so never saw the
+         * server's own {@code cli_filter}.
+         *
+         * @implSpec
+         * The default implementation returns {@link Optional#empty()},
+         * which keeps the expression the server stated, or falls back
+         * to the trailing digits of the caller id when it stated none.
+         *
+         * @return the expression to use, or empty to use the server's
+         */
+        default Optional<String> flashCliFilter() {
+            return Optional.empty();
+        }
 
         /**
          * Solves a server-issued CAPTCHA challenge and returns the
@@ -782,6 +832,57 @@ public sealed interface LinkedWhatsAppClientVerificationHandler {
                 @Override
                 public Optional<String> requestMethod() {
                     return Optional.of("wa_old");
+                }
+
+                @Override
+                public String verificationCode() {
+                    var value = supplier.get();
+                    if(value == null) {
+                        throw new IllegalArgumentException("Cannot send verification code: no value");
+                    }
+                    return value;
+                }
+            };
+        }
+
+        /**
+         * Returns a verification handler that requests flash-call
+         * delivery and reads the caller id of the resulting call from
+         * the supplied supplier.
+         *
+         * @apiNote
+         * Maps to the server-side {@code flash} method, which delivers
+         * no code at all: WhatsApp rings the number being registered
+         * from a one-time caller id and drops the call before it can be
+         * answered, and the verification code is the trailing digits of
+         * that caller id. The supplier therefore returns the number the
+         * call came from, in whatever form the handset showed it, and
+         * the registration flow reduces it to the code using the
+         * {@code cli_filter} and {@code length} the server stated when
+         * it accepted the request. Answering the call verifies nothing;
+         * it hangs up on its own.
+         *
+         * <p>Three conditions gate the method. It is offered on Android
+         * only, because iOS exposes no way to read an incoming call's
+         * number, so requesting it on an iOS client is refused before
+         * any request leaves (spending none of the number's attempts).
+         * The server declines it for numbers and countries it has no
+         * flash route for, answering {@code no_routes}. And the
+         * carrier has to present the calling number, since a withheld
+         * caller id leaves nothing to read.
+         *
+         * @param supplier the supplier that produces the number the
+         *                 flash call rang from
+         * @return the verification handler
+         * @throws NullPointerException if {@code supplier} is
+         *                              {@code null}
+         */
+        static Mobile flash(Supplier<String> supplier) {
+            Objects.requireNonNull(supplier, "supplier cannot be null");
+            return new Mobile() {
+                @Override
+                public Optional<String> requestMethod() {
+                    return Optional.of("flash");
                 }
 
                 @Override

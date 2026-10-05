@@ -193,6 +193,19 @@ public abstract sealed class MobileClientRegistration implements AutoCloseable
     private String lastRequestedMethod;
 
     /**
+     * Instructions for reading the verification code out of the caller
+     * id of a flash call, captured from the {@code /v2/code} reply that
+     * accepted the request.
+     *
+     * <p>Remains {@code null} for every method other than
+     * {@code flash}, and for a flash registration whose code was
+     * requested outside Cobalt, where
+     * {@link #codeForSubmission(String)} falls back to the overrides
+     * the verification handler carries.
+     */
+    private FlashCallCode flashCallCode;
+
+    /**
      * Stable per-registration session identifier sent as the
      * {@code access_session_id} form field on every attested endpoint
      * and every funnel event.
@@ -341,10 +354,32 @@ public abstract sealed class MobileClientRegistration implements AutoCloseable
      *
      * @param method the verification method chosen by the user (for
      *               example {@code "sms"}, {@code "voice"},
-     *               {@code "wa_old"})
+     *               {@code "wa_old"}, {@code "flash"})
      * @return the additional alternating name/value form parameters
      */
     protected abstract String[] getRequestVerificationCodeParameters(String method);
+
+    /**
+     * Reports whether this platform can be verified by a flash call.
+     *
+     * <p>A flash call is verified by reading the number the call came
+     * from, which only a platform that exposes incoming-call metadata
+     * to applications can do. Returning {@code false} makes
+     * {@link #requestVerificationCode(String)} refuse the
+     * {@code flash} method before any request leaves, so the number
+     * being registered spends none of its attempts learning the same
+     * thing from the server.
+     *
+     * @implSpec
+     * Overriders must answer for the platform rather than for the
+     * host: the question is whether the native client offers the
+     * method at all, not whether this particular process can observe a
+     * call.
+     *
+     * @return {@code true} if the {@code flash} method may be
+     *         requested on this platform
+     */
+    protected abstract boolean supportsFlashCall();
 
     /**
      * Returns the device family identifier used as the {@code fdid}
@@ -628,6 +663,13 @@ public abstract sealed class MobileClientRegistration implements AutoCloseable
      *                                       error twice
      */
     private void requestVerificationCode(String method) throws IOException, InterruptedException {
+        if (isFlash(method) && !supportsFlashCall()) {
+            if (Log.WARNING) LOGGER.log(Level.WARNING, "flash call verification requested on a platform that does not offer it");
+            throw new WhatsAppRegistrationException(
+                    "Flash call verification is only offered on Android: iOS exposes no way to read an incoming call's number, "
+                    + "so WhatsApp never routes a flash call to an iOS client. Register as Android, or pick another method.");
+        }
+
         String lastError = null;
         attempt = 1;
         lastRequestedMethod = method;
@@ -642,6 +684,13 @@ public abstract sealed class MobileClientRegistration implements AutoCloseable
             var response = JSON.parseObject(result);
             var status = response.getString("status");
             if (isSuccessful(status)) {
+                if (isFlash(method)) {
+                    flashCallCode = FlashCallCode.of(response);
+                    if (Log.DEBUG) LOGGER.log(Level.DEBUG,
+                            "flash call accepted, cc={0} prefix={1} filter={2} length={3} timeout={4}s",
+                            flashCallCode.cliCc(), flashCallCode.cliPrefix(), flashCallCode.cliFilter(),
+                            flashCallCode.codeLength(), flashCallCode.timeoutSeconds());
+                }
                 sendFunnelLog(verifyScreen, "request_code", "request_code_success");
                 if (Log.INFO) LOGGER.log(Level.INFO, "verification code requested via {0}", method);
                 return;
@@ -778,7 +827,9 @@ public abstract sealed class MobileClientRegistration implements AutoCloseable
      * This implementation strips whitespace and dashes from the code
      * via {@link #normalizeCodeResult(String)} so common user-entered
      * formats (for example {@code "123-456"}) work without further
-     * preprocessing.
+     * preprocessing. A flash-call registration takes the other branch
+     * of {@link #codeForSubmission(String)}, where what the handler
+     * returns is a caller id rather than a code.
      *
      * @throws IOException                   if the HTTP call fails
      * @throws InterruptedException          if the sending thread is
@@ -793,7 +844,7 @@ public abstract sealed class MobileClientRegistration implements AutoCloseable
         sendFunnelLog(verifyScreen, "submit_code", "submit_code_attempt");
         if (Log.DEBUG) LOGGER.log(Level.DEBUG, "submitting verification code {0}", new LogRedactable.Code(code));
 
-        var attrs = getRegistrationOptions(true, "code", normalizeCodeResult(code));
+        var attrs = getRegistrationOptions(true, "code", codeForSubmission(code));
         var result = sendRequest("/register", attrs);
         var response = JSON.parseObject(result);
         var status = response.getString("status");
@@ -1032,6 +1083,66 @@ public abstract sealed class MobileClientRegistration implements AutoCloseable
     private String normalizeCodeResult(String code) {
         return code.replaceAll("-", "")
                 .trim();
+    }
+
+    /**
+     * Returns the digits to submit to {@code /v2/register} for
+     * whatever the verification handler produced.
+     *
+     * <p>Every method other than {@code flash} delivers a code the
+     * user reads off a message, so the value only needs its separators
+     * stripped. A flash call delivers no code: what the handler
+     * returns is the number the call rang from, and the code is the
+     * part of it the {@code /v2/code} reply framed. Reducing it is the
+     * whole difference between confirming a flash call and confirming
+     * anything else.
+     *
+     * <p>The instructions are the ones captured when the request was
+     * accepted, with whatever
+     * {@link LinkedWhatsAppClientVerificationHandler.Mobile#flashCodeLength()}
+     * and
+     * {@link LinkedWhatsAppClientVerificationHandler.Mobile#flashCliFilter()}
+     * state substituted for the server's. A registration whose code
+     * was requested outside Cobalt never saw a reply to capture, so
+     * there the handler's overrides are all there is; without them the
+     * trailing six digits of the caller id are taken.
+     *
+     * @implNote
+     * This implementation keys off the method actually requested
+     * rather than the one the caller asked for, which are the same
+     * value here because a {@code no_routes} refusal aborts the flow
+     * instead of silently falling back to another channel. A fallback
+     * would make the distinction load-bearing: an SMS code confirmed
+     * as a flash code would be trimmed to its own trailing digits,
+     * which is right by accident while the lengths match and wrong the
+     * moment they do not.
+     *
+     * @param code the value the verification handler returned
+     * @return the digits to submit
+     */
+    private String codeForSubmission(String code) {
+        if (!isFlash(lastRequestedMethod)) {
+            return normalizeCodeResult(code);
+        }
+
+        var instructions = Objects.requireNonNullElseGet(flashCallCode, () -> FlashCallCode.of(new JSONObject()))
+                .withOverrides(verification.flashCodeLength(), verification.flashCliFilter());
+        var resolved = instructions.read(code);
+        if (Log.DEBUG) LOGGER.log(Level.DEBUG, "flash call caller id reduced to a {0} digit code", resolved.length());
+        return resolved;
+    }
+
+    /**
+     * Tests whether the given verification method is the flash call.
+     *
+     * <p>Returns {@code false} for {@code null} so a flow that never
+     * reached {@code /v2/code} is treated as a non-flash one.
+     *
+     * @param method the verification method string, or {@code null}
+     * @return {@code true} if the method is {@code flash}
+     */
+    private boolean isFlash(String method) {
+        return "flash".equalsIgnoreCase(method);
     }
 
     /**

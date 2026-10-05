@@ -239,6 +239,19 @@ final class IosClientRegistration extends MobileClientRegistration {
     /**
      * {@inheritDoc}
      *
+     * <p>On iOS, returns {@code false}: the platform exposes no way
+     * for an application to read an incoming call's number, so
+     * WhatsApp never offers the flash call there and never routes one
+     * to an iOS client.
+     */
+    @Override
+    protected boolean supportsFlashCall() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * <p>On iOS, returns only the APNS {@code push_token}. The App
      * Attest payloads do not appear here because they ride outside the
      * encrypted body, in the {@code H=} suffix appended after the
