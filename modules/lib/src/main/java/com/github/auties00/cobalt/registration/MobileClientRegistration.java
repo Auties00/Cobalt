@@ -553,7 +553,10 @@ public abstract sealed class MobileClientRegistration implements AutoCloseable
     private void assertRegistrationKeys() throws IOException, InterruptedException {
         sendFunnelLog("enter_number", "exist_check", "exist_attempt");
 
-        var attrs = getRegistrationOptions(false);
+        // The Android client includes its APK token when requesting the silent push via /exist.
+        var platform = store.accountStore().device().platform();
+        var attrs = getRegistrationOptions(platform == ClientPlatformType.ANDROID
+                || platform == ClientPlatformType.ANDROID_BUSINESS);
 
         var result = sendRequest("/exist", attrs);
         var response = JSON.parseObject(result);
