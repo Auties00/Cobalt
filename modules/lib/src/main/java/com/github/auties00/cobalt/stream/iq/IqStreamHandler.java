@@ -208,8 +208,8 @@ public final class IqStreamHandler extends SocketStreamHandler.Concurrent {
      *
      * @param whatsapp                the client; must not be {@code null}
      * @param webVerificationHandler  the verification handler that receives
-     *                                QR/pairing payloads; must not be
-     *                                {@code null}
+     *                                QR/pairing payloads, or {@code null} for a
+     *                                client that does not need Web pairing
      * @param deviceService           the service used for ADV validation; must
      *                                not be {@code null}
      * @param snapshotRecoveryService the service updated on pair-success; must
@@ -237,7 +237,7 @@ public final class IqStreamHandler extends SocketStreamHandler.Concurrent {
             WamService wamService
     ) {
         this.whatsapp = whatsapp;
-        this.webVerificationHandler = Objects.requireNonNull(webVerificationHandler, "webVerificationHandler cannot be null");
+        this.webVerificationHandler = webVerificationHandler;
         this.deviceService = Objects.requireNonNull(deviceService, "deviceService cannot be null");
         this.snapshotRecoveryService = Objects.requireNonNull(snapshotRecoveryService, "snapshotRecoveryService cannot be null");
         this.lidMigrationService = Objects.requireNonNull(lidMigrationService, "lidMigrationService cannot be null");
