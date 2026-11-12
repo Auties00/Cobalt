@@ -18,6 +18,10 @@ arquivo e registre a memória Graphify correspondente a cada achado.
 | PENDENTE | Problema confirmado, ainda sem correção |
 | HIPÓTESE | Suspeita, falta evidência (log/captura) |
 
+## Referência de comparação
+
+Os testes do usuário compararam o Cobalt com o **whatsmeow** (Go), que não apresentou os sintomas. O whatsmeow faz um bootstrap mínimo após o login; o Cobalt replica o bootstrap completo do WA Web (AB-props, privacidade, probes, sync de app-state), o que por definição é mais lento até o evento de login.
+
 ## Sintoma 1: conexão lenta com o WhatsApp
 
 | # | Área | Estado | Evidência | Próximo passo |
@@ -34,6 +38,7 @@ arquivo e registre a memória Graphify correspondente a cada achado.
 | 2.1 | Phash divergente no ack não refazia a lista de dispositivos (cache reutilizado para sempre; o servidor reporta phash em todo ack) | CORRIGIDO | `device/LiveDeviceService.java` `getDeviceLists`; teste `DeviceServiceTest.mismatchedPhashForcesServerSync` | Confirmar em sessão real que o ack para de trazer `phash` após o reenvio |
 | 2.2 | Lote usync com falha sobrescrevia a lista em cache com "só primário" (perdia companions) | CORRIGIDO | `device/LiveDeviceService.java` `fetchDeviceListsFromServer` (loop de fallback) | Nada |
 | 2.3 | `refresh_lid="true"` no ack chama `getDeviceLists(..., null, ...)`, que é no-op quando o usuário já está em cache | PENDENTE | `message/send/UserMessageSender.java` `maybeRefreshLid` | Forçar usync (mesma técnica de 2.1) após confirmar o fluxo `syncContactListJob` no WA Web |
+| 2.5 | Sessão recriada a cada execução (novo pareamento -> novo código de pareamento + sync completo), ao contrário do whatsmeow, que reusa o device salvo no sqlstore | HIPÓTESE | Builder: `createConnection()` sempre cria sessão nova; `loadLatestOrCreateConnection()` / `registered()` reusam. `WhatsAppStoreFactory.temporary()` não persiste nada | Revisar o código de teste usado na comparação |
 | 2.4 | Texto exato do aviso não identificado ("código de segurança mudou" x "Aguardando mensagem" x outro) | HIPÓTESE | Precisa de print/log do usuário | Coletar: texto exato, onde aparece (celular do destinatário? console?), log `DEBUG` de um envio |
 
 ## Testes conhecidos falhando (pré-existentes, fora do escopo)
