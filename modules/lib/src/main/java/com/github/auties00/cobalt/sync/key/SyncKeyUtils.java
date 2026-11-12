@@ -439,11 +439,15 @@ public final class SyncKeyUtils {
      * giving up. The default value when {@link ABProp#SYNCD_SENTINEL_TIMEOUT_SECONDS} is unset
      * is {@code 3}.
      *
+     * <p>Read without waiting for the first AB props sync: this runs on the teardown path, including
+     * after a connect that never reached the server, where a blocking read would stall the disconnect
+     * for the whole sync timeout and replace the original failure with a {@code SyncTimeout}.
+     *
      * @param abPropsService the AB prop source
-     * @return the configured {@code syncd_sentinel_timeout_seconds} value
+     * @return the configured {@code syncd_sentinel_timeout_seconds} value, or its default before the first sync
      */
     public static int getSyncdSentinelTimeoutSeconds(ABPropsService abPropsService) {
-        return abPropsService.getInt(ABProp.SYNCD_SENTINEL_TIMEOUT_SECONDS);
+        return abPropsService.getInt(ABProp.SYNCD_SENTINEL_TIMEOUT_SECONDS, false);
     }
 
     /**
