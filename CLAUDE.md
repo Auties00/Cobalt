@@ -279,3 +279,4 @@ Cross-module references must respect the dependency direction: a wire/log/stanza
 - A Graphify code graph of `modules/` is rebuilt locally with `graphify update modules` (`pip install graphifyy`; AST only, no LLM). Output goes to `modules/graphify-out/`; `graph.json` (~150 MB) is git-ignored, `GRAPH_REPORT.md` and `memory/` are versioned. `modules/.graphifyignore` excludes native third-party headers.
 - Before a cross-cutting change, query impact with `graphify affected "<path>::<symbol>" --graph modules/graphify-out/graph.json`; after validating a finding, record it with `graphify save-result --memory-dir modules/graphify-out/memory ...`.
 - `docs/engine-review/STATUS.md` is the review ledger (what is fixed, validated, pending, or a hypothesis). Update it alongside every engine fix.
+- `docs/engine-review/VALIDACAO.md` is the live-validation checklist (real phones; cannot run in the cloud). Results feed back into `STATUS.md`.

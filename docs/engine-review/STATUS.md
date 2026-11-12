@@ -7,6 +7,7 @@ arquivo e registre a memória Graphify correspondente a cada achado.
 - Fork: `jonales/Cobalt`, base `3a53a668` (2026-11-12)
 - Build: Java 25 (`openjdk-25-jdk-headless`), `mvn -DskipTests install -pl modules/lib -am` OK
 - Grafo: `graphify update modules` -> `modules/graphify-out/` (83k nós, 221k arestas; `graph.json` não versionado)
+- **Validação ao vivo pendente: roteiro em `docs/engine-review/VALIDACAO.md`.**
 - Memórias Graphify: `modules/graphify-out/memory/` (versionadas); consolidar com `graphify reflect --memory-dir modules/graphify-out/memory`
 
 ## Legenda
@@ -47,6 +48,7 @@ Texto real do aviso (registrado no `msgforge-api`, `docs/spikes/cobalt-0.1/READM
 | 2.2 | Lote usync com falha sobrescrevia a lista em cache com "só primário" (perdia companions) | CORRIGIDO | `device/LiveDeviceService.java` `fetchDeviceListsFromServer` (loop de fallback) | Nada |
 | 2.3 | `refresh_lid="true"` no ack chama `getDeviceLists(..., null, ...)`, que é no-op quando o usuário já está em cache | PENDENTE | `message/send/UserMessageSender.java` `maybeRefreshLid` | Forçar usync (mesma técnica de 2.1) após confirmar o fluxo `syncContactListJob` no WA Web |
 | 2.5 | Sessão recriada a cada execução (novo pareamento) | DESCARTADO | Builder: `createConnection()` sempre cria sessão nova; `loadLatestOrCreateConnection()` / `registered()` reusam. `WhatsAppStoreFactory.temporary()` não persiste nada. O `msgforge-api` restaura a sessão do Postgres com `registered()` (`CobaltWhatsAppGateway.start`) | Nada |
+| 2.6 | Com a 0.0.10, **toda** mensagem saía como `pkmsg` (sessão Signal nunca se fixava; a API registrou isso ao vivo) | HIPÓTESE | No fork, a sessão fica no `SignalStore` e o `encryptForDevice` só cai para PreKey sem sessão; precisa confirmar ao vivo | Teste "pkmsg x msg" de `VALIDACAO.md` |
 | 2.4 | ICDC do remetente calculado sobre a própria lista de aparelhos em cache; se ela não tiver o companion atual, o hash não confere no destinatário | HIPÓTESE | `IcdcComputer.compute` usa `findDeviceList(self)`; a correção 2.1 refaz essa lista quando o ack traz `phash` | Teste 1 do spike `msgforge-api/docs/spikes/cobalt-0.1` com este branch instalado |
 
 ## Testes conhecidos falhando (pré-existentes, fora do escopo)
