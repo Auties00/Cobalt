@@ -129,11 +129,15 @@ public interface LinkedWhatsAppClientPasskeyAuthenticator {
      * @param onQrCode the consumer the {@code FIDO:/...} QR payload is handed to for rendering; never
      *                 {@code null}
      * @return a hybrid-transport authenticator over the given QR consumer
-     * @throws NullPointerException          if {@code onQrCode} is {@code null}
-     * @throws UnsupportedOperationException if the host platform has no supported native passkey service
+     * <p>The native passkey service is initialised lazily, on the first {@link #assertCredential(Request)}:
+     * a session that never runs a passkey ceremony (the common QR or pairing-code login) works on hosts
+     * without the native library (for example a Linux container without {@code libfido2}).
+     *
+     * @throws NullPointerException if {@code onQrCode} is {@code null}
      */
     static LinkedWhatsAppClientPasskeyAuthenticator toQr(Consumer<String> onQrCode) {
-        return SystemPasskeyAuthenticator.create(onQrCode);
+        Objects.requireNonNull(onQrCode, "onQrCode must not be null");
+        return new LazyPasskeyAuthenticator(() -> SystemPasskeyAuthenticator.create(onQrCode));
     }
 
     /**
