@@ -2,6 +2,7 @@ package com.github.auties00.cobalt.stream.control;
 
 import com.github.auties00.cobalt.exception.linked.web.WhatsAppWebGraphQlException;
 import com.github.auties00.cobalt.stanza.model.Stanza;
+import com.github.auties00.cobalt.wire.core.jid.Jid;
 import com.github.auties00.cobalt.store.linked.LinkedWhatsAppSettingsStore;
 import com.github.auties00.cobalt.stream.SocketStreamHandler;
 import com.github.auties00.cobalt.client.linked.LinkedWhatsAppClient;
@@ -51,6 +52,7 @@ import com.github.auties00.cobalt.wire.wam.type.StreamSocketProviderType;
 import java.lang.System.Logger.Level;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -347,13 +349,14 @@ public final class SuccessStreamHandler extends SocketStreamHandler.Concurrent {
 
         whatsapp.editPresence(ContactStatus.AVAILABLE);
 
-        runComplianceProbe("reachout timelock", whatsapp::queryReachoutTimelock);
+        Thread.startVirtualThread(() -> runComplianceProbe("reachout timelock", whatsapp::queryReachoutTimelock));
 
-        runComplianceProbe("new-chat capping info", whatsapp::queryNewChatMessageCappingInfo);
+        Thread.startVirtualThread(() -> runComplianceProbe("new-chat capping info", whatsapp::queryNewChatMessageCappingInfo));
 
-        syncPrivacySettings();
-
-        syncPrivacyDisallowedListsMex();
+        var privacySync = new ArrayList<Thread>();
+        privacySync.add(Thread.startVirtualThread(this::syncPrivacySettings));
+        privacySync.addAll(syncPrivacyDisallowedListsMex());
+        joinAll(privacySync);
 
         for (var listener : store.listeners()) {
             if (listener instanceof LoggedInListener typed) {
@@ -604,6 +607,24 @@ public final class SuccessStreamHandler extends SocketStreamHandler.Concurrent {
      * @param probeName the human-readable probe name used in log output
      * @param probe     the probe to run; must not be {@code null}
      */
+    /**
+     * Waits for every thread in {@code threads} to terminate.
+     * <p>
+     * Stops waiting and restores the interrupt flag when the calling thread is interrupted.
+     *
+     * @param threads the threads to join
+     */
+    private static void joinAll(List<Thread> threads) {
+        for (var thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
     private static void runComplianceProbe(String probeName, Supplier<?> probe) {
         try {
             probe.get();
@@ -760,23 +781,51 @@ public final class SuccessStreamHandler extends SocketStreamHandler.Concurrent {
         }
     }
 
-    private void syncPrivacyDisallowedListsMex() {
+    /**
+     * Starts one virtual thread per privacy category that reconciles its {@code DENYLIST}
+     * disallowed list, and returns the started threads.
+     * <p>
+     * The categories are independent server round trips, so they run concurrently; the caller joins
+     * the returned threads before the {@code onLoggedIn} listeners fire. Returns an empty list when
+     * the account has no LID yet.
+     *
+     * @return the started reconciliation threads, empty when no LID is recorded
+     */
+    @WhatsAppWebExport(moduleName = "WAWebSyncPrivacyDisallowedLists",
+            exports = "syncPrivacyDisallowedLists", adaptation = WhatsAppAdaptation.ADAPTED)
+    private List<Thread> syncPrivacyDisallowedListsMex() {
         var meLid = whatsapp.store().accountStore().lid().orElse(null);
         if (meLid == null) {
-            return;
+            return List.of();
         }
         var categories = List.of("ABOUT", "GROUPADD", "LAST", "PROFILE");
+        var threads = new ArrayList<Thread>(categories.size());
         for (var category : categories) {
-            try {
-                whatsapp.queryPrivacyDisallowedList(meLid, "", category, "DENYLIST");
-                if (Log.DEBUG) {
-                    LOGGER.log(Level.DEBUG, "privacy disallowed list reconciled category={0}", category);
-                }
-            } catch (Throwable throwable) {
-                if (Log.WARNING) {
-                    LOGGER.log(Level.WARNING,
-                            "cannot reconcile privacy disallowed list " + category, throwable);
-                }
+            threads.add(Thread.startVirtualThread(() -> syncPrivacyDisallowedList(meLid, category)));
+        }
+        return threads;
+    }
+
+    /**
+     * Reconciles the {@code DENYLIST} privacy disallowed list of one category, logging any failure
+     * without re-throwing.
+     *
+     * @param meLid    the account LID the list belongs to
+     * @param category the privacy category, one of {@code ABOUT}, {@code GROUPADD}, {@code LAST} or
+     *                 {@code PROFILE}
+     */
+    @WhatsAppWebExport(moduleName = "WAWebSyncPrivacyDisallowedLists",
+            exports = "syncPrivacyDisallowedLists", adaptation = WhatsAppAdaptation.ADAPTED)
+    private void syncPrivacyDisallowedList(Jid meLid, String category) {
+        try {
+            whatsapp.queryPrivacyDisallowedList(meLid, "", category, "DENYLIST");
+            if (Log.DEBUG) {
+                LOGGER.log(Level.DEBUG, "privacy disallowed list reconciled category={0}", category);
+            }
+        } catch (Throwable throwable) {
+            if (Log.WARNING) {
+                LOGGER.log(Level.WARNING,
+                        "cannot reconcile privacy disallowed list " + category, throwable);
             }
         }
     }

@@ -1,0 +1,6 @@
+# Native third-party headers and binaries: huge, not Cobalt code
+lib/dependencies/
+lib/natives/
+**/target/
+*.jsonl
+*.bin

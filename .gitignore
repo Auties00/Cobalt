@@ -40,3 +40,9 @@ validation/
 
 # Logs
 *.log
+
+# Graphify knowledge graph: graph.json is ~150 MB and rebuilt locally with `graphify update modules`.
+# Only the report and the work-memory (validated findings) are versioned.
+modules/graphify-out/*
+!modules/graphify-out/GRAPH_REPORT.md
+!modules/graphify-out/memory/
