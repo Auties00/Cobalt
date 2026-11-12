@@ -5153,16 +5153,19 @@ final class LiveLinkedWhatsAppClient implements LinkedWhatsAppClient {
             return Map.of();
         }
 
-        // Build a UsyncQuery anchored on the contact protocol with background context, mirroring
+        // On-demand existence check: WA Web sends mode=query with the interactive context and
+        // only the phone number in <contact>. A background context (meant for address-book
+        // sync) together with a jid attribute on <user> is silently dropped by the relay: the
+        // IQ never gets a response and the caller times out.
         var query = UsyncQuery.ofContact(UsyncAddressingMode.PN)
-                .withContext(UsyncContext.BACKGROUND);
+                .withContext(UsyncContext.INTERACTIVE);
         var hasUser = false;
         for (var jid : phoneNumbers) {
             var phoneNumber = jid.toPhoneNumber().orElse(null);
             if (phoneNumber == null) {
                 continue;
             }
-            query.withUser(UsyncUser.byPhoneNumber(phoneNumber).withId(jid.toUserJid()));
+            query.withUser(UsyncUser.byPhoneNumber(phoneNumber));
             hasUser = true;
         }
         if (!hasUser) {
