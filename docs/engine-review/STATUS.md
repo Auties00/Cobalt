@@ -22,6 +22,12 @@ arquivo e registre a memória Graphify correspondente a cada achado.
 
 Os testes do usuário compararam o Cobalt com o **whatsmeow** (Go), que não apresentou os sintomas. O whatsmeow faz um bootstrap mínimo após o login; o Cobalt replica o bootstrap completo do WA Web (AB-props, privacidade, probes, sync de app-state), o que por definição é mais lento até o evento de login.
 
+## Relação com a API (`jonales/msgforge-api`)
+
+- A API usa `it.auties00:cobalt:0.0.10` (Maven Central). **Nenhuma correção deste fork chega à API** até ela migrar para o fork (ADR 0007 da API; pendência 5a do `CLAUDE.md` dela).
+- Na 0.0.10 o login leva cerca de 60 s por causa de um timeout de IQ (`erro em LOGIN: Node timed out`), registrado nas memórias da API.
+- O spike `docs/spikes/cobalt-0.1` da API é o teste de aceitação do fork: código de segurança, tempo de login, status, LID, nono dígito, envio repetido, sessão restaurada.
+
 ## Sintoma 1: conexão lenta com o WhatsApp
 
 | # | Área | Estado | Evidência | Próximo passo |
@@ -31,15 +37,17 @@ Os testes do usuário compararam o Cobalt com o **whatsmeow** (Go), que não apr
 | 1.3 | Leituras bloqueantes de AB-prop no caminho de envio (`getBool(prop)` espera até 30 s pelo 1º sync) | HIPÓTESE | `UserMessageSender.shouldConvertToLid` usa `getBool(ABProp.WEB_PNLESS_STANZAS)` | Só afeta envio feito antes do 1º sync; confirmar com log de timestamps |
 | 1.4 | `flushStore()` a cada envio | VALIDADO | `PersistentStore.save()` é debounced (flusher daemon) | Nada |
 
-## Sintoma 2: "mensagem de validação do código" a cada mensagem enviada
+## Sintoma 2: "Não foi possível confirmar seu código de segurança" a cada mensagem enviada
+
+Texto real do aviso (registrado no `msgforge-api`, `docs/spikes/cobalt-0.1/README.md`): aparece no celular de quem **recebe**, em toda mensagem, com a API rodando o **Cobalt 0.0.10 do Maven Central**, não este fork. O aviso vem da verificação ICDC: o destinatário compara o `deviceListMetadata` (hash das chaves e timestamp da lista de aparelhos de quem envia) com a lista que ele conhece. O fork calcula e envia o ICDC (`IcdcComputer`, `IcdcEnricher`, `MessageSender.encryptForDevices`); a validação ao vivo (teste 1 do spike) ainda está pendente.
 
 | # | Área | Estado | Evidência | Próximo passo |
 |---|---|---|---|---|
 | 2.1 | Phash divergente no ack não refazia a lista de dispositivos (cache reutilizado para sempre; o servidor reporta phash em todo ack) | CORRIGIDO | `device/LiveDeviceService.java` `getDeviceLists`; teste `DeviceServiceTest.mismatchedPhashForcesServerSync` | Confirmar em sessão real que o ack para de trazer `phash` após o reenvio |
 | 2.2 | Lote usync com falha sobrescrevia a lista em cache com "só primário" (perdia companions) | CORRIGIDO | `device/LiveDeviceService.java` `fetchDeviceListsFromServer` (loop de fallback) | Nada |
 | 2.3 | `refresh_lid="true"` no ack chama `getDeviceLists(..., null, ...)`, que é no-op quando o usuário já está em cache | PENDENTE | `message/send/UserMessageSender.java` `maybeRefreshLid` | Forçar usync (mesma técnica de 2.1) após confirmar o fluxo `syncContactListJob` no WA Web |
-| 2.5 | Sessão recriada a cada execução (novo pareamento -> novo código de pareamento + sync completo), ao contrário do whatsmeow, que reusa o device salvo no sqlstore | HIPÓTESE | Builder: `createConnection()` sempre cria sessão nova; `loadLatestOrCreateConnection()` / `registered()` reusam. `WhatsAppStoreFactory.temporary()` não persiste nada | Revisar o código de teste usado na comparação |
-| 2.4 | Texto exato do aviso não identificado ("código de segurança mudou" x "Aguardando mensagem" x outro) | HIPÓTESE | Precisa de print/log do usuário | Coletar: texto exato, onde aparece (celular do destinatário? console?), log `DEBUG` de um envio |
+| 2.5 | Sessão recriada a cada execução (novo pareamento) | DESCARTADO | Builder: `createConnection()` sempre cria sessão nova; `loadLatestOrCreateConnection()` / `registered()` reusam. `WhatsAppStoreFactory.temporary()` não persiste nada `msgforge-api` restaura a sessão do Postgres com `registered()` (`CobaltWhatsAppGateway.start`) | Nada |
+| 2.4 | ICDC do remetente calculado sobre a própria lista de aparelhos em cache; se ela não tiver o companion atual, o hash não confere no destinatário | HIPÓTESE | `IcdcComputer.compute` usa `findDeviceList(self)`; a correção 2.1 refaz essa lista quando o ack traz `phash` | Teste 1 do spike `msgforge-api/docs/spikes/cobalt-0.1` com este branch instalado |
 
 ## Testes conhecidos falhando (pré-existentes, fora do escopo)
 
