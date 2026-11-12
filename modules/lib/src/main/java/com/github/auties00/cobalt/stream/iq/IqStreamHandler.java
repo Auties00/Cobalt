@@ -237,7 +237,8 @@ public final class IqStreamHandler extends SocketStreamHandler.Concurrent {
             WamService wamService
     ) {
         this.whatsapp = whatsapp;
-        this.webVerificationHandler = Objects.requireNonNull(webVerificationHandler, "webVerificationHandler cannot be null");
+        // Null for a restored (registered) session and for mobile clients: nothing to verify.
+        this.webVerificationHandler = webVerificationHandler;
         this.deviceService = Objects.requireNonNull(deviceService, "deviceService cannot be null");
         this.snapshotRecoveryService = Objects.requireNonNull(snapshotRecoveryService, "snapshotRecoveryService cannot be null");
         this.lidMigrationService = Objects.requireNonNull(lidMigrationService, "lidMigrationService cannot be null");

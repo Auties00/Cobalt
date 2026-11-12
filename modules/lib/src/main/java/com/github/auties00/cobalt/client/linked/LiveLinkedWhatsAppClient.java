@@ -1029,8 +1029,15 @@ final class LiveLinkedWhatsAppClient implements LinkedWhatsAppClient {
         this.passkeyAuthenticator = webVerificationHandler == null
                 ? null
                 : webVerificationHandler.passkeyAuthenticator();
-        if ((store.accountStore().clientType() == LinkedWhatsAppClientType.WEB) == (webVerificationHandler == null)) {
+        // A registered web session (restored from disk) has nothing left to verify, so it runs
+        // without a handler: LinkedWhatsAppClientBuilder.Options.Web.registered() passes null.
+        // Only an unregistered web client needs one, and a mobile client must never get one.
+        var web = store.accountStore().clientType() == LinkedWhatsAppClientType.WEB;
+        if (web && webVerificationHandler == null && !store.accountStore().registered()) {
             throw new IllegalArgumentException("webVerificationHandler cannot be null when client type is WEB");
+        }
+        if (!web && webVerificationHandler != null) {
+            throw new IllegalArgumentException("webVerificationHandler must be null when client type is MOBILE");
         }
         var sessionCipher = new SignalSessionCipher(store.signalStore());
         var groupCipher = new SignalGroupCipher(store.signalStore());
