@@ -832,8 +832,12 @@ final class UserMessageSender extends MessageSender<ChatMessageInfo> {
                 .filter(id -> !id.isEmpty())
                 .orElse(null);
 
+        // "unknown" means the relay could not classify the account; it is not a valid value for
+        // local_automated_type, and sending it gets the whole message rejected with 479
+        // (smax-invalid). Business accounts that are not automated report it.
         var bizBotType = client.queryBusinessProfile(chatJid)
                 .flatMap(BusinessProfile::automatedType)
+                .filter(type -> type != BusinessAutomatedType.UNKNOWN)
                 .map(BusinessAutomatedType::value)
                 .orElse(null);
 
