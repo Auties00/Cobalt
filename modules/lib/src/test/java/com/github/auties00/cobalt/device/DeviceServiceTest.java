@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -289,5 +290,43 @@ class DeviceServiceTest {
                 "PN-keyed list must carry the union of its own device ids and the LID-keyed list's");
         assertEquals(List.of(0, 1, 2), lidDevices,
                 "LID-keyed list must carry the union of its own device ids and the PN-keyed list's");
+    }
+
+    // Regression guard: a server-reported phash that differs from the local one must force a USync
+    // round trip instead of silently reusing the stale cached lists on every send
+    @Test
+    @DisplayName("getUserFanout with a mismatched phash re-queries the server and falls back to the cache on failure")
+    void mismatchedPhashForcesServerSync() {
+        var h = build();
+        var serverRequests = new AtomicInteger();
+        h.client.withSendNodeHandler(node -> {
+            serverRequests.incrementAndGet();
+            throw new IllegalStateException("simulated server failure");
+        });
+
+        var peerCompanion = Jid.of("393495089819:5@s.whatsapp.net");
+        h.client.store().contactStore().addDeviceList(new DeviceListBuilder()
+                .userJid(PEER)
+                .devices(List.of(DeviceInfo.ofE2EE(0, 0), DeviceInfo.ofE2EE(5, 1)))
+                .timestamp(Instant.now())
+                .currentIndex(0)
+                .validIndexes(new LinkedHashSet<>())
+                .build());
+        h.client.store().contactStore().addDeviceList(new DeviceListBuilder()
+                .userJid(SELF_PN)
+                .devices(List.of(DeviceInfo.ofE2EE(0, 0), DeviceInfo.ofE2EE(1, 1)))
+                .timestamp(Instant.now())
+                .currentIndex(0)
+                .validIndexes(new LinkedHashSet<>())
+                .build());
+
+        h.deviceService.getUserFanout(PEER, null);
+        assertEquals(0, serverRequests.get(), "a fully cached fanout without phash must not hit the server");
+
+        var fanout = h.deviceService.getUserFanout(PEER, "2:bogusPhash");
+
+        assertTrue(serverRequests.get() > 0, "a phash mismatch must trigger a server device sync");
+        assertTrue(fanout.contains(PEER.toUserJid()), "the cached primary must survive a failed sync");
+        assertTrue(fanout.contains(peerCompanion), "the cached companion must survive a failed sync");
     }
 }

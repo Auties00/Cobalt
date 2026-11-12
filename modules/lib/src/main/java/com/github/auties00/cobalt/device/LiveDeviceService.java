@@ -365,6 +365,12 @@ public final class LiveDeviceService implements DeviceService {
      * LID query always yields LID device WIDs and a PN query always yields PN device WIDs. Without
      * the re-key a group send filtered by addressing mode silently drops the sender's own devices,
      * triggering a self retry storm and a participant-hash mismatch.
+     * <p>
+     * When {@code expectedPhash} is supplied and does not match the locally computed phash, every
+     * cached record is treated as stale and all of {@code userJids} are re-queried from the server;
+     * a user the server does not return keeps its cached record. Without this, a mismatch would only
+     * fetch users that were never cached, so the stale list would be reused on every send and the
+     * server would keep reporting the same mismatch on every ack.
      *
      * @param userJids              the user JIDs to resolve
      * @param context               the USync context wire literal, one of the
@@ -382,6 +388,7 @@ public final class LiveDeviceService implements DeviceService {
     public Set<DeviceList> getDeviceLists(Collection<Jid> userJids, String context, String expectedPhash, boolean shouldMergeAltDevices) {
         userJids = userJids.stream().map(Jid::toUserJid).toList();
 
+        var phashMismatch = false;
         if (expectedPhash != null && !expectedPhash.isEmpty()) {
             try {
                 var cachedLists = userJids.stream()
@@ -403,11 +410,52 @@ public final class LiveDeviceService implements DeviceService {
                             .toList();
                     return mergeAlternateDeviceLists(nonNullLists);
                 }
+                phashMismatch = true;
+                if (Log.DEBUG) LOGGER.log(Level.DEBUG, "Phash pre-check failed, forcing device sync for {0} users", userJids.size());
             } catch (NoSuchAlgorithmException _) {
 
             }
         }
 
+        if (phashMismatch) {
+            var fetchedUsers = new HashSet<Jid>();
+            var refreshed = new HashSet<DeviceList>();
+            for (var deviceList : fetchDeviceListsFromServer(userJids, context)) {
+                store.contactStore().addDeviceList(deviceList);
+                refreshed.add(deviceList);
+                fetchedUsers.add(deviceList.userJid().toUserJid());
+            }
+            var notReturned = userJids.stream()
+                    .filter(jid -> !fetchedUsers.contains(jid))
+                    .toList();
+            refreshed.addAll(resolveCachedDeviceLists(notReturned, context));
+            return shouldMergeAltDevices ? mergeAlternateDeviceLists(refreshed) : refreshed;
+        }
+
+        var result = resolveCachedDeviceLists(userJids, context);
+        if (shouldMergeAltDevices) {
+            return mergeAlternateDeviceLists(result);
+        }
+
+        return result;
+    }
+
+    /**
+     * Resolves {@code userJids} from the device-list cache, fetching from the server only the users
+     * that have no cached record.
+     * <p>
+     * A cached record that is deleted and not flagged as deleted-changed-to-host is replaced by the
+     * primary-only device list. Each cache hit is re-keyed to the queried JID through
+     * {@link DeviceList#withUserJid(Jid)}.
+     *
+     * @param userJids the user JIDs to resolve, already normalised to user JIDs
+     * @param context  the USync context wire literal used for the server fetch
+     * @return the resolved device lists
+     */
+    @WhatsAppWebExport(moduleName = "WAWebAdvSyncDeviceListApi",
+            exports = "syncDeviceList",
+            adaptation = WhatsAppAdaptation.ADAPTED)
+    private Set<DeviceList> resolveCachedDeviceLists(Collection<Jid> userJids, String context) {
         var result = new HashSet<DeviceList>();
         var missingJids = new ArrayList<Jid>();
 
@@ -435,10 +483,6 @@ public final class LiveDeviceService implements DeviceService {
                 store.contactStore().addDeviceList(deviceList);
                 result.add(deviceList);
             }
-        }
-
-        if (shouldMergeAltDevices) {
-            return mergeAlternateDeviceLists(result);
         }
 
         return result;
@@ -956,6 +1000,19 @@ public final class LiveDeviceService implements DeviceService {
 
             for (var entry : futures.entrySet()) {
                 if (!entry.getValue().isDone()) {
+                    // A USync batch that failed in transit yields no entry; keep a known list rather
+                    // than collapsing it to the primary device and silently dropping companions
+                    var cachedList = store.contactStore().findDeviceList(entry.getKey())
+                            .filter(list -> !list.deleted());
+                    if (cachedList.isPresent()) {
+                        var kept = cachedList.get().withUserJid(entry.getKey());
+                        entry.getValue().complete(kept);
+                        result.add(kept);
+                        if (Log.DEBUG) {
+                            LOGGER.log(Level.DEBUG, "Device list not returned for {0}, keeping cached list", entry.getKey());
+                        }
+                        continue;
+                    }
                     var fallback = createPrimaryOnlyDeviceList(entry.getKey());
                     store.contactStore().addDeviceList(fallback);
                     entry.getValue().complete(fallback);

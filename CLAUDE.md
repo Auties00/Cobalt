@@ -273,3 +273,9 @@ mvn -Pjavadoc-check -pl modules/lib compile javadoc:javadoc-no-fork -DskipTests
 ```
 
 Cross-module references must respect the dependency direction: a wire/log/stanza module cannot link to `lib` types (`lib` depends on them, not the reverse), so a `{@link WhatsAppClient}` from e.g. `cobalt-wire-linked` can never resolve; likewise `cobalt-wire-cloud` cannot link a `cobalt-wire-linked` type.
+
+## Knowledge graph and review ledger
+
+- A Graphify code graph of `modules/` is rebuilt locally with `graphify update modules` (`pip install graphifyy`; AST only, no LLM). Output goes to `modules/graphify-out/`; `graph.json` (~150 MB) is git-ignored, `GRAPH_REPORT.md` and `memory/` are versioned. `modules/.graphifyignore` excludes native third-party headers.
+- Before a cross-cutting change, query impact with `graphify affected "<path>::<symbol>" --graph modules/graphify-out/graph.json`; after validating a finding, record it with `graphify save-result --memory-dir modules/graphify-out/memory ...`.
+- `docs/engine-review/STATUS.md` is the review ledger (what is fixed, validated, pending, or a hypothesis). Update it alongside every engine fix.
