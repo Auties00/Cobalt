@@ -1468,12 +1468,11 @@ final class LiveLinkedWhatsAppClient implements LinkedWhatsAppClient {
             emitWebcStreamModeChangeEvent(WebcStreamModeCode.OFFLINE);
         }
 
-        // Flush pending sentinel mutations before disconnecting so key expiration is
-        // propagated; the wait is bounded so the logout cannot block indefinitely if a flush stalls.
-        // When the failure path already marked the session terminal the flush sends fail fast
-        // rather than writing to a stream the server has already ended.
-        if (reason == WhatsAppClientDisconnectReason.LOGGED_OUT
-            || reason == WhatsAppClientDisconnectReason.DISCONNECTED) {
+        // A terminated session cannot propagate pending sentinel mutations.
+        // Continue directly to cleanup in that case.
+        if (state.get() != ConnectionState.TERMINATED
+                && (reason == WhatsAppClientDisconnectReason.LOGGED_OUT
+                || reason == WhatsAppClientDisconnectReason.DISCONNECTED)) {
             flushDirtyCollectionsWithTimeout();
         }
 
@@ -1558,7 +1557,8 @@ final class LiveLinkedWhatsAppClient implements LinkedWhatsAppClient {
     @WhatsAppWebExport(moduleName = "WAWebSocketModel", exports = "Socket",
             adaptation = WhatsAppAdaptation.ADAPTED)
     private void flushDirtyCollectionsWithTimeout() {
-        var configuredTimeoutSeconds = SyncKeyUtils.getSyncdSentinelTimeoutSeconds(abPropsService);
+        var configuredTimeoutSeconds =
+                abPropsService.getInt(ABProp.SYNCD_SENTINEL_TIMEOUT_SECONDS, false);
         var clampedSeconds = Math.min(20, Math.max(0, configuredTimeoutSeconds));
         var timeoutMs = clampedSeconds * 1000L;
 
